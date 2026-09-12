@@ -37,7 +37,7 @@
       <div class="welcome-icon">🎵</div>
       <h2>Welcome Back!</h2>
       <p class="credit-highlight">Made by & for <strong>Amarjeet kumar</strong></p>
-      <p class="modal-desc">Offline Studio Audio Player with Live Visualizer, 10-Band EQ, Backup Engine, and Lock-Screen Audio.</p>
+      <p class="modal-desc">Offline Studio Audio Player with Spectrum Visualizer, Timestamp Bookmarks, 10-Band EQ, and Lock-Screen Audio.</p>
       <button id="btn-close-welcome" class="btn-primary-large">Start Listening</button>
     </div>
   </div>
@@ -148,6 +148,22 @@
     </div>
   </div>
 
+  <!-- New Timestamp Bookmark Name Modal -->
+  <div id="timestamp-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+      <h3>⏱️ Save Timestamp</h3>
+      <div class="form-group">
+        <label for="timestamp-name-input">Marker Name (e.g. Guitar Solo, Drop, Chorus)</label>
+        <input type="text" id="timestamp-name-input" class="input-text" placeholder="Chorus / Best Part" autocomplete="off" />
+        <small id="timestamp-time-preview" style="color:var(--accent-light);font-size:0.8rem;margin-top:4px;">At: 0:00</small>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-timestamp" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-timestamp" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Save Marker</button>
+      </div>
+    </div>
+  </div>
+
   <!-- "Thanks!" Modal -->
   <div id="thanks-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box text-center">
@@ -223,7 +239,6 @@
           <h2 id="view-playlist-name">Tracks</h2>
           <small id="track-count-label">0 songs</small>
         </div>
-        <!-- Multi-Format High Res Audio Picker -->
         <label class="btn-action" for="file-picker">➕ Add Songs</label>
         <input type="file" id="file-picker" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus" multiple style="display:none;" />
       </div>
@@ -278,10 +293,18 @@
         <p id="box-playlist">Playlist: All</p>
       </div>
 
-      <!-- Quick Seek & Progress -->
+      <!-- Real-Time Active Timestamp Chapter Indicator On Progress Bar -->
+      <div class="current-marker-badge-row">
+        <span id="active-marker-pill" class="active-marker-pill" style="display:none;">📍 <span id="active-marker-name">Verse</span></span>
+      </div>
+
+      <!-- Progress Bar With Tick Markers Overlay -->
       <div class="progress-bar-box">
         <span id="curr-time">0:00</span>
-        <input type="range" id="seek-bar" min="0" max="100" value="0" />
+        <div class="seek-track-wrapper">
+          <input type="range" id="seek-bar" min="0" max="100" value="0" />
+          <div id="seek-ticks-layer" class="seek-ticks-layer"></div>
+        </div>
         <span id="dur-time">0:00</span>
       </div>
 
@@ -299,16 +322,17 @@
         <button id="box-btn-next" class="icon-btn-large">⏭</button>
       </div>
 
-      <!-- Integrated Tool Action Bar -->
+      <!-- Integrated Tool Action Bar with Timestamp Markers Button -->
       <div class="card-tool-row">
         <button id="card-toggle-playlist" class="card-tool-btn">≡ Playlist</button>
         <button id="card-toggle-volume" class="card-tool-btn">🔊 Volume</button>
         <button id="card-toggle-eq" class="card-tool-btn">🎛 EQ & Bass</button>
+        <button id="card-toggle-timestamps" class="card-tool-btn">⏱️ Markers</button>
         <button id="card-toggle-looper" class="card-tool-btn">🔄 A-B Loop</button>
         <button id="card-toggle-lyrics" class="card-tool-btn">📝 Lyrics</button>
       </div>
 
-      <!-- 1. Volume Drawer (GainNode 0% - 100%, Default 20%) -->
+      <!-- 1. Volume Drawer -->
       <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Master Volume (Software Gain)</span>
@@ -348,7 +372,16 @@
         </div>
       </div>
 
-      <!-- 3. A-B Segment Looper Drawer -->
+      <!-- 3. NEW: Timestamp Bookmarks Drawer -->
+      <div id="card-timestamps-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Saved Timestamps & Chapters</span>
+          <button id="btn-add-timestamp" class="btn-action" style="color:var(--accent-light);">➕ Add Current Time</button>
+        </div>
+        <ul id="timestamp-markers-list" class="timestamp-list"></ul>
+      </div>
+
+      <!-- 4. A-B Segment Looper Drawer -->
       <div id="card-looper-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Continuous A-B Section Repeater</span>
@@ -360,7 +393,7 @@
         </div>
       </div>
 
-      <!-- 4. Offline Lyrics & Notes Drawer -->
+      <!-- 5. Offline Lyrics & Notes Drawer -->
       <div id="card-lyrics-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Offline Lyrics & Song Notes</span>
@@ -369,10 +402,10 @@
         <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
       </div>
 
-      <!-- 5. View Playlist / Reorder Drawer -->
+      <!-- 6. View Playlist / Reorder Drawer (With Active Song Highlight) -->
       <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
-          <span>Reorder Tracks (▲ / ▼)</span>
+          <span>Current Playlist Tracks (▲ / ▼)</span>
         </div>
         <ul id="card-reorder-list" class="song-list" style="margin-top:8px;"></ul>
       </div>
