@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#171f2d" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -269,7 +269,7 @@
       <button id="btn-clean-names" class="btn-action-sm" title="One-tap clean clutter tags from song names">✨ Clean</button>
     </div>
 
-    <!-- UPPER CONTENT: Song List -->
+    <!-- UPPER CONTENT: Song List (EXTENDS DIRECTLY TO THE BOTTOM) -->
     <main class="upper-content">
       <div class="section-title-row">
         <div>
@@ -304,7 +304,7 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN PLAYER CARD MODAL (PERFECT MOBILE RESPONSIVE LAYOUT) -->
+  <!-- FULLSCREEN PLAYER CARD MODAL (RESTORED TO NATURAL PROPORTIONAL LAYOUT) -->
   <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
     <div class="card-top-nav">
       <button id="btn-close-box" class="btn-action">▼ Minimize</button>
@@ -315,9 +315,9 @@
       <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
     </div>
 
-    <!-- UPPER FIXED PINNED PLAYER SECTION (BIGGER PROMINENT ARTWORK) -->
-    <div class="player-pinned-controls">
-      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="30"></canvas>
+    <!-- Scrollable Body Matching Original Seamless Layout -->
+    <div class="card-scroll-body">
+      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="34"></canvas>
 
       <div class="detail-art-container" id="art-swipe-area">
         <img id="box-cover" src="icon-192.png" alt="Album Art" />
@@ -355,7 +355,7 @@
         <button id="box-btn-next" class="icon-btn-large">⏭</button>
       </div>
 
-      <!-- STICKY ACTION TOOLBAR - ALWAYS ACCESSIBLE -->
+      <!-- Action Toolbar -->
       <div class="card-tool-row">
         <button id="card-toggle-playlist" class="card-tool-btn">≡ Playlist</button>
         <button id="card-toggle-volume" class="card-tool-btn">🔊 Volume</button>
@@ -364,10 +364,7 @@
         <button id="card-toggle-looper" class="card-tool-btn">🔄 A-B Loop</button>
         <button id="card-toggle-lyrics" class="card-tool-btn">📝 Lyrics</button>
       </div>
-    </div>
 
-    <!-- LOWER DEDICATED SCROLLABLE DRAWER VIEWPORT (EXTENDS TO SCREEN BOTTOM) -->
-    <div class="card-scrollable-drawers">
       <!-- 1. Volume Drawer -->
       <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
@@ -438,7 +435,7 @@
         <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
       </div>
 
-      <!-- 6. View Playlist / Reorder Drawer (EXTENDS TILL END OF SCREEN WITH VISUALIZER ANIMATION) -->
+      <!-- 6. View Playlist / Reorder Drawer (EXTENDS DOWNWARDS WITH VISUALIZER ANIMATION) -->
       <div id="card-playlist-panel" class="embedded-card-panel playlist-expanded-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Active Playlist Songs (Tap to Play / Reorder)</span>
