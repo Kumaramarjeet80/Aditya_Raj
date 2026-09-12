@@ -125,7 +125,7 @@
         <div class="export-options-box">
           <label style="font-weight:600;display:block;margin-bottom:6px;">Export Configuration:</label>
           <label class="checkbox-label">
-            <input type="checkbox" id="chk-export-audio" checked /> Include Song Audio Files (Creates portable full backup)
+            <input type="checkbox" id="chk-export-audio" checked /> Include Song Audio Files (Creates full portable standalone backup)
           </label>
           <label class="checkbox-label">
             <input type="checkbox" id="chk-export-images" checked /> Include Custom Covers & App Logos
@@ -137,9 +137,9 @@
             <summary>📖 How to Export your Data (Instructions)</summary>
             <div class="instruction-content">
               <ol>
-                <li>Keep <strong>"Include Song Audio Files"</strong> checked if you want your actual song files backed up so you can transfer them to another device.</li>
+                <li>Check <strong>"Include Song Audio Files"</strong> if you want your actual songs exported so you can restore them on any phone or computer without needing the original audio files again.</li>
                 <li>Uncheck it if you only want to save your playlist names, markers, lyrics, and settings as a tiny lightweight file.</li>
-                <li>Click <strong>"💾 Start Export"</strong> to save the <code>.json</code> file completely offline.</li>
+                <li>Click <strong>"💾 Start Export"</strong>. A single <code>.json</code> file will download directly to your device completely offline.</li>
               </ol>
             </div>
           </details>
@@ -150,7 +150,7 @@
               <ol>
                 <li>Click <strong>"📥 Select Backup File (.json)"</strong>.</li>
                 <li>Select the backup file previously downloaded from Amarjeet Audio Studio.</li>
-                <li>The app will automatically restore all playlists, markers, hearts, lyrics, and media directly into local IndexedDB storage.</li>
+                <li>The engine will restore all playlists, bookmarks, favorite hearts, lyrics, settings, and media directly into local IndexedDB memory.</li>
               </ol>
             </div>
           </details>
@@ -269,7 +269,7 @@
       <button id="btn-clean-names" class="btn-action-sm" title="One-tap clean clutter tags from song names">✨ Clean</button>
     </div>
 
-    <!-- UPPER CONTENT: Song List (EXTENDS DIRECTLY TO THE BOTTOM) -->
+    <!-- UPPER CONTENT: Song List -->
     <main class="upper-content">
       <div class="section-title-row">
         <div>
@@ -304,7 +304,7 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN PLAYER CARD MODAL (RESTORED TO NATURAL PROPORTIONAL LAYOUT) -->
+  <!-- FULLSCREEN PLAYER CARD MODAL (RESTRUCTURED FOR ROCK-SOLID VISIBILITY) -->
   <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
     <div class="card-top-nav">
       <button id="btn-close-box" class="btn-action">▼ Minimize</button>
@@ -315,9 +315,9 @@
       <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
     </div>
 
-    <!-- Scrollable Body Matching Original Seamless Layout -->
-    <div class="card-scroll-body">
-      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="34"></canvas>
+    <!-- UPPER FIXED PINNED PLAYER SECTION (NEVER DISAPPEARS) -->
+    <div class="player-pinned-controls">
+      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="32"></canvas>
 
       <div class="detail-art-container" id="art-swipe-area">
         <img id="box-cover" src="icon-192.png" alt="Album Art" />
@@ -355,7 +355,7 @@
         <button id="box-btn-next" class="icon-btn-large">⏭</button>
       </div>
 
-      <!-- Action Toolbar -->
+      <!-- STICKY ACTION TOOLBAR - ALWAYS VISIBLE AT ALL TIMES -->
       <div class="card-tool-row">
         <button id="card-toggle-playlist" class="card-tool-btn">≡ Playlist</button>
         <button id="card-toggle-volume" class="card-tool-btn">🔊 Volume</button>
@@ -364,7 +364,10 @@
         <button id="card-toggle-looper" class="card-tool-btn">🔄 A-B Loop</button>
         <button id="card-toggle-lyrics" class="card-tool-btn">📝 Lyrics</button>
       </div>
+    </div>
 
+    <!-- LOWER DEDICATED SCROLLABLE DRAWER VIEWPORT -->
+    <div class="card-scrollable-drawers">
       <!-- 1. Volume Drawer -->
       <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
@@ -435,8 +438,8 @@
         <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
       </div>
 
-      <!-- 6. View Playlist / Reorder Drawer (EXTENDS DOWNWARDS WITH VISUALIZER ANIMATION) -->
-      <div id="card-playlist-panel" class="embedded-card-panel playlist-expanded-panel" style="display:none;">
+      <!-- 6. View Playlist / Reorder Drawer (Clean Scrollable List With Active Song Highlight) -->
+      <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Active Playlist Songs (Tap to Play / Reorder)</span>
         </div>
