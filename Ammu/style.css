@@ -359,11 +359,13 @@ body {
   padding-right: 4px;
 }
 .card-credit-footer {
+  display: block;
+  width: 100%;
   text-align: center;
+  margin: 12px auto 4px auto;
+  padding-top: 8px;
   font-size: 0.75rem;
   color: var(--text-muted);
-  margin-top: 10px;
-  padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
