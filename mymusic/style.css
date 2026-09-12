@@ -290,6 +290,24 @@ body {
   background: #14231b;
 }
 
+/* In-Card Reorder Drawer Active Song Highlight */
+.song-row.playing-in-drawer {
+  border: 1.5px solid var(--accent) !important;
+  background: #172d21 !important;
+  box-shadow: 0 0 10px rgba(46, 160, 67, 0.25);
+}
+
+.now-playing-tag {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: bold;
+  margin-left: 6px;
+  display: inline-block;
+}
+
 .song-info {
   flex: 1;
   overflow: hidden;
@@ -477,7 +495,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .visualizer-canvas {
@@ -489,8 +507,8 @@ body {
 
 .detail-art-container {
   position: relative;
-  width: min(70vw, 240px);
-  height: min(70vw, 240px);
+  width: min(68vw, 230px);
+  height: min(68vw, 230px);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 12px 30px rgba(0,0,0,0.8);
@@ -532,6 +550,32 @@ body {
   margin-top: 2px;
 }
 
+/* Real-Time Active Timestamp Indicator Banner */
+.current-marker-badge-row {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.active-marker-pill {
+  background: rgba(46, 160, 67, 0.2);
+  border: 1px solid var(--accent);
+  color: var(--accent-light);
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  animation: pulseMarker 2s infinite ease-in-out;
+}
+
+@keyframes pulseMarker {
+  0% { box-shadow: 0 0 0 rgba(46,160,67,0.4); }
+  50% { box-shadow: 0 0 10px rgba(46,160,67,0.8); }
+  100% { box-shadow: 0 0 0 rgba(46,160,67,0.4); }
+}
+
+/* Seek Bar with Timestamp Ticks */
 .progress-bar-box {
   width: 100%;
   max-width: 440px;
@@ -541,8 +585,40 @@ body {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
-.progress-bar-box input[type="range"] {
+
+.seek-track-wrapper {
+  position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.seek-track-wrapper input[type="range"] {
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.seek-ticks-layer {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 8px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.seek-tick-pip {
+  position: absolute;
+  width: 4px;
+  height: 10px;
+  background: #ffcc00;
+  border-radius: 2px;
+  top: -1px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 4px rgba(255, 204, 0, 0.8);
 }
 
 .quick-jump-row {
@@ -602,7 +678,10 @@ body {
   max-width: 440px;
   gap: 6px;
   overflow-x: auto;
+  scrollbar-width: none;
 }
+.card-tool-row::-webkit-scrollbar { display: none; }
+
 .card-tool-btn {
   flex: 1;
   background: var(--bg-surface);
@@ -660,6 +739,61 @@ body {
 .looper-action-row {
   display: flex;
   gap: 10px;
+}
+
+/* Timestamp Markers Drawer List */
+.timestamp-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.timestamp-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.timestamp-item.playing-timestamp {
+  border: 1.5px solid var(--accent);
+  background: #172d21;
+}
+
+.timestamp-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timestamp-badge-time {
+  background: #090d15;
+  color: var(--accent-light);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.timestamp-item-name {
+  font-size: 0.82rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.active-marker-tag {
+  color: var(--accent-light);
+  font-size: 0.72rem;
+  font-weight: bold;
+  margin-left: 6px;
 }
 
 .lyrics-box {
