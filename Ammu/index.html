@@ -16,6 +16,9 @@
   <!-- Toast Notification Container Directly Above Player Bar -->
   <div id="toast-container" class="toast-container"></div>
 
+  <!-- Fullscreen Floating Heart Animation Overlay -->
+  <div id="heart-burst-overlay" class="heart-burst-overlay" style="display:none;"></div>
+
   <!-- Persistent Install Helper Banner -->
   <div id="persistent-install-banner" class="install-banner-bar" style="display:none;">
     <div class="install-banner-info">
@@ -64,6 +67,27 @@
     </div>
   </div>
 
+  <!-- Edit User Profile Modal (Anytime Accessible) -->
+  <div id="user-profile-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <h3>👤 Edit Listener Profile</h3>
+      <p class="modal-desc">Update your personal listener identity anytime.</p>
+      <img id="user-edit-avatar-preview" class="dev-avatar" src="icon-192.png" alt="Avatar" style="margin:8px auto;" />
+      <div class="form-group text-left">
+        <label for="edit-user-name">Your Name</label>
+        <input type="text" id="edit-user-name" class="input-text" />
+      </div>
+      <div class="form-group text-left">
+        <label for="edit-user-avatar">Change Photo</label>
+        <input type="file" id="edit-user-avatar" accept="image/*" />
+      </div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button type="button" id="btn-cancel-user-profile" class="btn-action">Cancel</button>
+        <button type="button" id="btn-save-user-profile" class="btn-primary-large" style="width:auto;padding:10px 20px;">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Listening Analytics & History Modal -->
   <div id="stats-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box modal-box-large">
@@ -99,19 +123,19 @@
         <div id="milestone-badges-row" class="badges-row"></div>
       </div>
 
-      <!-- Top 5 Most Replayed Tracks -->
+      <!-- Top 5 Most Replayed Tracks (Clickable to Play) -->
       <div class="backup-management-box" style="margin-top:10px;">
-        <h4>🔥 Top 5 Most Replayed Songs</h4>
-        <ul id="stats-top-songs-list" class="history-list-box" style="max-height:130px;margin-top:6px;"></ul>
+        <h4>🔥 Top 5 Most Replayed Songs (Tap to Play)</h4>
+        <ul id="stats-top-songs-list" class="history-list-box clickable-stat-list" style="max-height:130px;margin-top:6px;"></ul>
       </div>
 
-      <!-- Chronological Playback Timeline -->
+      <!-- Chronological Playback Timeline (Clickable to Play) -->
       <div class="backup-management-box" style="margin-top:10px;">
         <div class="panel-header-row">
-          <h4 style="margin:0;">🕒 Recent Playback History</h4>
+          <h4 style="margin:0;">🕒 Recent Playback History (Tap to Play)</h4>
           <button id="btn-clear-play-history" class="btn-dim-sm" style="font-size:0.72rem;color:#f85149;">Clear History</button>
         </div>
-        <ul id="stats-history-list" class="history-list-box" style="max-height:160px;margin-top:6px;"></ul>
+        <ul id="stats-history-list" class="history-list-box clickable-stat-list" style="max-height:160px;margin-top:6px;"></ul>
       </div>
     </div>
   </div>
@@ -210,10 +234,19 @@
         </label>
       </div>
 
-      <!-- Complete Profile & Data Exporter -->
+      <!-- Quick Edit User Profile Trigger -->
       <div class="backup-management-box">
+        <div class="panel-header-row">
+          <h4>👤 Listener Identity</h4>
+          <button id="btn-open-edit-user-profile" class="btn-action-sm">✏️ Edit My Profile</button>
+        </div>
+        <p id="settings-current-user-lbl" style="font-size:0.75rem;color:var(--text-muted);">Active listener: Amarjeet Kumar</p>
+      </div>
+
+      <!-- Complete Profile & Data Exporter -->
+      <div class="backup-management-box" style="margin-top:10px;">
         <h4>📦 Complete Profile & Library Backup</h4>
-        <p style="font-size:0.75rem;color:var(--text-muted);margin:4px 0 8px 0;">Export your full listener profile, songs, playlists, history, and markers.</p>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin:4px 0 8px 0;">Export full profile, songs, playlists, history, and markers.</p>
         <button id="btn-export-full-profile" class="btn-primary-large">💾 Export Complete Profile & Library (.json)</button>
       </div>
 
@@ -235,9 +268,9 @@
             <summary>📖 How to Export your Data (Instructions)</summary>
             <div class="instruction-content">
               <ol>
-                <li>Check <strong>"Include Song Audio Files"</strong> if you want your actual songs exported so you can restore them on any phone or computer without needing the original audio files again.</li>
-                <li>Uncheck it if you only want to save your playlist names, markers, lyrics, and settings as a tiny lightweight file.</li>
-                <li>Click <strong>"💾 Start Export"</strong>. A single <code>.json</code> file will download directly to your device completely offline.</li>
+                <li>Check <strong>"Include Song Audio Files"</strong> if you want your actual songs exported so you can restore them on any phone or computer without needing the original audio files again[cite: 6].</li>
+                <li>Uncheck it if you only want to save your playlist names, markers, lyrics, and settings as a tiny lightweight file[cite: 6].</li>
+                <li>Click <strong>"💾 Start Export"</strong>. A single <code>.json</code> file will download directly to your device completely offline[cite: 6].</li>
               </ol>
             </div>
           </details>
@@ -363,7 +396,7 @@
     </div>
   </div>
 
-  <!-- Create Playlist Modal -->
+  <!-- Create Playlist Modal (with Playlist Import Button Inside) -->
   <div id="playlist-create-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
       <h3>Create New Playlist</h3>
@@ -383,6 +416,12 @@
         <button type="button" id="btn-cancel-playlist" class="btn-action">Cancel</button>
         <button type="button" id="btn-confirm-playlist" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Create</button>
       </div>
+
+      <!-- Secondary Playlist Import Button -->
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px;">
+        <label class="btn-action" for="playlist-modal-import-file" style="display:block;cursor:pointer;text-align:center;font-size:0.8rem;">📥 Import Shared Playlist File (.json)</label>
+        <input type="file" id="playlist-modal-import-file" accept=".json" style="display:none;" />
+      </div>
     </div>
   </div>
 
@@ -392,13 +431,13 @@
   <!-- Main App Shell -->
   <div class="app-layout">
     <header class="app-top">
-     <div class="brand-container" id="brand-edit-trigger" title="Tap to customize app branding">
-  <img id="header-app-logo" class="app-logo-badge" src="icon-192.png" alt="Logo" />
-  <div class="brand-text-col">
-    <span class="brand-title" id="display-app-name">Ammu music</span>
-    <span class="badge">Pure Audio</span>
-  </div>
-</div>
+      <div class="brand-container" id="brand-edit-trigger" title="Tap to customize app branding">
+        <img id="header-app-logo" class="app-logo-badge" src="icon-192.png" alt="Logo" />
+        <div class="brand-text-col">
+          <span class="brand-title" id="display-app-name">Ammu music</span>
+          <span class="badge">Pure Audio</span>
+        </div>
+      </div>
       <div style="display: flex; gap: 6px;">
         <button id="btn-open-stats" class="btn-action" title="Listening Insights & History">📊</button>
         <button id="btn-open-dev" class="btn-action" title="Developer Profile">👨‍💻</button>
@@ -620,17 +659,14 @@
         <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
       </div>
 
-      <!-- 6. View Playlist / Reorder Drawer -->
-      <!-- 6. View Playlist / Reorder Drawer -->
-<div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
-  <div class="panel-header-row">
-    <span>Active Playlist Songs (Tap to Play / Reorder)</span>
-  </div>
-  <ul id="card-reorder-list" class="song-list card-compact-list" style="margin-top:6px;"></ul>
-  
-  <!-- Add this line below the list -->
-  <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
-</div>
+      <!-- 6. View Playlist / Reorder Drawer (with 440px height & centered credit) -->
+      <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Active Playlist Songs (Tap to Play / Reorder)</span>
+        </div>
+        <ul id="card-reorder-list" class="song-list card-compact-list" style="margin-top:6px;"></ul>
+        <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+      </div>
     </div>
   </div>
 
