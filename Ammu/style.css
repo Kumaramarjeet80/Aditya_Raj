@@ -354,7 +354,7 @@ body {
 }
 
 .card-compact-list {
-  max-height: 220px;
+  max-height: 400px;
   overflow-y: auto;
   padding-right: 4px;
 }
