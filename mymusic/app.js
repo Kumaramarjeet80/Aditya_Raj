@@ -96,7 +96,7 @@ document.getElementById('btn-close-thanks').onclick = () => {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmarjeetAudioStudioDB_v70';
+const DB_NAME = 'AmarjeetAudioStudioDB_v75';
 const DB_VER = 1;
 let db;
 
@@ -340,7 +340,7 @@ function ensureAudioPipeline() {
   }
 }
 
-// Headphone / Bluetooth Disconnect Protection
+// Headphone / Bluetooth Disconnect Auto-Pause Protection
 if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange !== undefined) {
   navigator.mediaDevices.ondevicechange = () => {
     if (!audio.paused) {
@@ -402,7 +402,7 @@ let currentAppLogo = 'icon-192.png';
 let currentAppName = 'Amarjeet Studio';
 let playMode = 'all';
 let speedList = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
-let currentSpeedIndex = 2; // 1.0x
+let currentSpeedIndex = 2;
 let sleepTimerId = null;
 let pointA = null;
 let pointB = null;
@@ -526,7 +526,7 @@ document.getElementById('btn-save-dev-profile').onclick = async () => {
 };
 
 // ==========================================
-// APP BRANDING & PREFERENCES
+// APP BRANDING & UNIVERSAL BACKUP ENGINE
 // ==========================================
 const settingsModal = document.getElementById('settings-modal');
 const customAppNameInput = document.getElementById('custom-app-name');
@@ -609,44 +609,166 @@ document.getElementById('btn-save-settings').onclick = async () => {
   updateMediaSession();
 };
 
-// Backup Export & Import Utilities
+// Helper: Blob to Base64 conversion
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Helper: Base64 to Blob conversion
+function base64ToBlob(base64) {
+  const parts = base64.split(';base64,');
+  const contentType = parts[0].split(':')[1];
+  const raw = window.atob(parts[1]);
+  const rawLength = raw.length;
+  const uInt8Array = new Uint8Array(rawLength);
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  return new Blob([uInt8Array], { type: contentType });
+}
+
+// UNIVERSAL DATA EXPORT WITH AUDIO/IMAGE SELECTION
 document.getElementById('btn-export-backup').onclick = async () => {
-  const all = await dbOps.getAllTracks();
-  const pls = await dbOps.getPlaylists();
-  const backup = {
-    appName: currentAppName,
+  const includeAudio = document.getElementById('chk-export-audio').checked;
+  const includeImages = document.getElementById('chk-export-images').checked;
+
+  showNotification('Packaging offline backup data...');
+
+  const allTracks = await dbOps.getAllTracks();
+  const allPlaylists = await dbOps.getPlaylists();
+  const devProfile = await dbOps.getDevProfile();
+
+  // Export tracks
+  const exportedTracks = [];
+  for (const t of allTracks) {
+    let audioData = null;
+    if (includeAudio && t.blob) {
+      try {
+        audioData = await blobToBase64(t.blob);
+      } catch (err) {
+        console.warn('Could not serialize blob for track:', t.name);
+      }
+    }
+    const trkLyrics = await dbOps.getLyrics(t.name);
+    const trkMarkers = await dbOps.getTimestamps(t.name);
+    const isFav = await dbOps.isFavorite(t.name);
+    const playCount = await dbOps.getPlayCount(t.name);
+
+    exportedTracks.push({
+      id: t.id,
+      name: t.name,
+      playlistId: t.playlistId,
+      order: t.order,
+      audioBase64: audioData,
+      lyrics: trkLyrics,
+      markers: trkMarkers,
+      isFavorite: isFav,
+      playCount: playCount
+    });
+  }
+
+  // Export playlists
+  const exportedPlaylists = allPlaylists.map(p => ({
+    id: p.id,
+    name: p.name,
+    cover: includeImages ? p.cover : 'icon-192.png'
+  }));
+
+  const backupPayload = {
+    version: '2.0',
     exportedAt: new Date().toISOString(),
-    playlists: pls,
-    tracksMeta: all.map(t => ({ id: t.id, name: t.name, playlistId: t.playlistId, order: t.order }))
+    generator: 'Amarjeet Audio Studio',
+    branding: {
+      appName: currentAppName,
+      appLogo: includeImages ? currentAppLogo : 'icon-192.png'
+    },
+    devProfile: devProfile,
+    playlists: exportedPlaylists,
+    tracks: exportedTracks
   };
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2));
+
+  const jsonString = JSON.stringify(backupPayload, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const downloadUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = dataStr;
-  a.download = `Amarjeet_Studio_Backup_${Date.now()}.json`;
+  a.href = downloadUrl;
+  a.download = `Amarjeet_Studio_Universal_Backup_${includeAudio ? 'FULL' : 'META'}_${Date.now()}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  showNotification('Backup metadata exported!');
+  URL.revokeObjectURL(downloadUrl);
+
+  showThanksPopup(`Universal backup exported! ${includeAudio ? 'All song files & artwork included.' : 'Metadata & playlists saved.'}`);
 };
 
+// UNIVERSAL DATA IMPORT & RESTORE
 document.getElementById('import-backup-file').onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+
+  showNotification('Processing and verifying backup file...');
   const reader = new FileReader();
+
   reader.onload = async (event) => {
     try {
-      const backup = JSON.parse(event.target.result);
-      if (backup.playlists && Array.isArray(backup.playlists)) {
-        for (const p of backup.playlists) {
-          await dbOps.savePlaylist(p);
-        }
+      const data = JSON.parse(event.target.result);
+      if (!data.playlists || !data.tracks) {
+        throw new Error('Invalid backup schema');
       }
-      showThanksPopup('Backup metadata restored successfully!');
-      loadPlaylists();
-    } catch {
-      showNotification('Error restoring backup file');
+
+      // Restore Playlists
+      for (const p of data.playlists) {
+        await dbOps.savePlaylist(p);
+      }
+
+      // Restore Tracks & Associated metadata
+      let restoredSongsCount = 0;
+      for (const trk of data.tracks) {
+        let blob = null;
+        if (trk.audioBase64) {
+          blob = base64ToBlob(trk.audioBase64);
+        }
+
+        const trackObj = {
+          playlistId: trk.playlistId || 'favorites',
+          name: trk.name,
+          blob: blob || new Blob([], { type: 'audio/mp3' }),
+          order: trk.order || Date.now()
+        };
+
+        await dbOps.saveTrack(trackObj);
+
+        if (trk.lyrics) await dbOps.setLyrics(trk.name, trk.lyrics);
+        if (trk.markers) await dbOps.saveTimestamps(trk.name, trk.markers);
+        if (trk.isFavorite) await dbOps.setFavorite(trk.name, true);
+        restoredSongsCount++;
+      }
+
+      // Restore Branding & Dev profile if included
+      if (data.branding) {
+        if (data.branding.appName) await dbOps.setConfig('app_name', data.branding.appName);
+        if (data.branding.appLogo) await dbOps.setConfig('app_logo', data.branding.appLogo);
+      }
+      if (data.devProfile) {
+        await dbOps.setDevProfile(data.devProfile);
+      }
+
+      await loadAppBranding();
+      await loadDevProfile();
+      await loadPlaylists();
+
+      showThanksPopup(`Restore Complete! Successfully imported ${restoredSongsCount} track(s) and all playlists.`);
+    } catch (err) {
+      console.error(err);
+      showNotification('Failed to restore backup: File corrupted or invalid.');
     }
   };
+
   reader.readAsText(file);
 };
 
@@ -771,7 +893,7 @@ function renderFilteredTracks() {
 librarySearchInput.addEventListener('input', renderFilteredTracks);
 sortSelect.addEventListener('change', renderFilteredTracks);
 
-// One-Tap ID3 Tag Auto-Cleaner
+// One-Tap Clean Names
 document.getElementById('btn-clean-names').onclick = async () => {
   if (!allTracksRaw.length) return;
   let cleanedCount = 0;
@@ -1005,7 +1127,6 @@ async function playTrack(idx) {
   updateMediaSession();
   loadTracks();
 
-  // Keep in-card playlist strictly updated with active highlight
   renderCardReorderList();
 }
 
@@ -1053,7 +1174,7 @@ modalBtnLike.onclick = () => {
   if (currentIndex !== -1 && tracks[currentIndex]) toggleFavorite(tracks[currentIndex]);
 };
 
-// MediaSession API with Amarjeet credit
+// MediaSession API
 function updateMediaSession() {
   if (!('mediaSession' in navigator) || currentIndex === -1) return;
   const trk = tracks[currentIndex];
@@ -1203,7 +1324,7 @@ function formatSecs(s) {
 }
 
 // ==========================================
-// EMBEDDED DRAWERS (PRESERVES ALL CONTROLS)
+// EMBEDDED DRAWERS (PRESERVED IN LOWER VIEWPORT)
 // ==========================================
 const panels = {
   vol: document.getElementById('card-volume-panel'),
@@ -1227,7 +1348,7 @@ function togglePanel(key) {
   const target = panels[key];
   const isHidden = target.style.display === 'none' || !target.style.display;
   
-  // Hide all panels & reset active states
+  // Hide all panels & reset active button styles
   Object.values(panels).forEach(p => p.style.display = 'none');
   Object.values(btns).forEach(b => b.classList.remove('active'));
 
@@ -1440,7 +1561,6 @@ function renderCardReorderList() {
       </div>
     `;
 
-    // Tap song name inside the drawer to play immediately
     li.querySelector('.song-name').onclick = () => {
       playTrack(idx);
     };
