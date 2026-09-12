@@ -95,7 +95,7 @@ function showNotification(msg) {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmmuMusicDB_v90';
+const DB_NAME = 'AmmuMusicDB_v100';
 const DB_VER = 1;
 let db;
 
@@ -1628,7 +1628,7 @@ const btns = {
   vol: document.getElementById('card-toggle-volume'),
   eq: document.getElementById('card-toggle-eq'),
   timestamps: document.getElementById('card-toggle-timestamps'),
-  looper: document.getElementById('card-looper-panel'),
+  looper: document.getElementById('card-toggle-looper'),
   lyrics: document.getElementById('card-toggle-lyrics'),
   playlist: document.getElementById('card-toggle-playlist')
 };
@@ -1642,7 +1642,7 @@ function togglePanel(key) {
   Object.values(btns).forEach(b => b.classList.remove('active'));
 
   if (isHidden) {
-    target.style.display = 'flex';
+    target.style.display = 'block';
     btns[key].classList.add('active');
 
     if (key === 'playlist') renderCardReorderList();
@@ -1821,11 +1821,11 @@ seekBar.oninput = () => {
   if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
 };
 
-// In-Card Playlist Reorder & Active Visualizer Animation
+// In-Card Playlist Reorder & Active Highlight
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
   if (!tracks.length) {
-    cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:12px 0;">No songs in this playlist.</li>';
+    cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">No songs in this playlist.</li>';
     return;
   }
 
@@ -1929,7 +1929,7 @@ document.getElementById('btn-reset-eq-card').onclick = () => {
   showNotification('Equalizer reset to default');
 };
 
-// Initial Boot: Set 20% Volume & Run Diagnostics
+// Initial Boot
 initDB().then(async () => {
   await checkOnboarding();
   await loadAppBranding();
