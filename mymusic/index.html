@@ -37,7 +37,7 @@
       <div class="welcome-icon">🎵</div>
       <h2>Welcome Back!</h2>
       <p class="credit-highlight">Made by & for <strong>Amarjeet kumar</strong></p>
-      <p class="modal-desc">Offline Studio Audio Player with Spectrum Visualizer, Timestamp Bookmarks, 10-Band EQ, and Lock-Screen Audio.</p>
+      <p class="modal-desc">Offline Studio Audio Player with Spectrum Visualizer, Timestamp Bookmarks, 10-Band EQ, Universal Backup, and Lock-Screen Audio.</p>
       <button id="btn-close-welcome" class="btn-primary-large">Start Listening</button>
     </div>
   </div>
@@ -64,7 +64,6 @@
           <a id="dev-link-instagram" class="dev-chip-link" href="#" target="_blank">📸 Instagram</a>
         </div>
 
-        <!-- Inline Profile Editing -->
         <details class="dev-edit-drawer" style="margin-top:12px;">
           <summary style="cursor:pointer;font-size:0.78rem;color:var(--accent-light);">✏️ Edit Developer Card Info</summary>
           <div class="form-group" style="margin-top:8px;">
@@ -90,10 +89,10 @@
     </div>
   </div>
 
-  <!-- Studio Settings & Branding Modal -->
+  <!-- Studio Settings & Universal Data Backup Modal -->
   <div id="settings-modal" class="modal-backdrop" style="display:none;">
-    <div class="modal-box">
-      <h3>⚙️ Studio Preferences</h3>
+    <div class="modal-box modal-box-large">
+      <h3>⚙️ Studio Preferences & Universal Data Center</h3>
       <div class="form-group">
         <label for="custom-app-name">App Title</label>
         <input type="text" id="custom-app-name" class="input-text" placeholder="e.g. Amarjeet Studio" />
@@ -117,15 +116,53 @@
           <button class="theme-circle-btn" data-color="#e3b341" style="background:#e3b341;"></button>
         </div>
       </div>
-      <div class="form-group">
-        <label>Offline Storage & Library Backup</label>
-        <p id="storage-stat-label" style="font-size:0.8rem;color:var(--text-muted);">Calculating storage...</p>
-        <div style="display:flex;gap:6px;margin-top:6px;">
-          <button id="btn-export-backup" class="btn-action" style="flex:1;">💾 Export Backup</button>
-          <label class="btn-action" for="import-backup-file" style="flex:1;text-align:center;cursor:pointer;">📥 Restore Backup</label>
+
+      <!-- UNIVERSAL DATA BACKUP & RESTORE SECTION -->
+      <div class="backup-management-box">
+        <h4>📦 Universal Offline Data Management</h4>
+        <p id="storage-stat-label" style="font-size:0.78rem;color:var(--text-muted);margin:4px 0 10px 0;">Calculating library storage...</p>
+        
+        <div class="export-options-box">
+          <label style="font-weight:600;display:block;margin-bottom:6px;">Export Configuration:</label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-export-audio" checked /> Include Song Audio Files (Creates full portable standalone backup)
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-export-images" checked /> Include Custom Covers & App Logos
+          </label>
+        </div>
+
+        <div class="instruction-accordion">
+          <details>
+            <summary>📖 How to Export your Data (Instructions)</summary>
+            <div class="instruction-content">
+              <ol>
+                <li>Check <strong>"Include Song Audio Files"</strong> if you want your actual songs exported so you can restore them on any phone or computer without needing the original audio files again.</li>
+                <li>Uncheck it if you only want to save your playlist names, markers, lyrics, and settings as a tiny lightweight file.</li>
+                <li>Click <strong>"💾 Start Export"</strong>. A single <code>.json</code> file will download directly to your device completely offline.</li>
+              </ol>
+            </div>
+          </details>
+
+          <details style="margin-top:6px;">
+            <summary>📖 How to Import & Restore your Data (Instructions)</summary>
+            <div class="instruction-content">
+              <ol>
+                <li>Click <strong>"📥 Select Backup File (.json)"</strong>.</li>
+                <li>Select the backup file previously downloaded from Amarjeet Audio Studio.</li>
+                <li>The engine will restore all playlists, bookmarks, favorite hearts, lyrics, settings, and media directly into local IndexedDB memory.</li>
+              </ol>
+            </div>
+          </details>
+        </div>
+
+        <div class="backup-btn-row">
+          <button id="btn-export-backup" class="btn-primary-large" style="flex:1;">💾 Start Export</button>
+          <label class="btn-action" for="import-backup-file" style="flex:1;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;">📥 Restore Backup</label>
           <input type="file" id="import-backup-file" accept=".json" style="display:none;" />
         </div>
       </div>
+
       <div class="modal-actions">
         <button type="button" id="btn-cancel-settings" class="btn-action">Cancel</button>
         <button type="button" id="btn-save-settings" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Save Preferences</button>
@@ -267,7 +304,7 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN PLAYER CARD MODAL -->
+  <!-- FULLSCREEN PLAYER CARD MODAL (RESTRUCTURED FOR ROCK-SOLID VISIBILITY) -->
   <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
     <div class="card-top-nav">
       <button id="btn-close-box" class="btn-action">▼ Minimize</button>
@@ -278,11 +315,10 @@
       <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
     </div>
 
-    <div class="card-scroll-body">
-      <!-- Spectrum Visualizer Overlay -->
-      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="36"></canvas>
+    <!-- UPPER FIXED PINNED PLAYER SECTION (NEVER DISAPPEARS) -->
+    <div class="player-pinned-controls">
+      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="32"></canvas>
 
-      <!-- Album Cover with Swipe Detection & Edit Button (ALWAYS VISIBLE) -->
       <div class="detail-art-container" id="art-swipe-area">
         <img id="box-cover" src="icon-192.png" alt="Album Art" />
         <button id="btn-edit-art" class="btn-edit-cover" title="Change Album Image">📷 Change Image</button>
@@ -293,12 +329,10 @@
         <p id="box-playlist">Playlist: All</p>
       </div>
 
-      <!-- Real-Time Active Timestamp Chapter Indicator On Progress Bar -->
       <div class="current-marker-badge-row">
         <span id="active-marker-pill" class="active-marker-pill" style="display:none;">📍 <span id="active-marker-name">Verse</span></span>
       </div>
 
-      <!-- Progress Bar With Tick Markers Overlay (ALWAYS VISIBLE) -->
       <div class="progress-bar-box">
         <span id="curr-time">0:00</span>
         <div class="seek-track-wrapper">
@@ -315,14 +349,13 @@
         <button id="btn-skip-forward" class="jump-btn">⏩ +10s</button>
       </div>
 
-      <!-- Main Controls (ALWAYS VISIBLE) -->
       <div class="box-player-controls">
         <button id="box-btn-prev" class="icon-btn-large">⏮</button>
         <button id="box-btn-play" class="play-btn-huge">▶</button>
         <button id="box-btn-next" class="icon-btn-large">⏭</button>
       </div>
 
-      <!-- Integrated Tool Action Bar (ALWAYS VISIBLE) -->
+      <!-- STICKY ACTION TOOLBAR - ALWAYS VISIBLE AT ALL TIMES -->
       <div class="card-tool-row">
         <button id="card-toggle-playlist" class="card-tool-btn">≡ Playlist</button>
         <button id="card-toggle-volume" class="card-tool-btn">🔊 Volume</button>
@@ -331,86 +364,86 @@
         <button id="card-toggle-looper" class="card-tool-btn">🔄 A-B Loop</button>
         <button id="card-toggle-lyrics" class="card-tool-btn">📝 Lyrics</button>
       </div>
+    </div>
 
-      <!-- DRAWERS CONTAINER (Expands neatly without pushing controls away) -->
-      <div class="drawers-viewport">
-        <!-- 1. Volume Drawer -->
-        <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
-          <div class="panel-header-row">
-            <span>Master Volume (Software Gain)</span>
-            <span id="card-vol-label">20%</span>
-          </div>
-          <div class="vol-slider-row">
-            <span>🔈</span>
-            <input type="range" id="card-vol-slider" min="0" max="100" value="20" />
-            <span>🔊</span>
-          </div>
+    <!-- LOWER DEDICATED SCROLLABLE DRAWER VIEWPORT -->
+    <div class="card-scrollable-drawers">
+      <!-- 1. Volume Drawer -->
+      <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Master Volume (Software Gain)</span>
+          <span id="card-vol-label">20%</span>
+        </div>
+        <div class="vol-slider-row">
+          <span>🔈</span>
+          <input type="range" id="card-vol-slider" min="0" max="100" value="20" />
+          <span>🔊</span>
+        </div>
+      </div>
+
+      <!-- 2. Equalizer & Bass Boost Drawer -->
+      <div id="card-eq-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <label><input type="checkbox" id="card-eq-enable" checked /> DSP Active</label>
+          <button id="btn-reset-eq-card" class="btn-action">Reset Defaults</button>
         </div>
 
-        <!-- 2. Equalizer & Bass Boost Drawer -->
-        <div id="card-eq-panel" class="embedded-card-panel" style="display:none;">
-          <div class="panel-header-row">
-            <label><input type="checkbox" id="card-eq-enable" checked /> DSP Active</label>
-            <button id="btn-reset-eq-card" class="btn-action">Reset Defaults</button>
-          </div>
-
-          <div class="bass-boost-strip">
-            <span>🔊 Bass Boost (<span id="val-bass-boost">0dB</span>)</span>
-            <input type="range" id="slider-bass-boost" min="0" max="15" step="0.5" value="0" />
-          </div>
-
-          <div class="eq-container">
-            <div class="eq-col"><span class="eq-val" id="val-preamp">14.1dB</span><input type="range" class="vertical-slider" id="eq-preamp" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">Pre</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-60">18.2dB</span><input type="range" class="vertical-slider" data-band="0" min="-20" max="20" step="0.1" value="18.2" /><span class="eq-freq">60</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-170">11.8dB</span><input type="range" class="vertical-slider" data-band="1" min="-20" max="20" step="0.1" value="11.8" /><span class="eq-freq">170</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-310">3.7dB</span><input type="range" class="vertical-slider" data-band="2" min="-20" max="20" step="0.1" value="3.7" /><span class="eq-freq">310</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-600">-1.7dB</span><input type="range" class="vertical-slider" data-band="3" min="-20" max="20" step="0.1" value="-1.7" /><span class="eq-freq">600</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-1000">-7.8dB</span><input type="range" class="vertical-slider" data-band="4" min="-20" max="20" step="0.1" value="-7.8" /><span class="eq-freq">1k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-3000">2.1dB</span><input type="range" class="vertical-slider" data-band="5" min="-20" max="20" step="0.1" value="2.1" /><span class="eq-freq">3k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-6000">9.8dB</span><input type="range" class="vertical-slider" data-band="6" min="-20" max="20" step="0.1" value="9.8" /><span class="eq-freq">6k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-12000">14.1dB</span><input type="range" class="vertical-slider" data-band="7" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">12k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-14000">-3.6dB</span><input type="range" class="vertical-slider" data-band="8" min="-20" max="20" step="0.1" value="-3.6" /><span class="eq-freq">14k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-16000">11.6dB</span><input type="range" class="vertical-slider" data-band="9" min="-20" max="20" step="0.1" value="11.6" /><span class="eq-freq">16k</span></div>
-          </div>
+        <div class="bass-boost-strip">
+          <span>🔊 Bass Boost (<span id="val-bass-boost">0dB</span>)</span>
+          <input type="range" id="slider-bass-boost" min="0" max="15" step="0.5" value="0" />
         </div>
 
-        <!-- 3. Timestamp Bookmarks Drawer (Reliable & Instant) -->
-        <div id="card-timestamps-panel" class="embedded-card-panel" style="display:none;">
-          <div class="panel-header-row">
-            <span>⏱️ Track Bookmarks</span>
-            <button type="button" id="btn-add-timestamp" class="btn-action" style="color:var(--accent-light);">➕ Add Current Time</button>
-          </div>
-          <ul id="timestamp-markers-list" class="timestamp-list"></ul>
+        <div class="eq-container">
+          <div class="eq-col"><span class="eq-val" id="val-preamp">14.1dB</span><input type="range" class="vertical-slider" id="eq-preamp" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">Pre</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-60">18.2dB</span><input type="range" class="vertical-slider" data-band="0" min="-20" max="20" step="0.1" value="18.2" /><span class="eq-freq">60</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-170">11.8dB</span><input type="range" class="vertical-slider" data-band="1" min="-20" max="20" step="0.1" value="11.8" /><span class="eq-freq">170</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-310">3.7dB</span><input type="range" class="vertical-slider" data-band="2" min="-20" max="20" step="0.1" value="3.7" /><span class="eq-freq">310</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-600">-1.7dB</span><input type="range" class="vertical-slider" data-band="3" min="-20" max="20" step="0.1" value="-1.7" /><span class="eq-freq">600</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-1000">-7.8dB</span><input type="range" class="vertical-slider" data-band="4" min="-20" max="20" step="0.1" value="-7.8" /><span class="eq-freq">1k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-3000">2.1dB</span><input type="range" class="vertical-slider" data-band="5" min="-20" max="20" step="0.1" value="2.1" /><span class="eq-freq">3k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-6000">9.8dB</span><input type="range" class="vertical-slider" data-band="6" min="-20" max="20" step="0.1" value="9.8" /><span class="eq-freq">6k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-12000">14.1dB</span><input type="range" class="vertical-slider" data-band="7" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">12k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-14000">-3.6dB</span><input type="range" class="vertical-slider" data-band="8" min="-20" max="20" step="0.1" value="-3.6" /><span class="eq-freq">14k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-16000">11.6dB</span><input type="range" class="vertical-slider" data-band="9" min="-20" max="20" step="0.1" value="11.6" /><span class="eq-freq">16k</span></div>
         </div>
+      </div>
 
-        <!-- 4. A-B Segment Looper Drawer -->
-        <div id="card-looper-panel" class="embedded-card-panel" style="display:none;">
-          <div class="panel-header-row">
-            <span>Continuous A-B Section Repeater</span>
-            <button id="btn-clear-loop" class="btn-action">Clear Loop</button>
-          </div>
-          <div class="looper-action-row">
-            <button id="btn-set-point-a" class="btn-action">Set Point A: <span id="label-point-a">--:--</span></button>
-            <button id="btn-set-point-b" class="btn-action">Set Point B: <span id="label-point-b">--:--</span></button>
-          </div>
+      <!-- 3. Timestamp Bookmarks Drawer -->
+      <div id="card-timestamps-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>⏱️ Track Bookmarks & Chapters</span>
+          <button type="button" id="btn-add-timestamp" class="btn-action" style="color:var(--accent-light);">➕ Add Current Time</button>
         </div>
+        <ul id="timestamp-markers-list" class="timestamp-list"></ul>
+      </div>
 
-        <!-- 5. Offline Lyrics & Notes Drawer -->
-        <div id="card-lyrics-panel" class="embedded-card-panel" style="display:none;">
-          <div class="panel-header-row">
-            <span>Offline Lyrics & Song Notes</span>
-            <button id="btn-save-lyrics" class="btn-action">Save</button>
-          </div>
-          <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
+      <!-- 4. A-B Segment Looper Drawer -->
+      <div id="card-looper-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Continuous A-B Section Repeater</span>
+          <button id="btn-clear-loop" class="btn-action">Clear Loop</button>
         </div>
+        <div class="looper-action-row">
+          <button id="btn-set-point-a" class="btn-action">Set Point A: <span id="label-point-a">--:--</span></button>
+          <button id="btn-set-point-b" class="btn-action">Set Point B: <span id="label-point-b">--:--</span></button>
+        </div>
+      </div>
 
-        <!-- 6. View Playlist / Reorder Drawer (VISIBLE TOGETHER WITH CONTROLS & HIGHLIGHTED) -->
-        <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
-          <div class="panel-header-row">
-            <span>Current Playlist Tracks (Tap to Play / Reorder)</span>
-          </div>
-          <ul id="card-reorder-list" class="song-list card-compact-list" style="margin-top:8px;"></ul>
+      <!-- 5. Offline Lyrics & Notes Drawer -->
+      <div id="card-lyrics-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Offline Lyrics & Song Notes</span>
+          <button id="btn-save-lyrics" class="btn-action">Save</button>
         </div>
+        <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
+      </div>
+
+      <!-- 6. View Playlist / Reorder Drawer (Clean Scrollable List With Active Song Highlight) -->
+      <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Active Playlist Songs (Tap to Play / Reorder)</span>
+        </div>
+        <ul id="card-reorder-list" class="song-list card-compact-list" style="margin-top:6px;"></ul>
       </div>
     </div>
   </div>
