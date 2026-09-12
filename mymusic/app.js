@@ -94,9 +94,9 @@ document.getElementById('btn-close-thanks').onclick = () => {
 };
 
 // -------------------------------------------------------------
-// INDEXEDDB ENGINE (Includes 'timestamps' store)
+// INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmarjeetAudioStudioDB_v65';
+const DB_NAME = 'AmarjeetAudioStudioDB_v70';
 const DB_VER = 1;
 let db;
 
@@ -258,7 +258,6 @@ const dbOps = {
       tx.oncomplete = () => res();
     });
   },
-  // Timestamps storage per song
   async getTimestamps(songKey) {
     return new Promise((res) => {
       const tx = db.transaction('timestamps', 'readonly');
@@ -408,7 +407,7 @@ let sleepTimerId = null;
 let pointA = null;
 let pointB = null;
 let trackToRename = null;
-let currentSongTimestamps = []; // [{ id, time, name }]
+let currentSongTimestamps = [];
 let pendingTimestampTime = 0;
 
 // UI References
@@ -1005,7 +1004,9 @@ async function playTrack(idx) {
   renderSeekTicks();
   updateMediaSession();
   loadTracks();
-  if (panels.playlist.style.display === 'block') renderCardReorderList();
+
+  // Keep in-card playlist strictly updated with active highlight
+  renderCardReorderList();
 }
 
 function syncButtons(isPlaying) {
@@ -1079,6 +1080,7 @@ function updateMediaSession() {
 document.getElementById('open-box-trigger').onclick = () => { 
   playerBoxModal.style.display = 'flex'; 
   renderSeekTicks();
+  renderCardReorderList();
 };
 document.getElementById('btn-close-box').onclick = () => { playerBoxModal.style.display = 'none'; };
 
@@ -1200,7 +1202,9 @@ function formatSecs(s) {
   return `${m}:${sec < 10 ? '0' : ''}${sec}`;
 }
 
-// Embedded Drawer Toggles
+// ==========================================
+// EMBEDDED DRAWERS (PRESERVES ALL CONTROLS)
+// ==========================================
 const panels = {
   vol: document.getElementById('card-volume-panel'),
   eq: document.getElementById('card-eq-panel'),
@@ -1221,14 +1225,22 @@ const btns = {
 
 function togglePanel(key) {
   const target = panels[key];
-  const isHidden = target.style.display === 'none';
+  const isHidden = target.style.display === 'none' || !target.style.display;
+  
+  // Hide all panels & reset active states
   Object.values(panels).forEach(p => p.style.display = 'none');
   Object.values(btns).forEach(b => b.classList.remove('active'));
+
   if (isHidden) {
     target.style.display = 'block';
     btns[key].classList.add('active');
-    if (key === 'playlist') renderCardReorderList();
-    if (key === 'timestamps') renderTimestampsDrawerList();
+
+    // Specific drawer refresh routines
+    if (key === 'playlist') {
+      renderCardReorderList();
+    } else if (key === 'timestamps') {
+      renderTimestampsDrawerList();
+    }
   }
 }
 
@@ -1295,7 +1307,6 @@ function renderTimestampsDrawerList() {
   }
 
   const curTimeVal = audio.currentTime;
-  // Determine which timestamp segment is currently active
   let activeTsId = null;
   for (let i = 0; i < currentSongTimestamps.length; i++) {
     if (curTimeVal >= currentSongTimestamps[i].time) {
@@ -1316,7 +1327,6 @@ function renderTimestampsDrawerList() {
       <button class="btn-del" title="Delete Marker">🗑</button>
     `;
 
-    // Click timestamp to jump and play
     li.onclick = (e) => {
       if (e.target.closest('.btn-del')) return;
       audio.currentTime = ts.time;
@@ -1328,7 +1338,6 @@ function renderTimestampsDrawerList() {
       renderTimestampsDrawerList();
     };
 
-    // Delete single timestamp
     li.querySelector('.btn-del').onclick = async (e) => {
       e.stopPropagation();
       currentSongTimestamps = currentSongTimestamps.filter(item => item.id !== ts.id);
@@ -1342,7 +1351,6 @@ function renderTimestampsDrawerList() {
   });
 }
 
-// Add Timestamp Modal
 document.getElementById('btn-add-timestamp').onclick = () => {
   if (currentIndex === -1 || !tracks[currentIndex]) {
     return showNotification('Play a song to bookmark a timestamp!');
@@ -1373,7 +1381,6 @@ document.getElementById('btn-confirm-timestamp').onclick = async () => {
   renderSeekTicks();
 };
 
-// Check active timestamp marker on seekbar update
 function updateActiveTimestampBadge() {
   if (!currentSongTimestamps.length) {
     activeMarkerPill.style.display = 'none';
@@ -1394,7 +1401,7 @@ function updateActiveTimestampBadge() {
   }
 }
 
-// Seek Bar & Real-Time Track Loop Check
+// Real-Time Time Update
 audio.ontimeupdate = () => {
   if (!audio.duration) return;
   if (pointA !== null && pointB !== null && pointB > pointA) {
@@ -1410,16 +1417,21 @@ seekBar.oninput = () => {
   if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
 };
 
-// Reorder List in Card (With Distinct Active Song Highlight)
+// In-Card Playlist Reorder & Active Highlight
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
+  if (!tracks.length) {
+    cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">No songs in this playlist.</li>';
+    return;
+  }
+
   tracks.forEach((trk, idx) => {
-    const isThisPlaying = (idx === currentIndex);
+    const isThisPlaying = (currentIndex !== -1 && tracks[currentIndex] && (tracks[currentIndex].name === trk.name));
     const li = document.createElement('li');
     li.className = `song-row ${isThisPlaying ? 'playing-in-drawer' : ''}`;
     li.innerHTML = `
-      <span class="song-name" style="max-width:65%">
-        ${idx + 1}. ${trk.name}
+      <span class="song-name" style="max-width:65%;cursor:pointer;">
+        <strong>${idx + 1}.</strong> ${trk.name}
         ${isThisPlaying ? '<span class="now-playing-tag">▶ Now Playing</span>' : ''}
       </span>
       <div>
@@ -1427,6 +1439,12 @@ function renderCardReorderList() {
         <button class="btn-action" onclick="shiftTrack(${idx}, 1)">▼</button>
       </div>
     `;
+
+    // Tap song name inside the drawer to play immediately
+    li.querySelector('.song-name').onclick = () => {
+      playTrack(idx);
+    };
+
     cardReorderList.appendChild(li);
   });
 }
