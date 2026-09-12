@@ -158,20 +158,30 @@ body {
   border: 1px solid var(--border);
 }
 
+.brand-text-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Aligns both the title and badge to the exact same starting edge */
+  gap: 2px;
+}
+
 .brand-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .badge {
   background: var(--accent);
   color: #fff;
-  font-size: 0.65rem;
-  padding: 2px 6px;
-  border-radius: 8px;
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  border-radius: 6px;
   text-transform: uppercase;
   font-weight: bold;
-  margin-left: 4px;
+  margin-left: 0; /* Clears any previous left offset */
+  display: inline-block;
+  width: fit-content;
 }
 
 .btn-action {
