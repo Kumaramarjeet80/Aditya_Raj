@@ -358,7 +358,18 @@ body {
   overflow-y: auto;
   padding-right: 4px;
 }
+.card-credit-footer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
 
+.card-credit-footer strong {
+  color: var(--accent-light);
+}
 .song-row {
   display: flex;
   align-items: center;
