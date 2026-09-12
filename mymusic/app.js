@@ -96,7 +96,7 @@ document.getElementById('btn-close-thanks').onclick = () => {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmarjeetAudioStudioDB_v80';
+const DB_NAME = 'AmarjeetAudioStudioDB_v85';
 const DB_VER = 1;
 let db;
 
@@ -1300,7 +1300,7 @@ function formatSecs(s) {
 }
 
 // ==========================================
-// EMBEDDED DRAWERS (EXTENDED VIEWPORT)
+// EMBEDDED DRAWERS TOGGLES
 // ==========================================
 const panels = {
   vol: document.getElementById('card-volume-panel'),
