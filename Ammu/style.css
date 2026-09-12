@@ -133,6 +133,37 @@ body {
   font-size: 0.8rem;
 }
 
+/* Fullscreen Floating Heart Animation Overlay */
+.heart-burst-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99999;
+  overflow: hidden;
+}
+
+.burst-particle {
+  position: absolute;
+  font-size: 2rem;
+  user-select: none;
+  animation: floatHeart 1.4s ease-out forwards;
+}
+
+@keyframes floatHeart {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(0.6) rotate(0deg);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-80px) scale(1.3) rotate(15deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-160px) scale(1.6) rotate(-20deg);
+  }
+}
+
 .app-top {
   display: flex;
   justify-content: space-between;
@@ -161,7 +192,7 @@ body {
 .brand-text-col {
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* Aligns both the title and badge to the exact same starting edge */
+  align-items: flex-start;
   gap: 2px;
 }
 
@@ -179,7 +210,7 @@ body {
   border-radius: 6px;
   text-transform: uppercase;
   font-weight: bold;
-  margin-left: 0; /* Clears any previous left offset */
+  margin-left: 0;
   display: inline-block;
   width: fit-content;
 }
@@ -353,11 +384,13 @@ body {
   gap: 8px;
 }
 
+/* Active In-Card Playlist Scroll List Height Doubled to 440px */
 .card-compact-list {
-  max-height: 400px;
+  max-height: 440px;
   overflow-y: auto;
   padding-right: 4px;
 }
+
 .card-credit-footer {
   display: block;
   width: 100%;
@@ -372,6 +405,7 @@ body {
 .card-credit-footer strong {
   color: var(--accent-light);
 }
+
 .song-row {
   display: flex;
   align-items: center;
@@ -1242,11 +1276,15 @@ body {
 .history-list-box li {
   border-bottom: 1px solid #1c2635;
   padding: 4px;
-  cursor: pointer;
 }
 
-.history-list-box li:hover {
-  background: #111a28;
+.clickable-stat-list li {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.clickable-stat-list li:hover {
+  background: #152233;
 }
 
 .pre-import-author-card {
