@@ -16,7 +16,7 @@
   <!-- Toast Notification Container Directly Above Player Bar -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Permanent Install Helper Banner (Always Visible if Not Running as PWA) -->
+  <!-- Persistent Install Helper Banner -->
   <div id="persistent-install-banner" class="install-banner-bar" style="display:none;">
     <div class="install-banner-info">
       <img src="icon-192.png" class="install-banner-icon" alt="App Icon" />
@@ -37,30 +37,113 @@
       <div class="welcome-icon">🎵</div>
       <h2>Welcome Back!</h2>
       <p class="credit-highlight">Made by & for <strong>Amarjeet kumar</strong></p>
-      <p class="modal-desc">Offline studio player with active volume booster, equalizer, and background lock-screen playback.</p>
+      <p class="modal-desc">Offline Studio Audio Player with Live Visualizer, 10-Band EQ, Backup Engine, and Lock-Screen Audio.</p>
       <button id="btn-close-welcome" class="btn-primary-large">Start Listening</button>
     </div>
   </div>
 
-  <!-- App Customization Settings Modal (Edit In-App Title & Logo) -->
+  <!-- Developer Profile & Portfolio Modal -->
+  <div id="dev-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box dev-profile-box">
+      <div class="dev-header">
+        <img id="dev-avatar-img" class="dev-avatar" src="icon-192.png" alt="Amarjeet Kumar" />
+        <div>
+          <h3 id="dev-name-display">Amarjeet Kumar</h3>
+          <p id="dev-title-display" class="dev-tagline">Lead Audio Architect & Engineer</p>
+        </div>
+      </div>
+      <div class="dev-body">
+        <p id="dev-bio-display" class="dev-bio">Built with passion for high-fidelity audio, offline-first Web Audio digital signal processing, and clean UX.</p>
+        <div class="dev-contact-details">
+          <p>📍 <strong>Location:</strong> <span id="dev-location-display">Bihar, India</span></p>
+          <p>📧 <strong>Email:</strong> <span id="dev-email-display">amarjeet.kumar.dev@gmail.com</span></p>
+        </div>
+        <div class="dev-social-grid">
+          <a id="dev-link-github" class="dev-chip-link" href="#" target="_blank">🐙 GitHub</a>
+          <a id="dev-link-linkedin" class="dev-chip-link" href="#" target="_blank">💼 LinkedIn</a>
+          <a id="dev-link-instagram" class="dev-chip-link" href="#" target="_blank">📸 Instagram</a>
+        </div>
+
+        <!-- Inline Profile Editing -->
+        <details class="dev-edit-drawer" style="margin-top:12px;">
+          <summary style="cursor:pointer;font-size:0.78rem;color:var(--accent-light);">✏️ Edit Developer Card Info</summary>
+          <div class="form-group" style="margin-top:8px;">
+            <label>Full Name</label>
+            <input type="text" id="edit-dev-name" class="input-text" />
+            <label>Tagline / Title</label>
+            <input type="text" id="edit-dev-title" class="input-text" />
+            <label>Bio</label>
+            <textarea id="edit-dev-bio" class="input-text" style="height:60px;resize:none;"></textarea>
+            <label>Location</label>
+            <input type="text" id="edit-dev-location" class="input-text" />
+            <label>Email Address</label>
+            <input type="text" id="edit-dev-email" class="input-text" />
+            <label>Avatar Photo</label>
+            <input type="file" id="edit-dev-avatar" accept="image/*" />
+            <button id="btn-save-dev-profile" class="btn-primary-large" style="margin-top:8px;padding:8px;">Save Developer Info</button>
+          </div>
+        </details>
+      </div>
+      <div class="modal-actions" style="margin-top:10px;">
+        <button type="button" id="btn-close-dev" class="btn-primary-large">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Studio Settings & Branding Modal -->
   <div id="settings-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
-      <h3>⚙️ In-App Branding</h3>
+      <h3>⚙️ Studio Preferences</h3>
       <div class="form-group">
-        <label for="custom-app-name">In-App Name</label>
-        <input type="text" id="custom-app-name" class="input-text" placeholder="e.g. My Studio Player" />
+        <label for="custom-app-name">App Title</label>
+        <input type="text" id="custom-app-name" class="input-text" placeholder="e.g. Amarjeet Studio" />
       </div>
       <div class="form-group">
-        <label for="custom-app-logo">In-App Logo Image</label>
+        <label for="custom-app-logo">App Logo Badge</label>
         <input type="file" id="custom-app-logo" accept="image/*" />
         <div class="preview-row">
           <img id="settings-logo-preview" src="icon-192.png" alt="Logo Preview" />
-          <span>Upload custom in-app badge</span>
+          <span>Upload custom in-app logo</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Theme Color Accent</label>
+        <div class="theme-picker-row">
+          <button class="theme-circle-btn" data-color="#2ea043" style="background:#2ea043;"></button>
+          <button class="theme-circle-btn" data-color="#1f6feb" style="background:#1f6feb;"></button>
+          <button class="theme-circle-btn" data-color="#a371f7" style="background:#a371f7;"></button>
+          <button class="theme-circle-btn" data-color="#f0883e" style="background:#f0883e;"></button>
+          <button class="theme-circle-btn" data-color="#f85149" style="background:#f85149;"></button>
+          <button class="theme-circle-btn" data-color="#e3b341" style="background:#e3b341;"></button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Offline Storage & Library Backup</label>
+        <p id="storage-stat-label" style="font-size:0.8rem;color:var(--text-muted);">Calculating storage...</p>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <button id="btn-export-backup" class="btn-action" style="flex:1;">💾 Export Backup</button>
+          <label class="btn-action" for="import-backup-file" style="flex:1;text-align:center;cursor:pointer;">📥 Restore Backup</label>
+          <input type="file" id="import-backup-file" accept=".json" style="display:none;" />
         </div>
       </div>
       <div class="modal-actions">
         <button type="button" id="btn-cancel-settings" class="btn-action">Cancel</button>
-        <button type="button" id="btn-save-settings" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Save Changes</button>
+        <button type="button" id="btn-save-settings" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Save Preferences</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Track Rename Modal -->
+  <div id="rename-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+      <h3>✏️ Rename Track</h3>
+      <div class="form-group">
+        <label for="rename-input">Track Title</label>
+        <input type="text" id="rename-input" class="input-text" autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-rename" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-rename" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Update</button>
       </div>
     </div>
   </div>
@@ -101,7 +184,7 @@
   <!-- Hidden Cover Image Picker -->
   <input type="file" id="edit-cover-input" accept="image/*" style="display:none;" />
 
-  <!-- Main Layout -->
+  <!-- Main App Shell -->
   <div class="app-layout">
     <header class="app-top">
       <div class="brand-container" id="brand-edit-trigger" title="Tap to customize app branding">
@@ -112,6 +195,7 @@
         </div>
       </div>
       <div style="display: flex; gap: 6px;">
+        <button id="btn-open-dev" class="btn-action" title="Developer Profile">👨‍💻</button>
         <button id="btn-open-settings" class="btn-action" title="Settings">⚙️</button>
         <button id="btn-header-install" class="btn-action btn-install">📥 Install</button>
         <button id="btn-open-create-playlist" class="btn-action">➕ New</button>
@@ -121,25 +205,37 @@
     <!-- Playlist Category Tabs -->
     <div class="playlist-chips" id="playlist-tabs"></div>
 
-    <!-- Song List Content -->
+    <!-- Search, Filter & Auto-Clean Tool Bar -->
+    <div class="search-sort-bar">
+      <input type="text" id="library-search-input" class="search-field" placeholder="🔍 Search songs in current list..." />
+      <select id="sort-select" class="sort-dropdown">
+        <option value="default">Sort: Manual</option>
+        <option value="az">Name: A to Z</option>
+        <option value="za">Name: Z to A</option>
+      </select>
+      <button id="btn-clean-names" class="btn-action-sm" title="One-tap clean clutter tags from song names">✨ Clean</button>
+    </div>
+
+    <!-- UPPER CONTENT: Song List -->
     <main class="upper-content">
       <div class="section-title-row">
         <div>
           <h2 id="view-playlist-name">Tracks</h2>
           <small id="track-count-label">0 songs</small>
         </div>
+        <!-- Multi-Format High Res Audio Picker -->
         <label class="btn-action" for="file-picker">➕ Add Songs</label>
-        <input type="file" id="file-picker" accept="audio/*" multiple style="display:none;" />
+        <input type="file" id="file-picker" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus" multiple style="display:none;" />
       </div>
       <ul id="song-list" class="song-list"></ul>
     </main>
 
-    <!-- Footer Attribution -->
-    <footer class="app-footer">
-      Made by & for <strong>Amarjeet kumar</strong>
+    <!-- Footer Attribution with Profile Trigger -->
+    <footer class="app-footer" id="footer-dev-trigger" style="cursor:pointer;" title="Click to view Developer Profile">
+      Made by & for <strong>Amarjeet kumar</strong> • <span>View Profile 👨‍💻</span>
     </footer>
 
-    <!-- Fixed Bottom Mini Player Bar -->
+    <!-- LOWER SECTION: Fixed Bottom Player Bar -->
     <div class="bottom-player-bar" id="mini-player">
       <div class="player-left-group" id="open-box-trigger">
         <img id="mini-cover" class="mini-art" src="icon-192.png" alt="Art" />
@@ -156,16 +252,23 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN PLAYER MODAL CARD -->
+  <!-- FULLSCREEN PLAYER CARD MODAL -->
   <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
     <div class="card-top-nav">
       <button id="btn-close-box" class="btn-action">▼ Minimize</button>
-      <span class="card-nav-title">Now Playing</span>
+      <div class="card-nav-controls">
+        <button id="btn-speed-toggle" class="chip-action-sm">1.0x</button>
+        <button id="btn-sleep-timer" class="chip-action-sm">⏱️ Off</button>
+      </div>
       <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
     </div>
 
     <div class="card-scroll-body">
-      <div class="detail-art-container">
+      <!-- Spectrum Visualizer Overlay -->
+      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="40"></canvas>
+
+      <!-- Album Cover with Swipe Detection & Edit Button -->
+      <div class="detail-art-container" id="art-swipe-area">
         <img id="box-cover" src="icon-192.png" alt="Album Art" />
         <button id="btn-edit-art" class="btn-edit-cover" title="Change Album Image">📷 Change Image</button>
       </div>
@@ -175,28 +278,40 @@
         <p id="box-playlist">Playlist: All</p>
       </div>
 
+      <!-- Quick Seek & Progress -->
       <div class="progress-bar-box">
         <span id="curr-time">0:00</span>
         <input type="range" id="seek-bar" min="0" max="100" value="0" />
         <span id="dur-time">0:00</span>
       </div>
 
+      <div class="quick-jump-row">
+        <button id="btn-skip-backward" class="jump-btn">⏪ -10s</button>
+        <button id="btn-mode-shuffle" class="jump-btn">🔀 Off</button>
+        <button id="btn-mode-repeat" class="jump-btn">🔁 All</button>
+        <button id="btn-skip-forward" class="jump-btn">⏩ +10s</button>
+      </div>
+
+      <!-- Main Controls -->
       <div class="box-player-controls">
         <button id="box-btn-prev" class="icon-btn-large">⏮</button>
         <button id="box-btn-play" class="play-btn-huge">▶</button>
         <button id="box-btn-next" class="icon-btn-large">⏭</button>
       </div>
 
+      <!-- Integrated Tool Action Bar -->
       <div class="card-tool-row">
-        <button id="card-toggle-playlist" class="card-tool-btn">≡ View Playlist</button>
+        <button id="card-toggle-playlist" class="card-tool-btn">≡ Playlist</button>
         <button id="card-toggle-volume" class="card-tool-btn">🔊 Volume</button>
-        <button id="card-toggle-eq" class="card-tool-btn">🎛 Equalizer</button>
+        <button id="card-toggle-eq" class="card-tool-btn">🎛 EQ & Bass</button>
+        <button id="card-toggle-looper" class="card-tool-btn">🔄 A-B Loop</button>
+        <button id="card-toggle-lyrics" class="card-tool-btn">📝 Lyrics</button>
       </div>
 
-      <!-- Embedded Volume Drawer -->
+      <!-- 1. Volume Drawer (GainNode 0% - 100%, Default 20%) -->
       <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
-          <span>Master Volume</span>
+          <span>Master Volume (Software Gain)</span>
           <span id="card-vol-label">20%</span>
         </div>
         <div class="vol-slider-row">
@@ -206,12 +321,18 @@
         </div>
       </div>
 
-      <!-- Embedded Equalizer Drawer -->
+      <!-- 2. Equalizer & Bass Boost Drawer -->
       <div id="card-eq-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <label><input type="checkbox" id="card-eq-enable" checked /> DSP Active</label>
           <button id="btn-reset-eq-card" class="btn-action">Reset Defaults</button>
         </div>
+
+        <div class="bass-boost-strip">
+          <span>🔊 Bass Boost (<span id="val-bass-boost">0dB</span>)</span>
+          <input type="range" id="slider-bass-boost" min="0" max="15" step="0.5" value="0" />
+        </div>
+
         <div class="eq-container">
           <div class="eq-col"><span class="eq-val" id="val-preamp">14.1dB</span><input type="range" class="vertical-slider" id="eq-preamp" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">Pre</span></div>
           <div class="eq-col"><span class="eq-val" id="val-60">18.2dB</span><input type="range" class="vertical-slider" data-band="0" min="-20" max="20" step="0.1" value="18.2" /><span class="eq-freq">60</span></div>
@@ -227,10 +348,31 @@
         </div>
       </div>
 
-      <!-- Embedded Playlist Reorder Drawer -->
+      <!-- 3. A-B Segment Looper Drawer -->
+      <div id="card-looper-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Continuous A-B Section Repeater</span>
+          <button id="btn-clear-loop" class="btn-action">Clear Loop</button>
+        </div>
+        <div class="looper-action-row">
+          <button id="btn-set-point-a" class="btn-action">Set Point A: <span id="label-point-a">--:--</span></button>
+          <button id="btn-set-point-b" class="btn-action">Set Point B: <span id="label-point-b">--:--</span></button>
+        </div>
+      </div>
+
+      <!-- 4. Offline Lyrics & Notes Drawer -->
+      <div id="card-lyrics-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Offline Lyrics & Song Notes</span>
+          <button id="btn-save-lyrics" class="btn-action">Save</button>
+        </div>
+        <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
+      </div>
+
+      <!-- 5. View Playlist / Reorder Drawer -->
       <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
-          <span>Playlist Songs (Use ▲ / ▼ to reorder)</span>
+          <span>Reorder Tracks (▲ / ▼)</span>
         </div>
         <ul id="card-reorder-list" class="song-list" style="margin-top:8px;"></ul>
       </div>
