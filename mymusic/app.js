@@ -96,7 +96,7 @@ document.getElementById('btn-close-thanks').onclick = () => {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmarjeetAudioStudioDB_v75';
+const DB_NAME = 'AmarjeetAudioStudioDB_v80';
 const DB_VER = 1;
 let db;
 
@@ -290,7 +290,7 @@ const defaultGains = [18.2, 11.8, 3.7, -1.7, -7.8, 2.1, 9.8, 14.1, -3.6, 11.6];
 const defaultPreamp = 14.1;
 let filters = [];
 let eqEnabled = true;
-let currentVol = 0.20; // 20% default volume
+let currentVol = 0.20;
 
 function ensureAudioPipeline() {
   if (audioCtx) {
@@ -340,7 +340,7 @@ function ensureAudioPipeline() {
   }
 }
 
-// Headphone / Bluetooth Disconnect Auto-Pause Protection
+// Headphone / Bluetooth Disconnect Protection
 if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange !== undefined) {
   navigator.mediaDevices.ondevicechange = () => {
     if (!audio.paused) {
@@ -609,7 +609,6 @@ document.getElementById('btn-save-settings').onclick = async () => {
   updateMediaSession();
 };
 
-// Helper: Blob to Base64 conversion
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -619,7 +618,6 @@ function blobToBase64(blob) {
   });
 }
 
-// Helper: Base64 to Blob conversion
 function base64ToBlob(base64) {
   const parts = base64.split(';base64,');
   const contentType = parts[0].split(':')[1];
@@ -632,7 +630,7 @@ function base64ToBlob(base64) {
   return new Blob([uInt8Array], { type: contentType });
 }
 
-// UNIVERSAL DATA EXPORT WITH AUDIO/IMAGE SELECTION
+// UNIVERSAL DATA EXPORT
 document.getElementById('btn-export-backup').onclick = async () => {
   const includeAudio = document.getElementById('chk-export-audio').checked;
   const includeImages = document.getElementById('chk-export-images').checked;
@@ -643,7 +641,6 @@ document.getElementById('btn-export-backup').onclick = async () => {
   const allPlaylists = await dbOps.getPlaylists();
   const devProfile = await dbOps.getDevProfile();
 
-  // Export tracks
   const exportedTracks = [];
   for (const t of allTracks) {
     let audioData = null;
@@ -672,7 +669,6 @@ document.getElementById('btn-export-backup').onclick = async () => {
     });
   }
 
-  // Export playlists
   const exportedPlaylists = allPlaylists.map(p => ({
     id: p.id,
     name: p.name,
@@ -721,12 +717,10 @@ document.getElementById('import-backup-file').onchange = async (e) => {
         throw new Error('Invalid backup schema');
       }
 
-      // Restore Playlists
       for (const p of data.playlists) {
         await dbOps.savePlaylist(p);
       }
 
-      // Restore Tracks & Associated metadata
       let restoredSongsCount = 0;
       for (const trk of data.tracks) {
         let blob = null;
@@ -749,7 +743,6 @@ document.getElementById('import-backup-file').onchange = async (e) => {
         restoredSongsCount++;
       }
 
-      // Restore Branding & Dev profile if included
       if (data.branding) {
         if (data.branding.appName) await dbOps.setConfig('app_name', data.branding.appName);
         if (data.branding.appLogo) await dbOps.setConfig('app_logo', data.branding.appLogo);
@@ -850,7 +843,6 @@ function renderFilteredTracks() {
     const actions = document.createElement('div');
     actions.className = 'row-actions';
 
-    // Rename Button
     const btnRename = document.createElement('button');
     btnRename.className = 'btn-icon-sm';
     btnRename.innerHTML = '✏️';
@@ -860,7 +852,6 @@ function renderFilteredTracks() {
       openRenameModal(trk);
     };
 
-    // Favorite Button
     const btnLikeRow = document.createElement('button');
     btnLikeRow.className = 'btn-icon-sm song-heart-btn';
     btnLikeRow.innerHTML = isFav ? '❤️' : '💛';
@@ -869,7 +860,6 @@ function renderFilteredTracks() {
       await toggleFavorite(trk);
     };
 
-    // Delete Button
     const del = document.createElement('button');
     del.className = 'btn-del';
     del.innerHTML = '🗑';
@@ -893,7 +883,6 @@ function renderFilteredTracks() {
 librarySearchInput.addEventListener('input', renderFilteredTracks);
 sortSelect.addEventListener('change', renderFilteredTracks);
 
-// One-Tap Clean Names
 document.getElementById('btn-clean-names').onclick = async () => {
   if (!allTracksRaw.length) return;
   let cleanedCount = 0;
@@ -915,7 +904,6 @@ document.getElementById('btn-clean-names').onclick = async () => {
   loadTracks();
 };
 
-// Track Renaming
 const renameModal = document.getElementById('rename-modal');
 const renameInput = document.getElementById('rename-input');
 function openRenameModal(trk) {
@@ -940,7 +928,6 @@ document.getElementById('btn-confirm-rename').onclick = async () => {
   }
 };
 
-// Toggle Favorite Logic
 async function toggleFavorite(trk) {
   const songKey = trk.name;
   const isFav = await dbOps.isFavorite(songKey);
@@ -984,7 +971,6 @@ function updateLikeButtonsUI(isLiked) {
   modalBtnLike.textContent = heart;
 }
 
-// Compress Image Safe
 function compressImageSafe(file) {
   return new Promise((resolve) => {
     if (!file) return resolve(currentAppLogo);
@@ -1015,7 +1001,6 @@ function compressImageSafe(file) {
   });
 }
 
-// Edit Cover Anytime
 const editCoverInput = document.getElementById('edit-cover-input');
 document.getElementById('btn-edit-art').onclick = () => editCoverInput.click();
 editCoverInput.onchange = async (e) => {
@@ -1032,7 +1017,6 @@ editCoverInput.onchange = async (e) => {
   }
 };
 
-// Create Playlist
 const createModal = document.getElementById('playlist-create-modal');
 const newPlaylistName = document.getElementById('new-playlist-name');
 const newPlaylistImg = document.getElementById('new-playlist-img');
@@ -1071,7 +1055,6 @@ btnConfirmPlaylist.onclick = async () => {
   showThanksPopup(`Playlist "${name}" created successfully!`);
 };
 
-// Add Songs (Multi-Format)
 document.getElementById('file-picker').onchange = async (e) => {
   const files = Array.from(e.target.files);
   if (!files.length) return;
@@ -1136,6 +1119,7 @@ function syncButtons(isPlaying) {
   if ('mediaSession' in navigator) {
     navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
   }
+  renderCardReorderList();
 }
 
 function togglePlay() {
@@ -1174,7 +1158,6 @@ modalBtnLike.onclick = () => {
   if (currentIndex !== -1 && tracks[currentIndex]) toggleFavorite(tracks[currentIndex]);
 };
 
-// MediaSession API
 function updateMediaSession() {
   if (!('mediaSession' in navigator) || currentIndex === -1) return;
   const trk = tracks[currentIndex];
@@ -1197,7 +1180,6 @@ function updateMediaSession() {
   navigator.mediaSession.setActionHandler('previoustrack', () => playTrack(currentIndex > 0 ? currentIndex - 1 : tracks.length - 1));
 }
 
-// Fullscreen Modal Details
 document.getElementById('open-box-trigger').onclick = () => { 
   playerBoxModal.style.display = 'flex'; 
   renderSeekTicks();
@@ -1205,11 +1187,9 @@ document.getElementById('open-box-trigger').onclick = () => {
 };
 document.getElementById('btn-close-box').onclick = () => { playerBoxModal.style.display = 'none'; };
 
-// Quick Seek Jumpers
 document.getElementById('btn-skip-backward').onclick = () => { audio.currentTime = Math.max(0, audio.currentTime - 10); };
 document.getElementById('btn-skip-forward').onclick = () => { audio.currentTime = Math.min(audio.duration, audio.currentTime + 10); };
 
-// Playback Speed Toggle
 const btnSpeedToggle = document.getElementById('btn-speed-toggle');
 btnSpeedToggle.onclick = () => {
   currentSpeedIndex = (currentSpeedIndex + 1) % speedList.length;
@@ -1219,7 +1199,6 @@ btnSpeedToggle.onclick = () => {
   showNotification(`Speed: ${spd}x`);
 };
 
-// Mode Toggles (Shuffle / Repeat)
 const btnModeShuffle = document.getElementById('btn-mode-shuffle');
 const btnModeRepeat = document.getElementById('btn-mode-repeat');
 
@@ -1249,7 +1228,6 @@ btnModeRepeat.onclick = () => {
   }
 };
 
-// Sleep Timer with Audio Cross-Fade
 const btnSleepTimer = document.getElementById('btn-sleep-timer');
 const sleepTimes = [0, 15, 30, 45, 60];
 let sleepIndex = 0;
@@ -1280,7 +1258,6 @@ btnSleepTimer.onclick = () => {
   }
 };
 
-// Cover Swipe Gestures
 let touchStartX = 0;
 const swipeArea = document.getElementById('art-swipe-area');
 swipeArea.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
@@ -1293,7 +1270,6 @@ swipeArea.addEventListener('touchend', (e) => {
   }
 });
 
-// A-B Segment Looper
 const btnSetA = document.getElementById('btn-set-point-a');
 const btnSetB = document.getElementById('btn-set-point-b');
 const labelPointA = document.getElementById('label-point-a');
@@ -1324,7 +1300,7 @@ function formatSecs(s) {
 }
 
 // ==========================================
-// EMBEDDED DRAWERS (PRESERVED IN LOWER VIEWPORT)
+// EMBEDDED DRAWERS (EXTENDED VIEWPORT)
 // ==========================================
 const panels = {
   vol: document.getElementById('card-volume-panel'),
@@ -1348,15 +1324,13 @@ function togglePanel(key) {
   const target = panels[key];
   const isHidden = target.style.display === 'none' || !target.style.display;
   
-  // Hide all panels & reset active button styles
   Object.values(panels).forEach(p => p.style.display = 'none');
   Object.values(btns).forEach(b => b.classList.remove('active'));
 
   if (isHidden) {
-    target.style.display = 'block';
+    target.style.display = 'flex';
     btns[key].classList.add('active');
 
-    // Specific drawer refresh routines
     if (key === 'playlist') {
       renderCardReorderList();
     } else if (key === 'timestamps') {
@@ -1374,7 +1348,6 @@ btns.playlist.onclick = () => togglePanel('playlist');
 
 document.getElementById('card-vol-slider').addEventListener('input', (e) => setVolume(e.target.value));
 
-// Offline Lyrics Saving
 const lyricsTextarea = document.getElementById('lyrics-textarea');
 async function loadLyricsForCurrent() {
   if (currentIndex === -1 || !tracks[currentIndex]) return;
@@ -1522,7 +1495,6 @@ function updateActiveTimestampBadge() {
   }
 }
 
-// Real-Time Time Update
 audio.ontimeupdate = () => {
   if (!audio.duration) return;
   if (pointA !== null && pointB !== null && pointB > pointA) {
@@ -1538,13 +1510,15 @@ seekBar.oninput = () => {
   if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
 };
 
-// In-Card Playlist Reorder & Active Highlight
+// In-Card Playlist Reorder & Active Visualizer Animation
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
   if (!tracks.length) {
-    cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">No songs in this playlist.</li>';
+    cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:12px 0;">No songs in this playlist.</li>';
     return;
   }
+
+  const isAudioPlaying = !audio.paused && audio.currentTime > 0;
 
   tracks.forEach((trk, idx) => {
     const isThisPlaying = (currentIndex !== -1 && tracks[currentIndex] && (tracks[currentIndex].name === trk.name));
@@ -1553,7 +1527,17 @@ function renderCardReorderList() {
     li.innerHTML = `
       <span class="song-name" style="max-width:65%;cursor:pointer;">
         <strong>${idx + 1}.</strong> ${trk.name}
-        ${isThisPlaying ? '<span class="now-playing-tag">▶ Now Playing</span>' : ''}
+        ${isThisPlaying ? `
+          <span class="now-playing-badge-group">
+            <span class="mini-equalizer-bars ${isAudioPlaying ? 'animating' : 'paused'}">
+              <span class="eq-bar bar-1"></span>
+              <span class="eq-bar bar-2"></span>
+              <span class="eq-bar bar-3"></span>
+              <span class="eq-bar bar-4"></span>
+            </span>
+            <span class="now-playing-tag">Now Playing</span>
+          </span>
+        ` : ''}
       </span>
       <div>
         <button class="btn-action" onclick="shiftTrack(${idx}, -1)">▲</button>
