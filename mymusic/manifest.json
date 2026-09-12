@@ -1,7 +1,7 @@
 {
   "name": "Amarjeet Audio Studio",
   "short_name": "AmarjeetAudio",
-  "description": "Offline Studio Audio Player. Made by & for Amarjeet kumar.",
+  "description": "Offline Studio Audio Player & Sound Suite. Made by & for Amarjeet kumar.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
