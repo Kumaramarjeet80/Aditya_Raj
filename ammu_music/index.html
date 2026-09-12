@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#171f2d" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -164,7 +164,7 @@
           <details>
             <summary>📖 How Export Works & Storage Location</summary>
             <div class="instruction-content">
-              <p>On supported devices, clicking <strong>"💾 Export to Custom Folder"</strong> lets you choose your target folder. On mobile browsers, files download directly to your <code>Downloads/</code> folder.</p>
+              <p>On supported devices, clicking <strong>"💾 Export Backup"</strong> lets you choose your target folder. On mobile browsers, files download directly to your <code>Downloads/</code> folder.</p>
             </div>
           </details>
         </div>
@@ -338,7 +338,7 @@
 
     <!-- Search, Sort & Tools Bar -->
     <div class="search-sort-bar">
-      <input type="text" id="library-search-input" class="search-field" placeholder="🔍 Search songs..." />
+      <input type="text" id="library-search-input" class="search-field" placeholder="🔍 Search songs in current list..." />
       <select id="sort-select" class="sort-dropdown">
         <option value="default">Sort: Manual</option>
         <option value="az">Name: A to Z</option>
@@ -357,7 +357,7 @@
       </div>
     </div>
 
-    <!-- UPPER CONTENT: Song List -->
+    <!-- UPPER CONTENT: Song List (EXTENDS TO SCREEN BOTTOM) -->
     <main class="upper-content">
       <div class="section-title-row">
         <div>
@@ -395,9 +395,8 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN PLAYER CARD MODAL -->
+  <!-- FULLSCREEN PLAYER CARD MODAL (FIXED DIMENSIONS RESTORED) -->
   <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
-    <!-- Dynamic Ambient Radial Glow Layer -->
     <div id="ambient-glow-layer" class="ambient-glow"></div>
 
     <div class="card-top-nav">
@@ -410,11 +409,10 @@
       <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
     </div>
 
-    <!-- Seamless Single-Scroll Card Body -->
-    <div class="card-scroll-body" id="card-drag-dismiss-area">
-      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="34"></canvas>
+    <!-- UPPER FIXED PINNED PLAYER SECTION -->
+    <div class="player-pinned-controls">
+      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="32"></canvas>
 
-      <!-- Transformable Artwork Display (Standard, Vinyl Disc, or Cassette) -->
       <div class="detail-art-container mode-standard" id="art-display-box">
         <img id="box-cover" src="icon-192.png" alt="Album Art" />
         <div class="vinyl-grooves"></div>
@@ -453,7 +451,7 @@
         <button id="box-btn-next" class="icon-btn-large">⏭</button>
       </div>
 
-      <!-- Action Toolbar -->
+      <!-- STICKY ACTION TOOLBAR -->
       <div class="card-tool-row">
         <button id="card-toggle-playlist" class="card-tool-btn">≡ Playlist</button>
         <button id="card-toggle-volume" class="card-tool-btn">🔊 Volume</button>
@@ -463,7 +461,10 @@
         <button id="card-toggle-trimmer" class="card-tool-btn">✂️ Trim</button>
         <button id="card-toggle-lyrics" class="card-tool-btn">📝 Lyrics</button>
       </div>
+    </div>
 
+    <!-- LOWER DEDICATED SCROLLABLE DRAWER VIEWPORT -->
+    <div class="card-scrollable-drawers" id="card-drag-dismiss-area">
       <!-- 1. Volume Drawer -->
       <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
@@ -535,7 +536,7 @@
       </div>
 
       <!-- 6. View Playlist / Reorder Drawer -->
-      <div id="card-playlist-panel" class="embedded-card-panel playlist-expanded-panel" style="display:none;">
+      <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Active Playlist Songs (Tap to Play / Reorder)</span>
         </div>
