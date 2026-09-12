@@ -276,7 +276,7 @@ body {
 }
 
 .card-compact-list {
-  max-height: 180px;
+  max-height: 220px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -454,7 +454,7 @@ body {
   box-shadow: 0 3px 12px rgba(46, 160, 67, 0.45);
 }
 
-/* Fullscreen Player Card */
+/* FULLSCREEN PLAYER MODAL CARD (ALWAYS VISIBLE UPPER SECTION + PINNED CONTROLS) */
 .fullscreen-player-card {
   position: fixed;
   inset: 0;
@@ -475,7 +475,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 16px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -497,34 +497,33 @@ body {
   cursor: pointer;
 }
 
-.card-scroll-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 16px;
+/* PINNED UPPER CONTROLS (ALWAYS PRESERVED, NEVER SCROLLED OFF) */
+.player-pinned-controls {
+  flex-shrink: 0;
+  padding: 8px 16px 4px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  -webkit-overflow-scrolling: touch;
+  gap: 6px;
+  background: var(--bg-main);
+  border-bottom: 1px solid rgba(48, 54, 61, 0.5);
 }
 
 .visualizer-canvas {
   width: 100%;
   max-width: 320px;
-  height: 36px;
+  height: 32px;
   border-radius: 6px;
-  flex-shrink: 0;
 }
 
 .detail-art-container {
   position: relative;
-  width: min(60vw, 210px);
-  height: min(60vw, 210px);
-  border-radius: 16px;
+  width: min(44vw, 150px);
+  height: min(44vw, 150px);
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.8);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.8);
   border: 1px solid var(--border);
-  flex-shrink: 0;
 }
 .detail-art-container img {
   width: 100%;
@@ -534,13 +533,13 @@ body {
 
 .btn-edit-cover {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
+  bottom: 6px;
+  right: 6px;
   background: rgba(15, 20, 28, 0.85);
   border: 1px solid var(--border);
   color: #fff;
-  font-size: 0.75rem;
-  padding: 5px 9px;
+  font-size: 0.7rem;
+  padding: 4px 8px;
   border-radius: 20px;
   backdrop-filter: blur(4px);
   cursor: pointer;
@@ -549,27 +548,23 @@ body {
 .detail-titles {
   text-align: center;
   max-width: 90%;
-  flex-shrink: 0;
 }
 .detail-titles h2 {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .detail-titles p {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  margin-top: 2px;
 }
 
-/* Real-Time Active Timestamp Indicator Banner */
 .current-marker-badge-row {
-  min-height: 22px;
+  min-height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .active-marker-pill {
@@ -578,7 +573,7 @@ body {
   color: var(--accent-light);
   padding: 2px 10px;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   animation: pulseMarker 2s infinite ease-in-out;
 }
@@ -589,16 +584,14 @@ body {
   100% { box-shadow: 0 0 0 rgba(46,160,67,0.4); }
 }
 
-/* Seek Bar with Timestamp Ticks */
 .progress-bar-box {
   width: 100%;
   max-width: 440px;
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
-  flex-shrink: 0;
 }
 
 .seek-track-wrapper {
@@ -641,16 +634,15 @@ body {
   width: 100%;
   max-width: 440px;
   justify-content: space-between;
-  flex-shrink: 0;
 }
 
 .jump-btn {
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-muted);
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -663,18 +655,17 @@ body {
 .box-player-controls {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 18px;
   margin: 2px 0;
-  flex-shrink: 0;
 }
 .icon-btn-large {
   background: var(--bg-surface);
   color: #fff;
   border: 1px solid var(--border);
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  font-size: 1.25rem;
+  width: 44px;
+  height: 44px;
+  font-size: 1.15rem;
   cursor: pointer;
 }
 .play-btn-huge {
@@ -682,13 +673,14 @@ body {
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 62px;
-  height: 62px;
-  font-size: 1.6rem;
+  width: 56px;
+  height: 56px;
+  font-size: 1.45rem;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(46, 160, 67, 0.5);
 }
 
+/* STICKY TOOLBAR (ALWAYS VISIBLE AT TOP OF DRAWERS) */
 .card-tool-row {
   display: flex;
   width: 100%;
@@ -696,8 +688,7 @@ body {
   gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
-  flex-shrink: 0;
-  padding: 2px 0;
+  padding: 4px 0;
 }
 .card-tool-row::-webkit-scrollbar { display: none; }
 
@@ -706,9 +697,9 @@ body {
   background: var(--bg-surface);
   color: var(--text-primary);
   border: 1px solid var(--border);
-  padding: 8px 6px;
+  padding: 7px 6px;
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -716,29 +707,34 @@ body {
 .card-tool-btn.active {
   background: var(--accent);
   color: #fff;
+  border-color: var(--accent-light);
 }
 
-/* Embedded Drawers Viewport */
-.drawers-viewport {
-  width: 100%;
-  max-width: 440px;
+/* LOWER SCROLLABLE DRAWER CONTAINER */
+.card-scrollable-drawers {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  -webkit-overflow-scrolling: touch;
 }
 
 .embedded-card-panel {
   width: 100%;
+  max-width: 440px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px;
 }
+
 .panel-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   margin-bottom: 8px;
 }
@@ -766,13 +762,12 @@ body {
   gap: 10px;
 }
 
-/* Timestamp Markers Drawer List */
 .timestamp-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 180px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
@@ -823,7 +818,7 @@ body {
 
 .lyrics-box {
   width: 100%;
-  height: 120px;
+  height: 140px;
   background: #090d15;
   border: 1px solid var(--border);
   color: #fff;
@@ -863,11 +858,68 @@ body {
   appearance: slider-vertical;
   -webkit-appearance: slider-vertical;
   width: 20px;
-  height: 100px;
+  height: 95px;
   margin: 6px 0;
 }
 .eq-val { font-size: 0.65rem; color: var(--accent-light); }
 .eq-freq { font-size: 0.65rem; color: var(--text-muted); }
+
+/* Universal Backup Styles */
+.modal-box-large {
+  max-width: 440px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.backup-management-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.backup-management-box h4 {
+  font-size: 0.9rem;
+  color: var(--accent-light);
+}
+.export-options-box {
+  background: #090d15;
+  border: 1px solid var(--border);
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  margin: 4px 0;
+  cursor: pointer;
+  color: #fff;
+}
+.instruction-accordion details {
+  background: #090d15;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.76rem;
+}
+.instruction-accordion summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent-light);
+}
+.instruction-content {
+  margin-top: 6px;
+  padding-left: 14px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.backup-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
 
 /* Developer Profile Card */
 .dev-profile-box {
@@ -978,7 +1030,7 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 20px;
+  padding: 18px;
   width: 100%;
   max-width: 360px;
 }
@@ -1004,9 +1056,9 @@ body {
   background: var(--accent);
   color: white;
   border: none;
-  padding: 12px;
+  padding: 10px;
   border-radius: 10px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
   width: 100%;
@@ -1017,9 +1069,8 @@ body {
   min-height: 44px;
 }
 
-/* Form Styles */
 .form-group {
-  margin: 12px 0;
+  margin: 10px 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1043,8 +1094,8 @@ body {
   margin-top: 6px;
 }
 .preview-row img {
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: 6px;
   object-fit: cover;
   border: 1px solid var(--border);
