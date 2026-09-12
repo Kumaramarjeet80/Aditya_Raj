@@ -1,4 +1,4 @@
-// Register Service Worker with relative scope for GitHub Pages subfolder support
+// Register Service Worker with relative scope
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
@@ -6,17 +6,15 @@ if ('serviceWorker' in navigator) {
 }
 
 // -------------------------------------------------------------
-// RELIABLE INSTALL PROMPT HANDLER (Fixes uninstalled redownload issue)
+// PWA INSTALL BANNER MANAGEMENT
 // -------------------------------------------------------------
 let deferredPrompt = null;
 const headerInstallBtn = document.getElementById('btn-header-install');
 const persistentInstallBanner = document.getElementById('persistent-install-banner');
 const bannerInstallBtn = document.getElementById('btn-banner-install');
 const bannerDismissBtn = document.getElementById('btn-banner-dismiss');
-
 const isRunningStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-// Only show banners if not currently running inside the installed standalone window
 if (!isRunningStandalone) {
   persistentInstallBanner.style.display = 'flex';
 }
@@ -40,7 +38,6 @@ async function triggerPWAInstall() {
     }
     deferredPrompt = null;
   } else {
-    // If the browser suppressed the prompt due to recent uninstall, guide user directly
     alert('To install the app:\n1. Tap the 3 dots (⋮) in Chrome.\n2. Tap "Install app" (or "Add to Home screen").');
   }
 }
@@ -56,55 +53,36 @@ if (bannerDismissBtn) bannerDismissBtn.addEventListener('click', () => {
 // -------------------------------------------------------------
 window.history.pushState({ page: 'home' }, '');
 window.addEventListener('popstate', () => {
-  const playerBoxModal = document.getElementById('player-box-modal');
-  const createModal = document.getElementById('playlist-create-modal');
-  const settingsModal = document.getElementById('settings-modal');
-  const thanksModal = document.getElementById('thanks-modal');
-  const welcomeModal = document.getElementById('welcome-modal');
-
-  if (playerBoxModal && playerBoxModal.style.display === 'flex') {
-    playerBoxModal.style.display = 'none';
-    window.history.pushState({ page: 'home' }, '');
-    return;
+  const modals = [
+    'player-box-modal',
+    'playlist-create-modal',
+    'settings-modal',
+    'rename-modal',
+    'dev-modal',
+    'thanks-modal',
+    'welcome-modal'
+  ];
+  for (const id of modals) {
+    const el = document.getElementById(id);
+    if (el && el.style.display === 'flex') {
+      el.style.display = 'none';
+      window.history.pushState({ page: 'home' }, '');
+      return;
+    }
   }
-  if (settingsModal && settingsModal.style.display === 'flex') {
-    settingsModal.style.display = 'none';
-    window.history.pushState({ page: 'home' }, '');
-    return;
-  }
-  if (createModal && createModal.style.display === 'flex') {
-    createModal.style.display = 'none';
-    window.history.pushState({ page: 'home' }, '');
-    return;
-  }
-  if (thanksModal && thanksModal.style.display === 'flex') {
-    thanksModal.style.display = 'none';
-    window.history.pushState({ page: 'home' }, '');
-    return;
-  }
-  if (welcomeModal && welcomeModal.style.display === 'flex') {
-    welcomeModal.style.display = 'none';
-    window.history.pushState({ page: 'home' }, '');
-    return;
-  }
-
   window.history.pushState({ page: 'home' }, '');
 });
 
-// 4-Second Notification with Animated Progress Bar
+// Toast Notifications
 function showNotification(msg) {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.innerHTML = `
-    <div class="toast-msg">${msg}</div>
-    <div class="toast-progress"></div>
-  `;
+  toast.innerHTML = `<div class="toast-msg">${msg}</div><div class="toast-progress"></div>`;
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 4000);
 }
 
-// "Thanks!" Modal
 function showThanksPopup(msg) {
   const modal = document.getElementById('thanks-modal');
   document.getElementById('thanks-msg').textContent = msg;
@@ -114,8 +92,10 @@ document.getElementById('btn-close-thanks').onclick = () => {
   document.getElementById('thanks-modal').style.display = 'none';
 };
 
-// IndexedDB Persistence
-const DB_NAME = 'AmarjeetAudioStudioDB_v30';
+// -------------------------------------------------------------
+// INDEXEDDB ENGINE
+// -------------------------------------------------------------
+const DB_NAME = 'AmarjeetAudioStudioDB_v60';
 const DB_VER = 1;
 let db;
 
@@ -124,19 +104,16 @@ function initDB() {
     const req = indexedDB.open(DB_NAME, DB_VER);
     req.onupgradeneeded = (e) => {
       const d = e.target.result;
-      if (!d.objectStoreNames.contains('playlists')) {
-        d.createObjectStore('playlists', { keyPath: 'id' });
-      }
+      if (!d.objectStoreNames.contains('playlists')) d.createObjectStore('playlists', { keyPath: 'id' });
       if (!d.objectStoreNames.contains('tracks')) {
         const trk = d.createObjectStore('tracks', { keyPath: 'id', autoIncrement: true });
         trk.createIndex('playlistId', 'playlistId', { unique: false });
       }
-      if (!d.objectStoreNames.contains('favorites')) {
-        d.createObjectStore('favorites', { keyPath: 'songKey' });
-      }
-      if (!d.objectStoreNames.contains('config')) {
-        d.createObjectStore('config', { keyPath: 'key' });
-      }
+      if (!d.objectStoreNames.contains('favorites')) d.createObjectStore('favorites', { keyPath: 'songKey' });
+      if (!d.objectStoreNames.contains('config')) d.createObjectStore('config', { keyPath: 'key' });
+      if (!d.objectStoreNames.contains('lyrics')) d.createObjectStore('lyrics', { keyPath: 'songKey' });
+      if (!d.objectStoreNames.contains('stats')) d.createObjectStore('stats', { keyPath: 'songKey' });
+      if (!d.objectStoreNames.contains('dev_profile')) d.createObjectStore('dev_profile', { keyPath: 'key' });
     };
     req.onsuccess = () => { db = req.result; resolve(); };
     req.onerror = () => resolve();
@@ -169,9 +146,7 @@ const dbOps = {
       const uniqueMap = new Map();
       all.forEach((trk) => {
         const cleanKey = trk.name.trim().toLowerCase();
-        if (!uniqueMap.has(cleanKey)) {
-          uniqueMap.set(cleanKey, trk);
-        }
+        if (!uniqueMap.has(cleanKey)) uniqueMap.set(cleanKey, trk);
       });
       return Array.from(uniqueMap.values());
     }
@@ -236,17 +211,64 @@ const dbOps = {
       tx.objectStore('config').put({ key, val });
       tx.oncomplete = () => res();
     });
+  },
+  async getLyrics(songKey) {
+    return new Promise((res) => {
+      const tx = db.transaction('lyrics', 'readonly');
+      const req = tx.objectStore('lyrics').get(songKey.trim().toLowerCase());
+      req.onsuccess = () => res(req.result ? req.result.text : '');
+    });
+  },
+  async setLyrics(songKey, text) {
+    return new Promise((res) => {
+      const tx = db.transaction('lyrics', 'readwrite');
+      tx.objectStore('lyrics').put({ songKey: songKey.trim().toLowerCase(), text });
+      tx.oncomplete = () => res();
+    });
+  },
+  async incrementPlayCount(songKey) {
+    const key = songKey.trim().toLowerCase();
+    const count = await this.getPlayCount(key);
+    return new Promise((res) => {
+      const tx = db.transaction('stats', 'readwrite');
+      tx.objectStore('stats').put({ songKey: key, count: count + 1 });
+      tx.oncomplete = () => res();
+    });
+  },
+  async getPlayCount(songKey) {
+    return new Promise((res) => {
+      const tx = db.transaction('stats', 'readonly');
+      const req = tx.objectStore('stats').get(songKey.trim().toLowerCase());
+      req.onsuccess = () => res(req.result ? req.result.count : 0);
+    });
+  },
+  async getDevProfile() {
+    return new Promise((res) => {
+      const tx = db.transaction('dev_profile', 'readonly');
+      const req = tx.objectStore('dev_profile').get('profile');
+      req.onsuccess = () => res(req.result ? req.result.val : null);
+    });
+  },
+  async setDevProfile(val) {
+    return new Promise((res) => {
+      const tx = db.transaction('dev_profile', 'readwrite');
+      tx.objectStore('dev_profile').put({ key: 'profile', val });
+      tx.oncomplete = () => res();
+    });
   }
 };
 
 // ==========================================
-// BACKGROUND AUDIO ENGINE (STABLE RECENT & LOCK-SCREEN PIPELINE)
+// AUDIO ENGINE (SOFTWARE GAIN, EQUALIZER, BASS BOOST, ANALYSER)
 // ==========================================
 const audio = document.getElementById('audio-engine');
 let audioCtx = null;
 let sourceNode = null;
 let masterGainNode = null;
 let preampGain = null;
+let bassFilterNode = null;
+let analyserNode = null;
+
 const bands = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
 const defaultGains = [18.2, 11.8, 3.7, -1.7, -7.8, 2.1, 9.8, 14.1, -3.6, 11.6];
 const defaultPreamp = 14.1;
@@ -264,11 +286,23 @@ function ensureAudioPipeline() {
     audioCtx = new AudioContextClass();
     sourceNode = audioCtx.createMediaElementSource(audio);
 
+    // Spectrum Analyser
+    analyserNode = audioCtx.createAnalyser();
+    analyserNode.fftSize = 64;
+
+    // Master Volume GainNode (0% - 100%, defaults to 20%)
     masterGainNode = audioCtx.createGain();
     masterGainNode.gain.setValueAtTime(currentVol, audioCtx.currentTime);
 
+    // VLC Preamp Gain
     preampGain = audioCtx.createGain();
     preampGain.gain.setValueAtTime(Math.pow(10, defaultPreamp / 20) * 0.35, audioCtx.currentTime);
+
+    // Dedicated Bass Booster Node
+    bassFilterNode = audioCtx.createBiquadFilter();
+    bassFilterNode.type = 'lowshelf';
+    bassFilterNode.frequency.value = 80;
+    bassFilterNode.gain.value = 0;
 
     let prevNode = preampGain;
     bands.forEach((freq, i) => {
@@ -283,42 +317,93 @@ function ensureAudioPipeline() {
     });
 
     sourceNode.connect(preampGain);
-    prevNode.connect(masterGainNode);
+    prevNode.connect(bassFilterNode);
+    bassFilterNode.connect(analyserNode);
+    analyserNode.connect(masterGainNode);
     masterGainNode.connect(audioCtx.destination);
+
+    startVisualizerLoop();
   } catch (e) {
-    console.warn('Audio Context Pipeline fallback:', e);
+    console.warn('Web Audio routing fallback:', e);
   }
+}
+
+// Headphone / Bluetooth Disconnect Auto-Pause Protection
+if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange !== undefined) {
+  navigator.mediaDevices.ondevicechange = () => {
+    if (!audio.paused) {
+      audio.pause();
+      syncButtons(false);
+      showNotification('Headphones disconnected: Audio paused');
+    }
+  };
 }
 
 function setVolume(pct) {
   currentVol = pct / 100;
   audio.volume = currentVol;
-
   if (masterGainNode && audioCtx) {
     masterGainNode.gain.setValueAtTime(currentVol, audioCtx.currentTime);
   }
-
   const slider = document.getElementById('card-vol-slider');
   const label = document.getElementById('card-vol-label');
   if (slider) slider.value = pct;
   if (label) label.textContent = `${pct}%`;
 }
 
+// Spectrum Visualizer
+const visualizerCanvas = document.getElementById('audio-visualizer');
+const vCtx = visualizerCanvas.getContext('2d');
+function startVisualizerLoop() {
+  if (!analyserNode) return;
+  const bufferLength = analyserNode.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+
+  function renderFrame() {
+    requestAnimationFrame(renderFrame);
+    if (audio.paused) {
+      vCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+      return;
+    }
+    analyserNode.getByteFrequencyData(dataArray);
+    vCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+    const barWidth = (visualizerCanvas.width / bufferLength) * 1.5;
+    let x = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      const barHeight = (dataArray[i] / 255) * visualizerCanvas.height;
+      vCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2ea043';
+      vCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
+      x += barWidth + 2;
+    }
+  }
+  renderFrame();
+}
+
 // State
 let activePlaylistId = 'all';
 let currentPlaylist = { id: 'all', name: 'All', cover: '' };
 let tracks = [];
+let allTracksRaw = [];
 let currentIndex = -1;
-let newBase64Cover = null;
 let currentAppLogo = 'icon-192.png';
 let currentAppName = 'Amarjeet Studio';
+let playMode = 'all';
+let speedList = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+let currentSpeedIndex = 2; // 1.0x
+let sleepTimerId = null;
+let pointA = null;
+let pointB = null;
+let trackToRename = null;
 
-// UI references
+// UI References
 const playlistTabs = document.getElementById('playlist-tabs');
 const songList = document.getElementById('song-list');
 const cardReorderList = document.getElementById('card-reorder-list');
 const viewPlaylistName = document.getElementById('view-playlist-name');
 const trackCountLabel = document.getElementById('track-count-label');
+const librarySearchInput = document.getElementById('library-search-input');
+const sortSelect = document.getElementById('sort-select');
 
 const miniCover = document.getElementById('mini-cover');
 const miniTitle = document.getElementById('mini-title');
@@ -347,7 +432,84 @@ document.getElementById('btn-close-welcome').onclick = () => {
 };
 
 // ==========================================
-// IN-APP BRANDING CUSTOMIZATION
+// DEVELOPER PROFILE SYSTEM (100% OFFLINE)
+// ==========================================
+const devModal = document.getElementById('dev-modal');
+const devAvatarImg = document.getElementById('dev-avatar-img');
+const devNameDisplay = document.getElementById('dev-name-display');
+const devTitleDisplay = document.getElementById('dev-title-display');
+const devBioDisplay = document.getElementById('dev-bio-display');
+const devLocationDisplay = document.getElementById('dev-location-display');
+const devEmailDisplay = document.getElementById('dev-email-display');
+
+const editDevName = document.getElementById('edit-dev-name');
+const editDevTitle = document.getElementById('edit-dev-title');
+const editDevBio = document.getElementById('edit-dev-bio');
+const editDevLocation = document.getElementById('edit-dev-location');
+const editDevEmail = document.getElementById('edit-dev-email');
+const editDevAvatar = document.getElementById('edit-dev-avatar');
+let tempDevAvatarBase64 = null;
+
+let devData = {
+  name: 'Amarjeet Kumar',
+  title: 'Lead Audio Architect & Engineer',
+  bio: 'Built with passion for high-fidelity audio, offline-first Web Audio DSP, and clean, responsive UI.',
+  location: 'Bihar, India',
+  email: 'amarjeet.kumar.dev@gmail.com',
+  avatar: 'icon-192.png'
+};
+
+async function loadDevProfile() {
+  const saved = await dbOps.getDevProfile();
+  if (saved) devData = Object.assign(devData, saved);
+  applyDevProfileUI();
+}
+
+function applyDevProfileUI() {
+  devNameDisplay.textContent = devData.name;
+  devTitleDisplay.textContent = devData.title;
+  devBioDisplay.textContent = devData.bio;
+  devLocationDisplay.textContent = devData.location;
+  devEmailDisplay.textContent = devData.email;
+  devAvatarImg.src = devData.avatar || 'icon-192.png';
+
+  editDevName.value = devData.name;
+  editDevTitle.value = devData.title;
+  editDevBio.value = devData.bio;
+  editDevLocation.value = devData.location;
+  editDevEmail.value = devData.email;
+}
+
+function openDevModal() {
+  devModal.style.display = 'flex';
+}
+
+document.getElementById('btn-open-dev').onclick = openDevModal;
+document.getElementById('footer-dev-trigger').onclick = openDevModal;
+document.getElementById('btn-close-dev').onclick = () => { devModal.style.display = 'none'; };
+
+editDevAvatar.onchange = async (e) => {
+  if (e.target.files && e.target.files[0]) {
+    tempDevAvatarBase64 = await compressImageSafe(e.target.files[0]);
+    devAvatarImg.src = tempDevAvatarBase64;
+  }
+};
+
+document.getElementById('btn-save-dev-profile').onclick = async () => {
+  devData.name = editDevName.value.trim() || devData.name;
+  devData.title = editDevTitle.value.trim() || devData.title;
+  devData.bio = editDevBio.value.trim() || devData.bio;
+  devData.location = editDevLocation.value.trim() || devData.location;
+  devData.email = editDevEmail.value.trim() || devData.email;
+  if (tempDevAvatarBase64) devData.avatar = tempDevAvatarBase64;
+
+  await dbOps.setDevProfile(devData);
+  applyDevProfileUI();
+  showNotification('Developer profile updated!');
+};
+
+// ==========================================
+// APP BRANDING & PREFERENCES
 // ==========================================
 const settingsModal = document.getElementById('settings-modal');
 const customAppNameInput = document.getElementById('custom-app-name');
@@ -362,12 +524,28 @@ let tempNewLogoBase64 = null;
 async function loadAppBranding() {
   const savedName = await dbOps.getConfig('app_name');
   const savedLogo = await dbOps.getConfig('app_logo');
+  const savedTheme = await dbOps.getConfig('app_theme');
 
   if (savedName) currentAppName = savedName;
   if (savedLogo) currentAppLogo = savedLogo;
+  if (savedTheme) setAppTheme(savedTheme);
 
   applyBrandingUI();
 }
+
+function setAppTheme(color) {
+  document.documentElement.style.setProperty('--accent', color);
+  document.documentElement.style.setProperty('--accent-light', color);
+}
+
+document.querySelectorAll('.theme-circle-btn').forEach((btn) => {
+  btn.onclick = async () => {
+    const col = btn.dataset.color;
+    setAppTheme(col);
+    await dbOps.setConfig('app_theme', col);
+    showNotification(`Theme accent updated!`);
+  };
+});
 
 function applyBrandingUI() {
   displayAppName.textContent = currentAppName;
@@ -377,10 +555,13 @@ function applyBrandingUI() {
   settingsLogoPreview.src = currentAppLogo;
 }
 
-function openSettingsModal() {
+async function openSettingsModal() {
   customAppNameInput.value = currentAppName;
   settingsLogoPreview.src = currentAppLogo;
   tempNewLogoBase64 = currentAppLogo;
+
+  const total = await dbOps.getAllTracks();
+  document.getElementById('storage-stat-label').textContent = `${total.length} tracks permanently stored offline in IndexedDB.`;
   settingsModal.style.display = 'flex';
 }
 
@@ -399,11 +580,7 @@ customAppLogoInput.onchange = async (e) => {
 
 document.getElementById('btn-save-settings').onclick = async () => {
   const newName = customAppNameInput.value.trim();
-  if (!newName) {
-    showNotification('Please enter an app name!');
-    return;
-  }
-  currentAppName = newName;
+  if (newName) currentAppName = newName;
   if (tempNewLogoBase64) currentAppLogo = tempNewLogoBase64;
 
   await dbOps.setConfig('app_name', currentAppName);
@@ -411,11 +588,54 @@ document.getElementById('btn-save-settings').onclick = async () => {
 
   applyBrandingUI();
   settingsModal.style.display = 'none';
-  showThanksPopup(`In-app name updated to "${currentAppName}".`);
+  showThanksPopup(`Branding saved! App name updated to "${currentAppName}".`);
   updateMediaSession();
 };
 
-// Load Playlists
+// Backup Export & Import Utilities
+document.getElementById('btn-export-backup').onclick = async () => {
+  const all = await dbOps.getAllTracks();
+  const pls = await dbOps.getPlaylists();
+  const backup = {
+    appName: currentAppName,
+    exportedAt: new Date().toISOString(),
+    playlists: pls,
+    tracksMeta: all.map(t => ({ id: t.id, name: t.name, playlistId: t.playlistId, order: t.order }))
+  };
+  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2));
+  const a = document.createElement('a');
+  a.href = dataStr;
+  a.download = `Amarjeet_Studio_Backup_${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  showNotification('Backup metadata exported!');
+};
+
+document.getElementById('import-backup-file').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const backup = JSON.parse(event.target.result);
+      if (backup.playlists && Array.isArray(backup.playlists)) {
+        for (const p of backup.playlists) {
+          await dbOps.savePlaylist(p);
+        }
+      }
+      showThanksPopup('Backup metadata restored successfully!');
+      loadPlaylists();
+    } catch {
+      showNotification('Error restoring backup file');
+    }
+  };
+  reader.readAsText(file);
+};
+
+// ==========================================
+// PLAYLISTS, TRACKS & AUTO-CLEANER
+// ==========================================
 async function loadPlaylists() {
   let list = await dbOps.getPlaylists();
   if (!list.length) {
@@ -446,21 +666,35 @@ async function loadPlaylists() {
   loadTracks();
 }
 
-// Tracks Loading with Universal Favorite Heart Sync
 async function loadTracks() {
-  tracks = await dbOps.getTracks(activePlaylistId);
-  tracks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  allTracksRaw = await dbOps.getTracks(activePlaylistId);
+  allTracksRaw.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  renderFilteredTracks();
+}
+
+function renderFilteredTracks() {
+  const q = librarySearchInput.value.trim().toLowerCase();
+  let filtered = allTracksRaw.filter(t => t.name.toLowerCase().includes(q));
+
+  const sortVal = sortSelect.value;
+  if (sortVal === 'az') {
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortVal === 'za') {
+    filtered.sort((a, b) => b.name.localeCompare(a.name));
+  }
+
+  tracks = filtered;
   trackCountLabel.textContent = `${tracks.length} track${tracks.length === 1 ? '' : 's'}`;
 
   songList.innerHTML = '';
   if (!tracks.length) {
-    songList.innerHTML = '<li style="color:var(--text-muted);text-align:center;padding:24px 0;">No songs here yet. Tap "➕ Add Songs".</li>';
+    songList.innerHTML = '<li style="color:var(--text-muted);text-align:center;padding:24px 0;">No songs found.</li>';
     return;
   }
 
-  for (let idx = 0; idx < tracks.length; idx++) {
-    const trk = tracks[idx];
+  tracks.forEach(async (trk, idx) => {
     const isFav = await dbOps.isFavorite(trk.name);
+    const playCount = await dbOps.getPlayCount(trk.name);
 
     const li = document.createElement('li');
     li.className = `song-row ${idx === currentIndex ? 'active' : ''}`;
@@ -468,25 +702,38 @@ async function loadTracks() {
 
     const info = document.createElement('div');
     info.className = 'song-info';
-    info.innerHTML = `<span class="song-name"><strong>${idx + 1}.</strong> ${trk.name}</span>`;
+    info.innerHTML = `
+      <span class="song-name"><strong>${idx + 1}.</strong> ${trk.name}</span>
+      <span class="song-sub-info">Plays: ${playCount}</span>
+    `;
     info.onclick = () => playTrack(idx);
 
     const actions = document.createElement('div');
     actions.className = 'row-actions';
 
+    // Rename Button
+    const btnRename = document.createElement('button');
+    btnRename.className = 'btn-icon-sm';
+    btnRename.innerHTML = '✏️';
+    btnRename.title = 'Rename Track';
+    btnRename.onclick = (e) => {
+      e.stopPropagation();
+      openRenameModal(trk);
+    };
+
+    // Favorite Button
     const btnLikeRow = document.createElement('button');
     btnLikeRow.className = 'btn-icon-sm song-heart-btn';
     btnLikeRow.innerHTML = isFav ? '❤️' : '💛';
-    btnLikeRow.title = isFav ? 'Remove from Favorites' : 'Add to Favorites';
     btnLikeRow.onclick = async (e) => {
       e.stopPropagation();
       await toggleFavorite(trk);
     };
 
+    // Delete Button
     const del = document.createElement('button');
     del.className = 'btn-del';
     del.innerHTML = '🗑';
-    del.title = 'Delete Song';
     del.onclick = async (e) => {
       e.stopPropagation();
       await dbOps.deleteTrack(trk.id);
@@ -494,16 +741,65 @@ async function loadTracks() {
       loadTracks();
     };
 
-    actions.append(btnLikeRow, del);
+    actions.append(btnRename, btnLikeRow, del);
     li.append(info, actions);
     songList.appendChild(li);
-  }
+  });
 
   if (currentIndex !== -1 && tracks[currentIndex]) {
-    const isCurFav = await dbOps.isFavorite(tracks[currentIndex].name);
-    updateLikeButtonsUI(isCurFav);
+    dbOps.isFavorite(tracks[currentIndex].name).then(updateLikeButtonsUI);
   }
 }
+
+librarySearchInput.addEventListener('input', renderFilteredTracks);
+sortSelect.addEventListener('change', renderFilteredTracks);
+
+// One-Tap ID3 Tag Auto-Cleaner
+document.getElementById('btn-clean-names').onclick = async () => {
+  if (!allTracksRaw.length) return;
+  let cleanedCount = 0;
+  for (const trk of allTracksRaw) {
+    let clean = trk.name
+      .replace(/\.(mp3|wav|flac|m4a|aac|ogg|opus)$/i, '')
+      .replace(/\[.*?\]|\(.*?\)|_|-/g, ' ')
+      .replace(/\b(128kbps|320kbps|download|pagalworld|songs|audio|mp3)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (clean && clean !== trk.name) {
+      trk.name = clean;
+      await dbOps.updateTrack(trk);
+      cleanedCount++;
+    }
+  }
+  showNotification(`Cleaned clutter from ${cleanedCount} song name(s)!`);
+  loadTracks();
+};
+
+// Track Renaming
+const renameModal = document.getElementById('rename-modal');
+const renameInput = document.getElementById('rename-input');
+function openRenameModal(trk) {
+  trackToRename = trk;
+  renameInput.value = trk.name;
+  renameModal.style.display = 'flex';
+}
+document.getElementById('btn-cancel-rename').onclick = () => { renameModal.style.display = 'none'; };
+document.getElementById('btn-confirm-rename').onclick = async () => {
+  const newTitle = renameInput.value.trim();
+  if (newTitle && trackToRename) {
+    trackToRename.name = newTitle;
+    await dbOps.updateTrack(trackToRename);
+    renameModal.style.display = 'none';
+    showNotification('Track renamed successfully');
+    loadTracks();
+    if (currentIndex !== -1 && tracks[currentIndex] && tracks[currentIndex].id === trackToRename.id) {
+      miniTitle.textContent = newTitle;
+      boxTitle.textContent = newTitle;
+      updateMediaSession();
+    }
+  }
+};
 
 // Toggle Favorite Logic
 async function toggleFavorite(trk) {
@@ -517,9 +813,7 @@ async function toggleFavorite(trk) {
     await dbOps.removeFavorite(songKey);
     const favTracks = await dbOps.getTracks(favPlaylist.id);
     const existing = favTracks.find((t) => t.name.trim().toLowerCase() === trk.name.trim().toLowerCase());
-    if (existing) {
-      await dbOps.deleteTrack(existing.id);
-    }
+    if (existing) await dbOps.deleteTrack(existing.id);
     showNotification(`Removed "${trk.name}" from Favorites 💛`);
     syncHeartsEverywhere(songKey, false);
   } else {
@@ -533,17 +827,13 @@ async function toggleFavorite(trk) {
     showThanksPopup(`"${trk.name}" added to Favorites ❤️!`);
     syncHeartsEverywhere(songKey, true);
   }
-
   loadTracks();
 }
 
 function syncHeartsEverywhere(songName, isLiked) {
   const heart = isLiked ? '❤️' : '💛';
   const rows = document.querySelectorAll(`[data-song-name="${CSS.escape(songName)}"] .song-heart-btn`);
-  rows.forEach((btn) => {
-    btn.innerHTML = heart;
-  });
-
+  rows.forEach((btn) => { btn.innerHTML = heart; });
   if (currentIndex !== -1 && tracks[currentIndex] && tracks[currentIndex].name === songName) {
     updateLikeButtonsUI(isLiked);
   }
@@ -555,7 +845,7 @@ function updateLikeButtonsUI(isLiked) {
   modalBtnLike.textContent = heart;
 }
 
-// Image Compression
+// Compress Image Safe
 function compressImageSafe(file) {
   return new Promise((resolve) => {
     if (!file) return resolve(currentAppLogo);
@@ -568,15 +858,9 @@ function compressImageSafe(file) {
           const maxDim = 240;
           let w = img.width;
           let h = img.height;
-          if (w > h) {
-            h = Math.round((h * maxDim) / w);
-            w = maxDim;
-          } else {
-            w = Math.round((w * maxDim) / h);
-            h = maxDim;
-          }
-          canvas.width = w;
-          canvas.height = h;
+          if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          else { w = Math.round((w * maxDim) / h); h = maxDim; }
+          canvas.width = w; canvas.height = h;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', 0.8));
@@ -595,13 +879,11 @@ function compressImageSafe(file) {
 // Edit Cover Anytime
 const editCoverInput = document.getElementById('edit-cover-input');
 document.getElementById('btn-edit-art').onclick = () => editCoverInput.click();
-
 editCoverInput.onchange = async (e) => {
   if (e.target.files && e.target.files[0]) {
     const newArt = await compressImageSafe(e.target.files[0]);
     miniCover.src = newArt;
     boxCover.src = newArt;
-
     if (currentPlaylist && currentPlaylist.id !== 'all') {
       currentPlaylist.cover = newArt;
       await dbOps.savePlaylist(currentPlaylist);
@@ -611,13 +893,14 @@ editCoverInput.onchange = async (e) => {
   }
 };
 
-// Create Playlist Handlers
+// Create Playlist
 const createModal = document.getElementById('playlist-create-modal');
 const newPlaylistName = document.getElementById('new-playlist-name');
 const newPlaylistImg = document.getElementById('new-playlist-img');
 const previewArt = document.getElementById('preview-art-tag');
 const previewStatus = document.getElementById('preview-status-text');
 const btnConfirmPlaylist = document.getElementById('btn-confirm-playlist');
+let newBase64Cover = null;
 
 document.getElementById('btn-open-create-playlist').onclick = () => {
   newPlaylistName.value = '';
@@ -627,10 +910,7 @@ document.getElementById('btn-open-create-playlist').onclick = () => {
   previewStatus.textContent = 'Default art selected';
   createModal.style.display = 'flex';
 };
-
-document.getElementById('btn-cancel-playlist').onclick = () => {
-  createModal.style.display = 'none';
-};
+document.getElementById('btn-cancel-playlist').onclick = () => { createModal.style.display = 'none'; };
 
 newPlaylistImg.onchange = async (e) => {
   if (e.target.files && e.target.files[0]) {
@@ -641,61 +921,39 @@ newPlaylistImg.onchange = async (e) => {
   }
 };
 
-btnConfirmPlaylist.addEventListener('click', async (e) => {
-  e.preventDefault();
+btnConfirmPlaylist.onclick = async () => {
   const name = newPlaylistName.value.trim();
-  if (!name) {
-    showNotification('Please enter a playlist name!');
-    newPlaylistName.focus();
-    return;
-  }
+  if (!name) return showNotification('Please enter a playlist name!');
+  const pl = { id: 'pl_' + Date.now(), name, cover: newBase64Cover || currentAppLogo };
+  await dbOps.savePlaylist(pl);
+  createModal.style.display = 'none';
+  activePlaylistId = pl.id;
+  await loadPlaylists();
+  showThanksPopup(`Playlist "${name}" created successfully!`);
+};
 
-  btnConfirmPlaylist.disabled = true;
-  btnConfirmPlaylist.textContent = 'Saving...';
-
-  try {
-    const pl = {
-      id: 'pl_' + Date.now(),
-      name,
-      cover: newBase64Cover || currentAppLogo
-    };
-    await dbOps.savePlaylist(pl);
-    createModal.style.display = 'none';
-    activePlaylistId = pl.id;
-    await loadPlaylists();
-    showThanksPopup(`Playlist "${name}" created successfully!`);
-  } catch (err) {
-    showNotification('Could not save playlist.');
-  } finally {
-    btnConfirmPlaylist.disabled = false;
-    btnConfirmPlaylist.textContent = 'Create';
-  }
-});
-
-// Add Multiple Songs
+// Add Songs (Multi-Format)
 document.getElementById('file-picker').onchange = async (e) => {
   const files = Array.from(e.target.files);
   if (!files.length) return;
-
-  const targetPlaylistId = activePlaylistId === 'all' ? 'favorites' : activePlaylistId;
-
+  const targetId = activePlaylistId === 'all' ? 'favorites' : activePlaylistId;
   for (let i = 0; i < files.length; i++) {
     await dbOps.saveTrack({
-      playlistId: targetPlaylistId,
+      playlistId: targetId,
       name: files[i].name,
       blob: files[i],
       order: tracks.length + i
     });
   }
-
-  showThanksPopup(`Successfully added ${files.length} song(s)!`);
+  showThanksPopup(`Added ${files.length} song(s)!`);
   loadTracks();
 };
 
-// Play Track
+// ==========================================
+// PLAYBACK SYSTEM & ADVANCED CONTROLS
+// ==========================================
 async function playTrack(idx) {
   if (idx < 0 || idx >= tracks.length) return;
-
   ensureAudioPipeline();
 
   if (currentIndex === idx && audio.src) {
@@ -709,6 +967,7 @@ async function playTrack(idx) {
   currentIndex = idx;
   const trk = tracks[currentIndex];
   audio.src = URL.createObjectURL(trk.blob);
+  audio.playbackRate = speedList[currentSpeedIndex];
 
   audio.play().then(() => {
     syncButtons(true);
@@ -722,39 +981,10 @@ async function playTrack(idx) {
   const isFav = await dbOps.isFavorite(trk.name);
   updateLikeButtonsUI(isFav);
 
+  await dbOps.incrementPlayCount(trk.name);
+  loadLyricsForCurrent();
   updateMediaSession();
   loadTracks();
-}
-
-// MediaSession: Continuous Background & Lock-Screen Notifications
-function updateMediaSession() {
-  if (!('mediaSession' in navigator) || currentIndex === -1) return;
-  const trk = tracks[currentIndex];
-  if (!trk) return;
-
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: trk.name,
-    artist: `Playlist: ${currentPlaylist.name} • Made by & for Amarjeet kumar`,
-    album: currentAppName,
-    artwork: [
-      { src: currentPlaylist.cover || currentAppLogo, sizes: '192x192', type: 'image/png' },
-      { src: currentPlaylist.cover || currentAppLogo, sizes: '512x512', type: 'image/png' }
-    ]
-  });
-
-  navigator.mediaSession.playbackState = 'playing';
-
-  navigator.mediaSession.setActionHandler('play', () => {
-    ensureAudioPipeline();
-    audio.play();
-    syncButtons(true);
-  });
-  navigator.mediaSession.setActionHandler('pause', () => {
-    audio.pause();
-    syncButtons(false);
-  });
-  navigator.mediaSession.setActionHandler('nexttrack', () => loopNext());
-  navigator.mediaSession.setActionHandler('previoustrack', () => playTrack(currentIndex > 0 ? currentIndex - 1 : tracks.length - 1));
 }
 
 function syncButtons(isPlaying) {
@@ -779,7 +1009,10 @@ function togglePlay() {
 
 function loopNext() {
   if (!tracks.length) return;
-  let next = currentIndex + 1;
+  if (playMode === 'one') return playTrack(currentIndex);
+  let next = (playMode === 'shuffle') 
+    ? Math.floor(Math.random() * tracks.length) 
+    : currentIndex + 1;
   if (next >= tracks.length) next = 0;
   playTrack(next);
 }
@@ -798,62 +1031,217 @@ modalBtnLike.onclick = () => {
   if (currentIndex !== -1 && tracks[currentIndex]) toggleFavorite(tracks[currentIndex]);
 };
 
+// MediaSession API with Amarjeet credit
+function updateMediaSession() {
+  if (!('mediaSession' in navigator) || currentIndex === -1) return;
+  const trk = tracks[currentIndex];
+  if (!trk) return;
+
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: trk.name,
+    artist: `Playlist: ${currentPlaylist.name} • Made by & for Amarjeet kumar`,
+    album: currentAppName,
+    artwork: [
+      { src: currentPlaylist.cover || currentAppLogo, sizes: '192x192', type: 'image/png' },
+      { src: currentPlaylist.cover || currentAppLogo, sizes: '512x512', type: 'image/png' }
+    ]
+  });
+
+  navigator.mediaSession.playbackState = 'playing';
+  navigator.mediaSession.setActionHandler('play', () => { ensureAudioPipeline(); audio.play(); syncButtons(true); });
+  navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); syncButtons(false); });
+  navigator.mediaSession.setActionHandler('nexttrack', loopNext);
+  navigator.mediaSession.setActionHandler('previoustrack', () => playTrack(currentIndex > 0 ? currentIndex - 1 : tracks.length - 1));
+}
+
 // Fullscreen Modal Details
-document.getElementById('open-box-trigger').onclick = () => {
-  playerBoxModal.style.display = 'flex';
-};
-document.getElementById('btn-close-box').onclick = () => {
-  playerBoxModal.style.display = 'none';
-};
+document.getElementById('open-box-trigger').onclick = () => { playerBoxModal.style.display = 'flex'; };
+document.getElementById('btn-close-box').onclick = () => { playerBoxModal.style.display = 'none'; };
 
-// Drawers inside Card
-const cardVolPanel = document.getElementById('card-volume-panel');
-const cardEqPanel = document.getElementById('card-eq-panel');
-const cardPlaylistPanel = document.getElementById('card-playlist-panel');
+// Quick Seek Jumpers
+document.getElementById('btn-skip-backward').onclick = () => { audio.currentTime = Math.max(0, audio.currentTime - 10); };
+document.getElementById('btn-skip-forward').onclick = () => { audio.currentTime = Math.min(audio.duration, audio.currentTime + 10); };
 
-const btnToggleVol = document.getElementById('card-toggle-volume');
-const btnToggleEq = document.getElementById('card-toggle-eq');
-const btnTogglePlaylist = document.getElementById('card-toggle-playlist');
-
-btnToggleVol.onclick = () => {
-  const isHidden = cardVolPanel.style.display === 'none';
-  cardVolPanel.style.display = isHidden ? 'block' : 'none';
-  btnToggleVol.classList.toggle('active', isHidden);
+// Playback Speed Toggle
+const btnSpeedToggle = document.getElementById('btn-speed-toggle');
+btnSpeedToggle.onclick = () => {
+  currentSpeedIndex = (currentSpeedIndex + 1) % speedList.length;
+  const spd = speedList[currentSpeedIndex];
+  audio.playbackRate = spd;
+  btnSpeedToggle.textContent = `${spd}x`;
+  showNotification(`Speed: ${spd}x`);
 };
 
-btnToggleEq.onclick = () => {
-  const isHidden = cardEqPanel.style.display === 'none';
-  cardEqPanel.style.display = isHidden ? 'block' : 'none';
-  btnToggleEq.classList.toggle('active', isHidden);
+// Mode Toggles (Shuffle / Repeat)
+const btnModeShuffle = document.getElementById('btn-mode-shuffle');
+const btnModeRepeat = document.getElementById('btn-mode-repeat');
+
+btnModeShuffle.onclick = () => {
+  if (playMode !== 'shuffle') {
+    playMode = 'shuffle';
+    btnModeShuffle.classList.add('active');
+    btnModeShuffle.textContent = '🔀 On';
+    showNotification('Shuffle: Active');
+  } else {
+    playMode = 'all';
+    btnModeShuffle.classList.remove('active');
+    btnModeShuffle.textContent = '🔀 Off';
+    showNotification('Shuffle: Off');
+  }
 };
 
-btnTogglePlaylist.onclick = () => {
-  const isHidden = cardPlaylistPanel.style.display === 'none';
-  cardPlaylistPanel.style.display = isHidden ? 'block' : 'none';
-  btnTogglePlaylist.classList.toggle('active', isHidden);
-  if (isHidden) renderCardReorderList();
+btnModeRepeat.onclick = () => {
+  if (playMode === 'all') {
+    playMode = 'one';
+    btnModeRepeat.textContent = '🔂 One';
+    showNotification('Repeat: Current Song');
+  } else {
+    playMode = 'all';
+    btnModeRepeat.textContent = '🔁 All';
+    showNotification('Repeat: Entire List');
+  }
 };
 
-document.getElementById('card-vol-slider').addEventListener('input', (e) => {
-  setVolume(e.target.value);
+// Sleep Timer with Audio Cross-Fade
+const btnSleepTimer = document.getElementById('btn-sleep-timer');
+const sleepTimes = [0, 15, 30, 45, 60];
+let sleepIndex = 0;
+btnSleepTimer.onclick = () => {
+  sleepIndex = (sleepIndex + 1) % sleepTimes.length;
+  const mins = sleepTimes[sleepIndex];
+  if (sleepTimerId) clearTimeout(sleepTimerId);
+
+  if (mins === 0) {
+    btnSleepTimer.textContent = '⏱️ Off';
+    showNotification('Sleep Timer: Disabled');
+  } else {
+    btnSleepTimer.textContent = `⏱️ ${mins}m`;
+    showNotification(`Sleep Timer set for ${mins} minutes`);
+    sleepTimerId = setTimeout(() => {
+      // Fade out audio over 5 seconds
+      if (masterGainNode && audioCtx) {
+        masterGainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 5);
+      }
+      setTimeout(() => {
+        audio.pause();
+        syncButtons(false);
+        setVolume(20);
+        btnSleepTimer.textContent = '⏱️ Off';
+        sleepIndex = 0;
+        showNotification('Sleep timer ended. Goodnight!');
+      }, 5000);
+    }, mins * 60 * 1000);
+  }
+};
+
+// Cover Swipe Gestures
+let touchStartX = 0;
+const swipeArea = document.getElementById('art-swipe-area');
+swipeArea.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+swipeArea.addEventListener('touchend', (e) => {
+  const diff = e.changedTouches[0].screenX - touchStartX;
+  if (diff > 50) {
+    playTrack(currentIndex > 0 ? currentIndex - 1 : tracks.length - 1);
+  } else if (diff < -50) {
+    loopNext();
+  }
 });
 
-// Seek Bar
+// A-B Segment Looper
+const btnSetA = document.getElementById('btn-set-point-a');
+const btnSetB = document.getElementById('btn-set-point-b');
+const labelPointA = document.getElementById('label-point-a');
+const labelPointB = document.getElementById('label-point-b');
+
+btnSetA.onclick = () => {
+  pointA = audio.currentTime;
+  labelPointA.textContent = formatSecs(pointA);
+  showNotification(`Loop Point A set at ${formatSecs(pointA)}`);
+};
+btnSetB.onclick = () => {
+  if (pointA === null) return showNotification('Set Point A first!');
+  pointB = audio.currentTime;
+  labelPointB.textContent = formatSecs(pointB);
+  showNotification(`Looping from ${formatSecs(pointA)} to ${formatSecs(pointB)}`);
+};
+document.getElementById('btn-clear-loop').onclick = () => {
+  pointA = null; pointB = null;
+  labelPointA.textContent = '--:--';
+  labelPointB.textContent = '--:--';
+  showNotification('A-B Loop cleared');
+};
+
+function formatSecs(s) {
+  const m = Math.floor(s / 60) || 0;
+  const sec = Math.floor(s % 60) || 0;
+  return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+}
+
+// Embedded Drawer Toggles
+const panels = {
+  vol: document.getElementById('card-volume-panel'),
+  eq: document.getElementById('card-eq-panel'),
+  looper: document.getElementById('card-looper-panel'),
+  lyrics: document.getElementById('card-lyrics-panel'),
+  playlist: document.getElementById('card-playlist-panel')
+};
+
+const btns = {
+  vol: document.getElementById('card-toggle-volume'),
+  eq: document.getElementById('card-toggle-eq'),
+  looper: document.getElementById('card-toggle-looper'),
+  lyrics: document.getElementById('card-toggle-lyrics'),
+  playlist: document.getElementById('card-toggle-playlist')
+};
+
+function togglePanel(key) {
+  const target = panels[key];
+  const isHidden = target.style.display === 'none';
+  Object.values(panels).forEach(p => p.style.display = 'none');
+  Object.values(btns).forEach(b => b.classList.remove('active'));
+  if (isHidden) {
+    target.style.display = 'block';
+    btns[key].classList.add('active');
+    if (key === 'playlist') renderCardReorderList();
+  }
+}
+
+btns.vol.onclick = () => togglePanel('vol');
+btns.eq.onclick = () => togglePanel('eq');
+btns.looper.onclick = () => togglePanel('looper');
+btns.lyrics.onclick = () => togglePanel('lyrics');
+btns.playlist.onclick = () => togglePanel('playlist');
+
+document.getElementById('card-vol-slider').addEventListener('input', (e) => setVolume(e.target.value));
+
+// Offline Lyrics Saving
+const lyricsTextarea = document.getElementById('lyrics-textarea');
+async function loadLyricsForCurrent() {
+  if (currentIndex === -1 || !tracks[currentIndex]) return;
+  const text = await dbOps.getLyrics(tracks[currentIndex].name);
+  lyricsTextarea.value = text;
+}
+document.getElementById('btn-save-lyrics').onclick = async () => {
+  if (currentIndex === -1 || !tracks[currentIndex]) return;
+  await dbOps.setLyrics(tracks[currentIndex].name, lyricsTextarea.value);
+  showNotification('Lyrics saved offline!');
+};
+
+// Seek Bar & A-B Looper Loop Check
 audio.ontimeupdate = () => {
   if (!audio.duration) return;
+  if (pointA !== null && pointB !== null && pointB > pointA) {
+    if (audio.currentTime >= pointB) audio.currentTime = pointA;
+  }
   seekBar.value = (audio.currentTime / audio.duration) * 100;
-  const cM = Math.floor(audio.currentTime / 60) || 0;
-  const cS = Math.floor(audio.currentTime % 60) || 0;
-  currTime.textContent = `${cM}:${cS < 10 ? '0' : ''}${cS}`;
-  const dM = Math.floor(audio.duration / 60) || 0;
-  const dS = Math.floor(audio.duration % 60) || 0;
-  durTime.textContent = `${dM}:${dS < 10 ? '0' : ''}${dS}`;
+  currTime.textContent = formatSecs(audio.currentTime);
+  durTime.textContent = formatSecs(audio.duration);
 };
 seekBar.oninput = () => {
   if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
 };
 
-// Reorder List
+// Reorder List in Card
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
   tracks.forEach((trk, idx) => {
@@ -887,7 +1275,13 @@ window.shiftTrack = async (from, delta) => {
   showNotification('Playlist order updated');
 };
 
-// Equalizer
+// Bass Boost & Equalizer
+document.getElementById('slider-bass-boost').oninput = (e) => {
+  const val = parseFloat(e.target.value);
+  document.getElementById('val-bass-boost').textContent = `${val}dB`;
+  if (bassFilterNode) bassFilterNode.gain.value = val;
+};
+
 document.querySelectorAll('[data-band]').forEach((s) => {
   s.oninput = (e) => {
     const b = parseInt(e.target.dataset.band, 10);
@@ -926,9 +1320,10 @@ document.getElementById('btn-reset-eq-card').onclick = () => {
   showNotification('Equalizer reset to VLC preset');
 };
 
-// Initial Boot
+// Initial Boot: Set 20% Volume & Load Data
 initDB().then(async () => {
   await loadAppBranding();
+  await loadDevProfile();
   await loadPlaylists();
   setVolume(20);
 });
