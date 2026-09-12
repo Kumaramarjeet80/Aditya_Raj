@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ammu-music-v90';
+const CACHE_NAME = 'ammu-music-v100';
 const ASSETS = [
   './',
   './index.html',
