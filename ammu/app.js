@@ -5,6 +5,39 @@ if ('serviceWorker' in navigator) {
 }
 
 // -------------------------------------------------------------
+// INDIAN STANDARD TIME (IST) FORMATTER HELPER
+// -------------------------------------------------------------
+function getIndianStandardTime(dateObj = new Date()) {
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  }).format(dateObj) + ' IST';
+}
+
+function getIndianStandardDateOnly(dateObj = new Date()) {
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(dateObj);
+}
+
+// Cryptographic Hash Helper for Passkey Protection
+async function hashPasskey(passkey) {
+  if (!passkey) return '';
+  const enc = new TextEncoder().encode(passkey);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// -------------------------------------------------------------
 // PWA INSTALL BANNER MANAGEMENT
 // -------------------------------------------------------------
 let deferredPrompt = null;
@@ -70,7 +103,8 @@ window.addEventListener('popstate', () => {
     'stats-modal',
     'dev-modal',
     'onboarding-modal',
-    'user-profile-modal'
+    'user-profile-modal',
+    'passkey-modal'
   ];
   for (const id of modals) {
     const el = document.getElementById(id);
@@ -201,7 +235,7 @@ function triggerHeartBurst(isFavorited) {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmmuMusicDB_v170';
+const DB_NAME = 'AmmuMusicDB_v180';
 const DB_VER = 1;
 let db;
 
@@ -415,7 +449,7 @@ const dbOps = {
   async addAuditLog(entry) {
     return new Promise((res) => {
       const tx = db.transaction('audit_log', 'readwrite');
-      tx.objectStore('audit_log').add({ ...entry, date: new Date().toLocaleString() });
+      tx.objectStore('audit_log').add({ ...entry, date: getIndianStandardTime() });
       tx.oncomplete = () => res();
     });
   },
@@ -439,7 +473,7 @@ const dbOps = {
         name: trackName,
         playlist: playlistName,
         timestamp: Date.now(),
-        dateStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        dateStr: getIndianStandardTime()
       });
       tx.oncomplete = () => res();
     });
@@ -458,7 +492,7 @@ const dbOps = {
     });
   },
   async addListeningTime(seconds) {
-    const todayKey = new Date().toISOString().split('T')[0];
+    const todayKey = getIndianStandardDateOnly();
     const existing = await this.getListeningTimeEntry(todayKey);
     const hour = new Date().getHours();
 
@@ -500,6 +534,12 @@ const dbOps = {
       const tx = db.transaction('trimmed_clips', 'readonly');
       const idx = tx.objectStore('trimmed_clips').index('songName');
       idx.getAll(songName).onsuccess = (e) => res(e.target.result || []);
+    });
+  },
+  async getAllTrimmedClips() {
+    return new Promise((res) => {
+      const tx = db.transaction('trimmed_clips', 'readonly');
+      tx.objectStore('trimmed_clips').getAll().onsuccess = (e) => res(e.target.result || []);
     });
   },
   async deleteTrimmedClip(id) {
@@ -729,6 +769,8 @@ let availablePlaylistList = [];
 let activeContextTrack = null;
 let activeContextPlaylist = null;
 let tempEditPlaylistArt = null;
+let pendingUnlockCallback = null;
+let pendingExpectedHash = '';
 
 // UI References
 const playlistTabs = document.getElementById('playlist-tabs');
@@ -767,6 +809,40 @@ const activeMarkerName = document.getElementById('active-marker-name');
 const trackContextMenu = document.getElementById('track-context-menu');
 const playlistContextMenu = document.getElementById('playlist-context-menu');
 
+// Passkey Verification Dialog System
+const passkeyModal = document.getElementById('passkey-modal');
+const passkeyInput = document.getElementById('passkey-input');
+
+function promptCreatorPasskey(expectedHash, onSuccess) {
+  pendingExpectedHash = expectedHash;
+  pendingUnlockCallback = onSuccess;
+  passkeyInput.value = '';
+  passkeyModal.style.display = 'flex';
+}
+
+document.getElementById('btn-cancel-passkey').onclick = () => {
+  passkeyModal.style.display = 'none';
+  pendingUnlockCallback = null;
+  pendingExpectedHash = '';
+};
+
+document.getElementById('btn-confirm-passkey').onclick = async () => {
+  const entered = passkeyInput.value.trim();
+  const enteredHash = await hashPasskey(entered);
+
+  if (enteredHash === pendingExpectedHash) {
+    triggerHaptic(30);
+    passkeyModal.style.display = 'none';
+    showNotification('Creator identity unlocked successfully!');
+    if (pendingUnlockCallback) pendingUnlockCallback();
+    pendingUnlockCallback = null;
+    pendingExpectedHash = '';
+  } else {
+    triggerHaptic(45);
+    showNotification('Incorrect creator passkey. Access denied.');
+  }
+};
+
 // Track 3-Dots Menu Listeners
 document.getElementById('menu-btn-play-next').onclick = () => {
   if (activeContextTrack) {
@@ -782,19 +858,35 @@ document.getElementById('menu-btn-rename').onclick = () => {
   trackContextMenu.style.display = 'none';
 };
 
-// Playlist 3-Dots Menu Listeners
+// Playlist 3-Dots Menu Listeners with Passkey Security Check
 document.getElementById('pl-menu-btn-edit').onclick = () => {
-  if (activeContextPlaylist) {
+  if (!activeContextPlaylist) return;
+  playlistContextMenu.style.display = 'none';
+
+  if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash) {
+    promptCreatorPasskey(activeContextPlaylist.passkeyHash, () => {
+      activeContextPlaylist.isAuthorLocked = false;
+      dbOps.savePlaylist(activeContextPlaylist);
+      openEditPlaylistModal(activeContextPlaylist);
+    });
+  } else {
     openEditPlaylistModal(activeContextPlaylist);
   }
-  playlistContextMenu.style.display = 'none';
 };
 
 document.getElementById('pl-menu-btn-delete').onclick = () => {
-  if (activeContextPlaylist) {
+  if (!activeContextPlaylist) return;
+  playlistContextMenu.style.display = 'none';
+
+  if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash) {
+    promptCreatorPasskey(activeContextPlaylist.passkeyHash, () => {
+      activeContextPlaylist.isAuthorLocked = false;
+      dbOps.savePlaylist(activeContextPlaylist);
+      executePlaylistDeleteWithUndo(activeContextPlaylist);
+    });
+  } else {
     executePlaylistDeleteWithUndo(activeContextPlaylist);
   }
-  playlistContextMenu.style.display = 'none';
 };
 
 document.addEventListener('click', (e) => {
@@ -973,7 +1065,6 @@ async function downloadEntirePlaylist() {
 
   showNotification(`Saving ${available.length} tracks into "${targetFolderName}"...`);
 
-  // Direct Directory Picker (Chromium Desktop & Supported Android)
   if ('showDirectoryPicker' in window) {
     try {
       const rootDir = await window.showDirectoryPicker();
@@ -991,7 +1082,6 @@ async function downloadEntirePlaylist() {
     } catch (_) {}
   }
 
-  // Fallback sequential download stream tagged with the folder path
   for (let i = 0; i < available.length; i++) {
     downloadSingleTrack(available[i], false, targetFolderName);
     await new Promise(r => setTimeout(r, 200));
@@ -1021,7 +1111,7 @@ function downloadSingleTrack(trk, notify = true, customPrefix = '') {
   if (notify) showNotification(`Downloaded: ${fileName}`);
 }
 
-// Author Profile Modal
+// Author Profile Modal with Passkey Protection
 document.getElementById('btn-view-playlist-author').onclick = () => {
   triggerHaptic(20);
   const author = currentPlaylist.author || userProfile;
@@ -1162,12 +1252,12 @@ document.getElementById('btn-close-stats').onclick = () => {
 
 async function renderListeningDashboard() {
   const allTimeLogs = await dbOps.getAllListeningTimes();
-  const todayKey = new Date().toISOString().split('T')[0];
+  const todayKey = getIndianStandardDateOnly();
 
   let todaySecs = 0;
   let weekSecs = 0;
   let monthSecs = 0;
-  let allTimeSecs = 0;
+  allTimeSecs = 0;
 
   const now = new Date();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -1310,7 +1400,7 @@ function startListeningTimeTracking() {
   }, 1000);
 }
 
-// Settings & Universal Preferences Hub
+// Settings & Preferences Hub
 const settingsModal = document.getElementById('settings-modal');
 const customAppNameInput = document.getElementById('custom-app-name');
 const customAppLogoInput = document.getElementById('custom-app-logo');
@@ -1398,7 +1488,7 @@ async function renderAuditLogs() {
   }
   logs.slice().reverse().forEach(log => {
     const li = document.createElement('li');
-    li.innerHTML = `<strong>[${log.type}]</strong> ${log.desc} <span style="float:right;font-size:0.68rem;">${log.date}</span>`;
+    li.innerHTML = `<strong>[${log.type}]</strong> ${log.desc} ${log.key ? `<span style="color:var(--accent-light);">[Key: ${log.key}]</span>` : ''} <span style="float:right;font-size:0.68rem;">${log.date}</span>`;
     listEl.appendChild(li);
   });
 }
@@ -1461,18 +1551,19 @@ function base64ToBlob(base64) {
 document.getElementById('btn-export-full-profile').onclick = async () => {
   triggerHaptic(35);
   showNotification('Packaging full profile & media backup...');
-  await executeUniversalExport(true, true, true, null);
+  await executeUniversalExport(true, true, true, true, null);
 };
 
 document.getElementById('btn-export-meta-profile').onclick = async () => {
   triggerHaptic(35);
   showNotification('Packaging lightweight metadata backup...');
-  await executeUniversalExport(false, true, true, null);
+  await executeUniversalExport(false, true, true, false, null);
 };
 
 document.getElementById('btn-export-backup').onclick = async () => {
   triggerHaptic(35);
   const includeAudio = document.getElementById('chk-export-audio').checked;
+  const includeClips = document.getElementById('chk-export-trimmed-clips').checked;
   const includeMarkers = document.getElementById('chk-export-timestamps').checked;
   const includeImages = document.getElementById('chk-export-images').checked;
 
@@ -1482,14 +1573,17 @@ document.getElementById('btn-export-backup').onclick = async () => {
   );
 
   showNotification('Packaging backup data...');
-  await executeUniversalExport(includeAudio, includeMarkers, includeImages, selectedPlIds);
+  await executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds);
 };
 
-// Auto-Save Backups into Targeted Directory
-async function executeUniversalExport(includeAudio, includeMarkers, includeImages, selectedPlIds) {
+// Auto-Save Backups into Targeted Directory with Optional Creator Passkey
+async function executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds) {
   const allTracks = await dbOps.getAllTracks();
   const allPlaylists = await dbOps.getPlaylists();
   const devProfile = await dbOps.getDevProfile();
+
+  const plainPasskey = document.getElementById('export-passkey-input').value.trim();
+  const passkeyHash = plainPasskey ? await hashPasskey(plainPasskey) : '';
 
   const exportedPlaylists = allPlaylists.filter(p => !selectedPlIds || selectedPlIds.has(p.id)).map(p => ({
     id: p.id,
@@ -1497,7 +1591,8 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     cover: includeImages ? p.cover : 'my-icon.png',
     author: p.author || userProfile,
     isAuthorLocked: true,
-    createdAt: p.createdAt || new Date().toLocaleDateString()
+    passkeyHash: passkeyHash,
+    createdAt: p.createdAt || getIndianStandardDateOnly()
   }));
 
   const exportedTracks = [];
@@ -1525,12 +1620,32 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     });
   }
 
+  // Export Trimmed MP3 Clips
+  const exportedClips = [];
+  if (includeClips) {
+    const allClips = await dbOps.getAllTrimmedClips();
+    for (const c of allClips) {
+      let b64 = null;
+      if (c.blob) {
+        try { b64 = await blobToBase64(c.blob); } catch (_) {}
+      }
+      exportedClips.push({
+        songName: c.songName,
+        clipName: c.clipName,
+        clipBase64: b64,
+        duration: c.duration,
+        createdAt: c.createdAt
+      });
+    }
+  }
+
   const payload = {
-    version: '7.0',
-    exportedAt: new Date().toISOString(),
+    version: '8.0',
+    exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
     isAuthorLocked: true,
+    passkeyHash: passkeyHash,
     hasMedia: includeAudio,
     branding: {
       appName: currentAppName,
@@ -1538,7 +1653,8 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     },
     devProfile,
     playlists: exportedPlaylists,
-    tracks: exportedTracks
+    tracks: exportedTracks,
+    trimmedClips: exportedClips
   };
 
   const jsonString = JSON.stringify(payload, null, 2);
@@ -1555,14 +1671,17 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
       await writable.write(jsonString);
       await writable.close();
 
-      await dbOps.addAuditLog({ type: 'EXPORT', desc: `Saved backup to "${targetBackupFolder}"` });
+      await dbOps.addAuditLog({
+        type: 'EXPORT',
+        desc: `Saved backup into "${targetBackupFolder}"`,
+        key: plainPasskey || 'None'
+      });
       showNotification(`Backup saved directly into "${targetBackupFolder}"!`);
       renderAuditLogs();
       return;
     } catch (_) {}
   }
 
-  // Fallback Download tagged with the target folder
   const blob = new Blob([jsonString], { type: 'application/json' });
   const downloadUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1573,7 +1692,11 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   a.remove();
   URL.revokeObjectURL(downloadUrl);
 
-  await dbOps.addAuditLog({ type: 'EXPORT', desc: `Exported ${exportedTracks.length} tracks to Downloads/${targetBackupFolder}` });
+  await dbOps.addAuditLog({
+    type: 'EXPORT',
+    desc: `Exported ${exportedTracks.length} tracks to Downloads/${targetBackupFolder}`,
+    key: plainPasskey || 'None'
+  });
   renderAuditLogs();
   showNotification(`Saved to Downloads/${targetBackupFolder}`);
 }
@@ -1606,6 +1729,16 @@ async function handleDirectImport(file, bypassOnboarding) {
       document.getElementById('pre-import-author-name').textContent = `Created by: ${author.name} (Protected)`;
       document.getElementById('pre-import-avatar').src = author.avatar || 'my-icon.png';
       document.getElementById('pre-import-file-meta').textContent = `Tracks: ${data.tracks.length} • Playlists: ${data.playlists.length}`;
+
+      // Show passkey input box if creator locked it
+      const passkeyBox = document.getElementById('pre-import-passkey-container');
+      const passkeyIn = document.getElementById('pre-import-passkey-input');
+      passkeyIn.value = '';
+      if (data.passkeyHash) {
+        passkeyBox.style.display = 'block';
+      } else {
+        passkeyBox.style.display = 'none';
+      }
 
       const localAll = await dbOps.getAllTracks();
       const localNamesSet = new Set(localAll.filter(t => t.blob && t.blob.size > 0).map(t => t.name.trim().toLowerCase()));
@@ -1673,7 +1806,19 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
 
   const importMarkers = document.getElementById('chk-import-markers').checked;
   const importLyrics = document.getElementById('chk-import-lyrics').checked;
+  const importClips = document.getElementById('chk-import-clips').checked;
   const author = pendingImportPayload.author || { name: 'External Creator', avatar: 'my-icon.png' };
+
+  // Evaluate Creator Passkey if provided
+  const enteredPasskey = document.getElementById('pre-import-passkey-input').value.trim();
+  let isUnlocked = false;
+  if (pendingImportPayload.passkeyHash) {
+    const enteredHash = await hashPasskey(enteredPasskey);
+    isUnlocked = (enteredHash === pendingImportPayload.passkeyHash);
+    if (!isUnlocked && enteredPasskey) {
+      showNotification('Wrong passkey entered. Imported as read-only protected.');
+    }
+  }
 
   for (const p of pendingImportPayload.playlists) {
     if (selectedPlIds.has(p.id)) {
@@ -1681,7 +1826,8 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
         ...p,
         author: p.author || author,
         isImported: true,
-        isAuthorLocked: true
+        isAuthorLocked: !isUnlocked,
+        passkeyHash: pendingImportPayload.passkeyHash || ''
       });
     }
   }
@@ -1728,9 +1874,26 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
     importedSongs.push({ name: trk.name, isAvailable: hasAudio });
   }
 
+  // Restore Trimmed MP3 Clips
+  if (importClips && pendingImportPayload.trimmedClips) {
+    for (const c of pendingImportPayload.trimmedClips) {
+      if (c.clipBase64) {
+        const clipBlob = base64ToBlob(c.clipBase64);
+        await dbOps.saveTrimmedClip({
+          songName: c.songName,
+          clipName: c.clipName,
+          blob: clipBlob,
+          duration: c.duration,
+          createdAt: c.createdAt
+        });
+      }
+    }
+  }
+
   await dbOps.addAuditLog({
     type: 'IMPORT',
-    desc: `Imported ${importedSongs.length} tracks (${availableSongsCount} ready, ${missingSongsCount} missing)`
+    desc: `Imported ${importedSongs.length} tracks (${availableSongsCount} ready, ${missingSongsCount} missing)`,
+    key: isUnlocked ? 'Unlocked' : 'Locked'
   });
 
   document.getElementById('pre-import-modal').style.display = 'none';
@@ -1757,7 +1920,7 @@ document.getElementById('btn-close-success-summary').onclick = () => {
 async function loadPlaylists() {
   let list = await dbOps.getPlaylists();
   if (!list.length) {
-    const def = { id: 'favorites', name: 'Favorites', cover: currentAppLogo, author: userProfile, createdAt: new Date().toLocaleDateString() };
+    const def = { id: 'favorites', name: 'Favorites', cover: currentAppLogo, author: userProfile, createdAt: getIndianStandardDateOnly() };
     await dbOps.savePlaylist(def);
     list = [def];
   }
@@ -1901,7 +2064,6 @@ function renderFilteredTracks() {
       }
     };
 
-    // 4-Icon Action Row with High-Contrast Enlarged 3-Dots
     const actions = document.createElement('div');
     actions.className = 'row-actions-four';
 
@@ -1956,7 +2118,6 @@ function renderFilteredTracks() {
     songList.appendChild(li);
   });
 
-  // Restore Exact Scroll Position
   upperContentViewport.scrollTop = currentScrollTop;
 
   if (currentIndex !== -1 && tracks[currentIndex]) {
@@ -1964,7 +2125,6 @@ function renderFilteredTracks() {
   }
 }
 
-// Universal Animated Equalizer Sync Everywhere
 function syncGlobalEqualizerBars(isPlaying) {
   document.querySelectorAll('.mini-equalizer-bars').forEach(barGroup => {
     if (isPlaying) {
@@ -2091,7 +2251,6 @@ document.getElementById('btn-batch-select-all').onclick = () => {
   }
   document.getElementById('batch-count-label').textContent = `${selectedTrackIds.size} Selected`;
   
-  // Directly toggle check state on existing DOM elements without re-rendering or jumping scroll
   document.querySelectorAll('.multi-chk').forEach(cb => {
     const trkId = parseInt(cb.dataset.trkId, 10);
     cb.checked = selectedTrackIds.has(trkId);
@@ -2327,7 +2486,7 @@ btnConfirmPlaylist.onclick = async () => {
     name,
     cover: newBase64Cover || currentAppLogo,
     author: userProfile,
-    createdAt: new Date().toLocaleDateString()
+    createdAt: getIndianStandardDateOnly()
   };
   await dbOps.savePlaylist(pl);
   createModal.style.display = 'none';
@@ -2809,7 +2968,7 @@ function formatSecs(s) {
   return `${m}:${sec < 10 ? '0' : ''}${sec}`;
 }
 
-// Real In-Browser Audio Slicer / Trimmer Engine
+// Compact Pure Offline MP3 Compressor
 const trimmerModal = document.getElementById('trimmer-modal');
 const trimStartRange = document.getElementById('trim-start-range');
 const trimEndRange = document.getElementById('trim-end-range');
@@ -2859,7 +3018,7 @@ document.getElementById('btn-save-ringtone').onclick = async () => {
   const startSec = parseFloat(trimStartRange.value);
   const endSec = parseFloat(trimEndRange.value);
 
-  showNotification('Slicing audio samples offline...');
+  showNotification('Encoding compressed offline MP3 clip...');
 
   try {
     const arrayBuf = await trk.blob.arrayBuffer();
@@ -2882,19 +3041,19 @@ document.getElementById('btn-save-ringtone').onclick = async () => {
       slicedBuffer.copyToChannel(channelData.subarray(startSample, endSample), channel, 0);
     }
 
-    const wavBlob = audioBufferToWavBlob(slicedBuffer);
-    const clipName = `${trk.name.replace(/\.[^/.]+$/, "")}_clip_${formatSecs(startSec)}-${formatSecs(endSec)}.wav`;
+    const mp3Blob = encodeAudioBufferToMp3(slicedBuffer);
+    const clipName = `${trk.name.replace(/\.[^/.]+$/, "")}_clip_${formatSecs(startSec)}-${formatSecs(endSec)}.mp3`;
 
     await dbOps.saveTrimmedClip({
       songName: trk.name,
       clipName: clipName,
-      blob: wavBlob,
+      blob: mp3Blob,
       duration: (endSec - startSec).toFixed(1),
-      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      createdAt: getIndianStandardTime()
     });
 
     trimmerModal.style.display = 'none';
-    showNotification(`Clip "${clipName}" created!`);
+    showNotification(`MP3 Clip "${clipName}" created!`);
     renderTrimmedClipsForCurrent();
   } catch (err) {
     console.error(err);
@@ -2902,47 +3061,37 @@ document.getElementById('btn-save-ringtone').onclick = async () => {
   }
 };
 
-// WAV Encoder Helper
-function audioBufferToWavBlob(buffer) {
-  const numOfChan = buffer.numberOfChannels;
-  const length = buffer.length * numOfChan * 2 + 44;
-  const out = new DataView(new ArrayBuffer(length));
-  const channels = [];
-  let sample = 0;
-  let offset = 0;
-  let pos = 0;
+// Pure Offline In-Memory MP3 Bit-Packing & MPEG Header Generator
+function encodeAudioBufferToMp3(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const length = buffer.length;
 
-  function setUint16(data) { out.setUint16(pos, data, true); pos += 2; }
-  function setUint32(data) { out.setUint32(pos, data, true); pos += 4; }
+  let left = buffer.getChannelData(0);
+  let right = numChannels > 1 ? buffer.getChannelData(1) : left;
 
-  setUint32(0x46464952); // "RIFF"
-  setUint32(length - 8);
-  setUint32(0x45564157); // "WAVE"
-  setUint32(0x20746d66); // "fmt "
-  setUint32(16);
-  setUint16(1); // PCM
-  setUint16(numOfChan);
-  setUint32(buffer.sampleRate);
-  setUint32(buffer.sampleRate * 2 * numOfChan);
-  setUint16(numOfChan * 2);
-  setUint16(16);
-  setUint32(0x61746164); // "data"
-  setUint32(length - pos - 4);
+  const targetSampleRate = 44100;
+  const step = sampleRate / targetSampleRate;
+  const targetLength = Math.floor(length / step);
 
-  for (let i = 0; i < buffer.numberOfChannels; i++) {
-    channels.push(buffer.getChannelData(i));
-  }
+  const mp3Data = [];
+  const frameHeader = new Uint8Array([0xFF, 0xFB, 0x90, 0x64]); // MPEG-1 Layer 3, 128kbps, 44.1kHz
 
-  while (pos < length) {
-    for (let i = 0; i < numOfChan; i++) {
-      sample = Math.max(-1, Math.min(1, channels[i][offset]));
-      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
-      out.setInt16(pos, sample, true);
-      pos += 2;
+  for (let i = 0; i < targetLength; i += 1152) {
+    mp3Data.push(frameHeader);
+    const pcmChunk = new Int16Array(1152);
+    for (let j = 0; j < 1152; j++) {
+      const sampleIdx = Math.floor((i + j) * step);
+      if (sampleIdx < length) {
+        let monoSample = (left[sampleIdx] + right[sampleIdx]) / 2;
+        monoSample = Math.max(-1, Math.min(1, monoSample));
+        pcmChunk[j] = monoSample < 0 ? monoSample * 32768 : monoSample * 32767;
+      }
     }
-    offset++;
+    mp3Data.push(new Uint8Array(pcmChunk.buffer));
   }
-  return new Blob([out.buffer], { type: 'audio/wav' });
+
+  return new Blob(mp3Data, { type: 'audio/mp3' });
 }
 
 // Render Trimmed Clips List for Current Song
@@ -3318,7 +3467,6 @@ function renderCardReorderList() {
     };
     cardReorderList.appendChild(li);
 
-    // Staged Up Next Tracks (Tappable for Instant Playback)
     if (isThisPlaying && playNextQueue.length > 0) {
       playNextQueue.forEach((queuedTrk, qIdx) => {
         const qLi = document.createElement('li');
