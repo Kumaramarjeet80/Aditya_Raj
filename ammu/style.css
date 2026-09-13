@@ -151,18 +151,9 @@ body {
 }
 
 @keyframes floatHeart {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(0.6) rotate(0deg);
-  }
-  50% {
-    opacity: 0.9;
-    transform: translateY(-80px) scale(1.3) rotate(15deg);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-160px) scale(1.6) rotate(-20deg);
-  }
+  0% { opacity: 1; transform: translateY(0) scale(0.6) rotate(0deg); }
+  50% { opacity: 0.9; transform: translateY(-80px) scale(1.3) rotate(15deg); }
+  100% { opacity: 0; transform: translateY(-160px) scale(1.6) rotate(-20deg); }
 }
 
 .app-top {
@@ -298,7 +289,7 @@ body {
   object-fit: cover;
 }
 
-/* Sticky Toolbar & Quick-Clear Search */
+/* Sticky Toolbar */
 .search-sort-bar {
   position: sticky;
   top: 0;
@@ -360,7 +351,7 @@ body {
   font-weight: 600;
 }
 
-/* UPPER CONTENT: SONG LIST EXTENDS TO SCREEN BOTTOM */
+/* Song List Viewport */
 .upper-content {
   flex: 1;
   overflow-y: auto;
@@ -385,11 +376,51 @@ body {
   gap: 8px;
 }
 
-/* Active In-Card Playlist Scroll List Height Doubled to 440px */
+/* Active Drawer Playlist Container (Exact Screenshot Style) */
 .card-compact-list {
   max-height: 440px;
   overflow-y: auto;
   padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Drawer Card Item Styled to Match User's Screenshot */
+.drawer-track-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0c1017 !important;
+  border: 1px solid #1e2638 !important;
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease;
+}
+
+.drawer-track-row.now-playing-active {
+  border: 1.5px solid #2ea043 !important;
+  background: #0e1d16 !important;
+  box-shadow: 0 0 10px rgba(46, 160, 67, 0.4);
+}
+
+.drawer-reorder-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.drawer-shift-btn {
+  background: #151b26;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  cursor: pointer;
 }
 
 .card-credit-footer {
@@ -407,6 +438,7 @@ body {
   color: var(--accent-light);
 }
 
+/* Standard Main List Song Row */
 .song-row {
   display: flex;
   align-items: center;
@@ -426,13 +458,6 @@ body {
   background: #14231b;
 }
 
-.song-row.playing-in-drawer {
-  border: 2px solid var(--accent) !important;
-  background: #132b1d !important;
-  box-shadow: 0 0 12px rgba(46, 160, 67, 0.45);
-}
-
-/* Ghost / Unavailable Song Highlighting */
 .song-row.missing-storage {
   border: 1.5px solid #f85149 !important;
   background: rgba(248, 81, 73, 0.1) !important;
@@ -546,27 +571,51 @@ body {
   color: var(--text-muted);
 }
 
-.row-actions {
+/* 4-Icon Row Actions */
+.row-actions-four {
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-.btn-del {
-  background: transparent;
-  color: #f85149;
-  border: none;
-  font-size: 1.05rem;
-  padding: 4px;
-  cursor: pointer;
+  gap: 4px;
 }
 
 .btn-icon-sm {
   background: transparent;
   border: none;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   cursor: pointer;
   padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 3-Dot Popup Context Menu */
+.context-menu-pop {
+  position: fixed;
+  background: #1b2638;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 10000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-pop-item {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.82rem;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.menu-pop-item:hover {
+  background: #233147;
 }
 
 /* Bottom Mini Player Bar */
@@ -664,7 +713,6 @@ body {
   box-shadow: 0 3px 12px rgba(46, 160, 67, 0.45);
 }
 
-/* FOOTER DIRECTLY ABOVE THE BOTTOM PLAYER BAR */
 .app-footer {
   text-align: center;
   font-size: 0.75rem;
@@ -677,7 +725,7 @@ body {
   pointer-events: auto;
 }
 
-/* FULLSCREEN PLAYER CARD */
+/* Fullscreen Player Card */
 .fullscreen-player-card {
   position: fixed;
   inset: 0;
@@ -984,7 +1032,6 @@ body {
   box-shadow: 0 4px 16px rgba(46, 160, 67, 0.5);
 }
 
-/* STICKY TOOLBAR */
 .card-tool-row {
   display: flex;
   width: 100%;
@@ -1015,7 +1062,6 @@ body {
   border-color: var(--accent-light);
 }
 
-/* LOWER SCROLLABLE DRAWER CONTAINER */
 .card-scrollable-drawers {
   flex: 1;
   overflow-y: auto;
@@ -1495,12 +1541,6 @@ body {
 .welcome-icon {
   font-size: 2.6rem;
   margin-bottom: 6px;
-}
-
-.credit-highlight {
-  color: var(--accent-light);
-  margin: 8px 0;
-  font-size: 0.95rem;
 }
 
 .modal-desc {
