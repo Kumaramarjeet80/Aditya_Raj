@@ -1641,3 +1641,32 @@ body {
   gap: 8px;
   margin-top: 14px;
 }
+/* 3-line layout for bottom mini-player */
+.mini-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.mini-output-line {
+  font-size: 0.68rem;
+  color: var(--accent-light);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fullscreen card output device badge placement */
+.fullscreen-output-row {
+  margin-top: 5px;
+  display: flex;
+  justify-content: center;
+}
+
+.fullscreen-output-row .device-output-badge {
+  font-size: 0.72rem;
+  padding: 3px 10px;
+}
