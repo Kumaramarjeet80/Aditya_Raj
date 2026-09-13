@@ -674,7 +674,7 @@ let currentPlaylist = { id: 'all', name: 'All', cover: '' };
 let tracks = [];
 let allTracksRaw = [];
 let currentIndex = -1;
-let currentAppLogo = 'ammu-icon.png';
+let currentAppLogo = 'my-icon.png';
 let currentAppName = 'Ammu';
 let playMode = 'all';
 let speedList = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
@@ -685,7 +685,7 @@ let pointB = null;
 let trackToRename = null;
 let currentSongTimestamps = [];
 let pendingTimestampTime = 0;
-let userProfile = { name: 'Amarjeet Kumar', avatar: 'ammu-icon.png' };
+let userProfile = { name: 'Amarjeet Kumar', avatar: 'my-icon.png' };
 let multiSelectMode = false;
 let selectedTrackIds = new Set();
 let artModeIndex = 0;
@@ -753,7 +753,7 @@ document.getElementById('onboarding-avatar').onchange = async (e) => {
 
 document.getElementById('btn-complete-onboarding').onclick = async () => {
   const name = document.getElementById('onboarding-name').value.trim() || 'Amarjeet Kumar';
-  const avatar = document.getElementById('onboarding-avatar-preview').src || 'ammu-icon.png';
+  const avatar = document.getElementById('onboarding-avatar-preview').src || 'my-icon.png';
   userProfile = { name, avatar };
   await dbOps.setUserProfile(userProfile);
   updateUserProfileLabels();
@@ -782,7 +782,7 @@ const userEditAvatarPreview = document.getElementById('user-edit-avatar-preview'
 document.getElementById('btn-open-edit-user-profile').onclick = () => {
   triggerHaptic(20);
   editUserNameInput.value = userProfile.name;
-  userEditAvatarPreview.src = userProfile.avatar || 'ammu-icon.png';
+  userEditAvatarPreview.src = userProfile.avatar || 'my-icon.png';
   tempUserAvatarBase64 = userProfile.avatar;
   userProfileModal.style.display = 'flex';
 };
@@ -865,7 +865,7 @@ document.getElementById('btn-view-playlist-author').onclick = () => {
   triggerHaptic(20);
   const author = currentPlaylist.author || userProfile;
   document.getElementById('author-name-display').textContent = author.name;
-  document.getElementById('author-avatar-display').src = author.avatar || 'ammu-icon.png';
+  document.getElementById('author-avatar-display').src = author.avatar || 'my-icon.png';
   document.getElementById('author-pl-name').textContent = currentPlaylist.name;
   document.getElementById('author-track-count').textContent = tracks.length;
   document.getElementById('author-created-date').textContent = currentPlaylist.createdAt || 'Local Storage';
@@ -936,7 +936,7 @@ let devData = {
   bio: 'Built with passion for high-fidelity audio, offline-first Web Audio DSP, and clean UX.',
   location: 'Bihar, India',
   email: 'amarjeet.kumar.dev@gmail.com',
-  avatar: 'ammu-icon.png'
+  avatar: 'my-icon.png'
 };
 
 async function loadDevProfile() {
@@ -951,7 +951,7 @@ function applyDevProfileUI() {
   devBioDisplay.textContent = devData.bio;
   devLocationDisplay.textContent = devData.location;
   devEmailDisplay.textContent = devData.email;
-  devAvatarImg.src = devData.avatar || 'ammu-icon.png';
+  devAvatarImg.src = devData.avatar || 'my-icon.png';
 
   editDevName.value = devData.name;
   editDevTitle.value = devData.title;
@@ -1340,7 +1340,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   const exportedPlaylists = allPlaylists.filter(p => !selectedPlIds || selectedPlIds.has(p.id)).map(p => ({
     id: p.id,
     name: p.name,
-    cover: includeImages ? p.cover : 'ammu-icon.png',
+    cover: includeImages ? p.cover : 'my-icon.png',
     author: p.author || userProfile,
     isAuthorLocked: true,
     createdAt: p.createdAt || new Date().toLocaleDateString()
@@ -1380,7 +1380,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     hasMedia: includeAudio,
     branding: {
       appName: currentAppName,
-      appLogo: includeImages ? currentAppLogo : 'ammu-icon.png'
+      appLogo: includeImages ? currentAppLogo : 'my-icon.png'
     },
     devProfile,
     playlists: exportedPlaylists,
@@ -1446,9 +1446,9 @@ async function handleDirectImport(file, bypassOnboarding) {
 
       pendingImportPayload = data;
 
-      const author = data.author || { name: 'Unknown Author', avatar: 'ammu-icon.png' };
+      const author = data.author || { name: 'Unknown Author', avatar: 'my-icon.png' };
       document.getElementById('pre-import-author-name').textContent = `Created by: ${author.name} (Protected)`;
-      document.getElementById('pre-import-avatar').src = author.avatar || 'ammu-icon.png';
+      document.getElementById('pre-import-avatar').src = author.avatar || 'my-icon.png';
       document.getElementById('pre-import-file-meta').textContent = `Tracks: ${data.tracks.length} • Playlists: ${data.playlists.length}`;
 
       // Run Storage Availability Match Audit
@@ -1520,7 +1520,7 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
 
   const importMarkers = document.getElementById('chk-import-markers').checked;
   const importLyrics = document.getElementById('chk-import-lyrics').checked;
-  const author = pendingImportPayload.author || { name: 'External Creator', avatar: 'ammu-icon.png' };
+  const author = pendingImportPayload.author || { name: 'External Creator', avatar: 'my-icon.png' };
 
   for (const p of pendingImportPayload.playlists) {
     if (selectedPlIds.has(p.id)) {
@@ -1583,7 +1583,7 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
   document.getElementById('pre-import-modal').style.display = 'none';
   await loadPlaylists();
 
-  document.getElementById('success-author-avatar').src = author.avatar || 'ammu-icon.png';
+  document.getElementById('success-author-avatar').src = author.avatar || 'my-icon.png';
   document.getElementById('success-author-label').textContent = `Curated by ${author.name} • ${availableSongsCount} Ready, ${missingSongsCount} Missing`;
   
   const summaryBox = document.getElementById('success-songs-summary');
