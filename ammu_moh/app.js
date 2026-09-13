@@ -1047,6 +1047,7 @@ document.getElementById('btn-open-edit-user-profile').onclick = () => {
 
 document.getElementById('btn-cancel-user-profile').onclick = () => {
   userProfileModal.style.display = 'none';
+  settingsModal.style.display = 'flex'; // Reopens Settings on cancel
 };
 
 editUserAvatarInput.onchange = async (e) => {
@@ -1065,10 +1066,10 @@ document.getElementById('btn-save-user-profile').onclick = async () => {
   await dbOps.setUserProfile(userProfile);
   updateUserProfileLabels();
   userProfileModal.style.display = 'none';
+  settingsModal.style.display = 'flex'; // Reopens Settings with updated info
   showNotification('Listener profile updated successfully!');
   await loadPlaylists();
 };
-
 // Direct Download Execution Straight to Downloads
 async function downloadEntirePlaylist() {
   triggerHaptic(35);
