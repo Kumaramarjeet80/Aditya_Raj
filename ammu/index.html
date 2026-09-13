@@ -13,13 +13,15 @@
   <link id="app-favicon" rel="icon" type="image/png" href="my-icon.png" />
 </head>
 <body>
-  <!-- Toast Notification Container Directly Above Player Bar -->
   <div id="toast-container" class="toast-container"></div>
-
-  <!-- Fullscreen Floating Heart Animation Overlay -->
   <div id="heart-burst-overlay" class="heart-burst-overlay" style="display:none;"></div>
 
-  <!-- Persistent Install Helper Banner -->
+  <!-- Context Menu Popup for 3-Dot Action -->
+  <div id="track-context-menu" class="context-menu-pop" style="display:none;">
+    <button id="menu-btn-play-next" class="menu-pop-item">⏭️ Play Next</button>
+    <button id="menu-btn-rename" class="menu-pop-item">✏️ Rename Track</button>
+  </div>
+
   <div id="persistent-install-banner" class="install-banner-bar" style="display:none;">
     <div class="install-banner-info">
       <img src="my-icon.png" class="install-banner-icon" alt="App Icon" />
@@ -34,14 +36,12 @@
     </div>
   </div>
 
-  <!-- Floating Resume State Notification Chip -->
   <div id="resume-playback-chip" class="resume-chip" style="display:none;">
     <span id="resume-chip-text">Resume last session?</span>
     <button id="btn-resume-session" class="btn-primary-sm">Resume</button>
     <button id="btn-dismiss-resume" class="btn-dim-sm">✕</button>
   </div>
 
-  <!-- First-Launch Onboarding Profile Setup Modal with Profile Import Option -->
   <div id="onboarding-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box text-center">
       <div class="welcome-icon">🎧</div>
@@ -55,7 +55,7 @@
         <label for="onboarding-avatar">Profile Photo</label>
         <input type="file" id="onboarding-avatar" accept="image/*" />
         <div class="preview-row">
-          <img id="onboarding-avatar-preview" src="ammu-icon.png" alt="Preview" />
+          <img id="onboarding-avatar-preview" src="my-icon.png" alt="Preview" />
           <span>Upload avatar (Optional)</span>
         </div>
       </div>
@@ -67,7 +67,6 @@
     </div>
   </div>
 
-  <!-- Edit User Profile Modal (Anytime Accessible) -->
   <div id="user-profile-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box text-center">
       <h3>👤 Edit Listener Profile</h3>
@@ -88,48 +87,27 @@
     </div>
   </div>
 
-  <!-- Listening Analytics & History Modal -->
   <div id="stats-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box modal-box-large">
       <div class="panel-header-row">
         <h3>📊 Listening Insights & Analytics</h3>
         <button id="btn-close-stats" class="btn-dim-sm">✕</button>
       </div>
-
-      <!-- Time Metrics Cards -->
       <div class="stats-time-grid">
-        <div class="stat-card">
-          <span class="stat-num" id="stat-time-today">0m</span>
-          <span class="stat-lbl">Played Today</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-num" id="stat-time-week">0m</span>
-          <span class="stat-lbl">This Week</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-num" id="stat-time-month">0h</span>
-          <span class="stat-lbl">This Month</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-num" id="stat-time-all">0h</span>
-          <span class="stat-lbl">All-Time Play</span>
-        </div>
+        <div class="stat-card"><span class="stat-num" id="stat-time-today">0m</span><span class="stat-lbl">Played Today</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-time-week">0m</span><span class="stat-lbl">This Week</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-time-month">0h</span><span class="stat-lbl">This Month</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-time-all">0h</span><span class="stat-lbl">All-Time Play</span></div>
       </div>
-
-      <!-- Peak Routine & Milestones -->
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>🏆 Milestone Badges & Routine</h4>
         <p id="stat-peak-hour-lbl" style="font-size:0.75rem;color:var(--accent-light);margin-bottom:6px;">Peak listening time: Calculating...</p>
         <div id="milestone-badges-row" class="badges-row"></div>
       </div>
-
-      <!-- Top 5 Most Replayed Tracks (Clickable to Play) -->
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>🔥 Top 5 Most Replayed Songs (Tap to Play)</h4>
         <ul id="stats-top-songs-list" class="history-list-box clickable-stat-list" style="max-height:130px;margin-top:6px;"></ul>
       </div>
-
-      <!-- Chronological Playback Timeline (Clickable to Play) -->
       <div class="backup-management-box" style="margin-top:10px;">
         <div class="panel-header-row">
           <h4 style="margin:0;">🕒 Recent Playback History (Tap to Play)</h4>
@@ -140,7 +118,6 @@
     </div>
   </div>
 
-  <!-- Playlist Author Profile Details Modal -->
   <div id="author-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box text-center">
       <img id="author-avatar-display" class="dev-avatar" src="my-icon.png" alt="Author" style="margin:0 auto 10px auto;" />
@@ -151,18 +128,14 @@
         <p>📊 <strong>Total Tracks:</strong> <span id="author-track-count">0</span></p>
         <p>📅 <strong>Created:</strong> <span id="author-created-date">Offline</span></p>
       </div>
-
-      <!-- Direct Action to Save Songs to Phone Storage -->
       <button id="btn-download-playlist-to-storage" class="btn-primary-large" style="margin-top:12px;">📁 Save Songs to Device Storage</button>
       <p style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Creates a folder named "[Username]'s music taste"</p>
-
       <div class="modal-actions" style="margin-top:12px;">
         <button type="button" id="btn-close-author" class="btn-action">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- Developer Profile & Portfolio Modal -->
   <div id="dev-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box dev-profile-box">
       <div class="dev-header">
@@ -186,18 +159,12 @@
         <details class="dev-edit-drawer" style="margin-top:12px;">
           <summary style="cursor:pointer;font-size:0.78rem;color:var(--accent-light);">✏️ Edit Developer Card Info</summary>
           <div class="form-group" style="margin-top:8px;">
-            <label>Full Name</label>
-            <input type="text" id="edit-dev-name" class="input-text" />
-            <label>Tagline / Title</label>
-            <input type="text" id="edit-dev-title" class="input-text" />
-            <label>Bio</label>
-            <textarea id="edit-dev-bio" class="input-text" style="height:60px;resize:none;"></textarea>
-            <label>Location</label>
-            <input type="text" id="edit-dev-location" class="input-text" />
-            <label>Email Address</label>
-            <input type="text" id="edit-dev-email" class="input-text" />
-            <label>Avatar Photo</label>
-            <input type="file" id="edit-dev-avatar" accept="image/*" />
+            <label>Full Name</label><input type="text" id="edit-dev-name" class="input-text" />
+            <label>Tagline / Title</label><input type="text" id="edit-dev-title" class="input-text" />
+            <label>Bio</label><textarea id="edit-dev-bio" class="input-text" style="height:60px;resize:none;"></textarea>
+            <label>Location</label><input type="text" id="edit-dev-location" class="input-text" />
+            <label>Email Address</label><input type="text" id="edit-dev-email" class="input-text" />
+            <label>Avatar Photo</label><input type="file" id="edit-dev-avatar" accept="image/*" />
             <button id="btn-save-dev-profile" class="btn-primary-large" style="margin-top:8px;padding:8px;">Save Developer Info</button>
           </div>
         </details>
@@ -208,7 +175,6 @@
     </div>
   </div>
 
-  <!-- Studio Settings & Universal Data Backup Modal -->
   <div id="settings-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box modal-box-large">
       <h3>⚙️ Studio Preferences & Universal Data Center</h3>
@@ -239,7 +205,6 @@
         </label>
       </div>
 
-      <!-- Quick Edit User Profile Trigger -->
       <div class="backup-management-box">
         <div class="panel-header-row">
           <h4>👤 Listener Identity</h4>
@@ -248,7 +213,6 @@
         <p id="settings-current-user-lbl" style="font-size:0.75rem;color:var(--text-muted);">Active listener: Amarjeet Kumar</p>
       </div>
 
-      <!-- Complete Profile & Data Exporter -->
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>📦 Complete Profile & Library Backup</h4>
         <p style="font-size:0.75rem;color:var(--text-muted);margin:4px 0 8px 0;">Export full profile, songs, playlists, history, and markers.</p>
@@ -258,25 +222,21 @@
         </div>
       </div>
 
-      <!-- Granular Export Engine -->
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>📦 Selective Library & Playlist Export</h4>
         <div class="export-options-box">
           <label style="font-weight:600;display:block;margin-bottom:4px;">Playlists to Include:</label>
           <div id="export-playlist-checklist" class="mini-checklist-box"></div>
-
           <label style="font-weight:600;display:block;margin-top:6px;margin-bottom:4px;">Export Content:</label>
-          <label class="checkbox-label"><input type="checkbox" id="chk-export-audio" checked /> Include Song Audio Files (Uncheck for tiny metadata backup)</label>
+          <label class="checkbox-label"><input type="checkbox" id="chk-export-audio" checked /> Include Song Audio Files</label>
           <label class="checkbox-label"><input type="checkbox" id="chk-export-timestamps" checked /> Include Saved Timestamps / Markers</label>
           <label class="checkbox-label"><input type="checkbox" id="chk-export-images" checked /> Include Custom Covers & App Logos</label>
         </div>
-
         <div class="backup-btn-row">
           <button id="btn-export-backup" class="btn-primary-large" style="flex:1;">💾 Export Backup</button>
         </div>
       </div>
 
-      <!-- Granular Import Engine -->
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>📥 Restore Backup</h4>
         <p style="font-size:0.75rem;color:var(--text-muted);margin:4px 0 8px 0;">Preview files and selectively import playlists.</p>
@@ -286,7 +246,6 @@
         </div>
       </div>
 
-      <!-- Audit History -->
       <div class="backup-management-box" style="margin-top:10px;">
         <div class="panel-header-row">
           <h4 style="margin:0;">📜 Export / Import Activity Audit</h4>
@@ -302,7 +261,6 @@
     </div>
   </div>
 
-  <!-- Pre-Import Verification & Storage Audit Inspection Modal -->
   <div id="pre-import-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box modal-box-large">
       <h3>🔍 Storage Matcher & Verification</h3>
@@ -313,28 +271,22 @@
           <p id="pre-import-file-meta" style="font-size:0.75rem;color:var(--text-muted);">Payload info</p>
         </div>
       </div>
-
-      <!-- Storage Availability Summary Badges -->
       <div class="storage-audit-badges-row">
         <span class="audit-badge badge-green" id="audit-badge-available">✓ 0 Available</span>
         <span class="audit-badge badge-red" id="audit-badge-missing">✕ 0 Not in Storage</span>
       </div>
-
       <div class="form-group">
         <label>Storage Match Audit:</label>
         <div id="pre-import-audit-checklist" class="mini-checklist-box" style="max-height:120px;"></div>
       </div>
-
       <div class="form-group">
         <label>Select Playlists to Import:</label>
         <div id="pre-import-playlist-list" class="mini-checklist-box"></div>
       </div>
-
       <div class="form-group">
         <label class="checkbox-label"><input type="checkbox" id="chk-import-markers" checked /> Import Timestamp Markers</label>
         <label class="checkbox-label"><input type="checkbox" id="chk-import-lyrics" checked /> Import Offline Lyrics</label>
       </div>
-
       <div class="modal-actions">
         <button type="button" id="btn-cancel-pre-import" class="btn-action">Cancel</button>
         <button type="button" id="btn-confirm-final-import" class="btn-primary-large" style="width:auto;padding:10px 20px;">Confirm & Import</button>
@@ -342,7 +294,6 @@
     </div>
   </div>
 
-  <!-- Import Success Summary Window -->
   <div id="import-success-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box text-center">
       <div style="font-size:2.8rem;margin-bottom:4px;">🎉</div>
@@ -354,7 +305,6 @@
     </div>
   </div>
 
-  <!-- Audio Trimmer Modal -->
   <div id="trimmer-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
       <h3>✂️ Audio Trimmer & Ringtone Maker</h3>
@@ -374,7 +324,6 @@
     </div>
   </div>
 
-  <!-- Track Rename Modal -->
   <div id="rename-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
       <h3>✏️ Rename Track</h3>
@@ -389,12 +338,11 @@
     </div>
   </div>
 
-  <!-- New Timestamp Bookmark Name Modal -->
   <div id="timestamp-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
       <h3>⏱️ Save Timestamp</h3>
       <div class="form-group">
-        <label for="timestamp-name-input">Marker Name (e.g. Guitar Solo, Drop, Chorus)</label>
+        <label for="timestamp-name-input">Marker Name</label>
         <input type="text" id="timestamp-name-input" class="input-text" placeholder="Chorus / Best Part" autocomplete="off" />
         <small id="timestamp-time-preview" style="color:var(--accent-light);font-size:0.8rem;margin-top:4px;">At: 0:00</small>
       </div>
@@ -405,7 +353,6 @@
     </div>
   </div>
 
-  <!-- Create Playlist Modal (with Playlist Import Button Inside) -->
   <div id="playlist-create-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
       <h3>Create New Playlist</h3>
@@ -425,8 +372,6 @@
         <button type="button" id="btn-cancel-playlist" class="btn-action">Cancel</button>
         <button type="button" id="btn-confirm-playlist" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Create</button>
       </div>
-
-      <!-- Secondary Playlist Import Button -->
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px;">
         <label class="btn-action" for="playlist-modal-import-file" style="display:block;cursor:pointer;text-align:center;font-size:0.8rem;">📥 Import Shared Playlist File (.json)</label>
         <input type="file" id="playlist-modal-import-file" accept=".json" style="display:none;" />
@@ -434,10 +379,8 @@
     </div>
   </div>
 
-  <!-- Hidden Cover Image Picker -->
   <input type="file" id="edit-cover-input" accept="image/*" style="display:none;" />
 
-  <!-- Main App Shell (Supports Edge-to-Edge Playlist Swiping) -->
   <div class="app-layout" id="main-swipe-viewport">
     <header class="app-top">
       <div class="brand-container" id="brand-edit-trigger" title="Tap to customize app branding">
@@ -456,10 +399,8 @@
       </div>
     </header>
 
-    <!-- Playlist Category Tabs -->
     <div class="playlist-chips" id="playlist-tabs"></div>
 
-    <!-- Sticky Search, Filter & Auto-Clean Tool Bar -->
     <div class="search-sort-bar">
       <div class="search-input-wrapper">
         <input type="text" id="library-search-input" class="search-field" placeholder="🔍 Search songs in current list..." />
@@ -474,16 +415,18 @@
       <button id="btn-toggle-multi-select" class="btn-action-sm" title="Bulk actions">☑️ Select</button>
     </div>
 
-    <!-- Batch Multi-Select Action Bar -->
+    <!-- Batch Multi-Select Action Bar (With Select All Feature) -->
     <div id="batch-action-bar" class="batch-bar" style="display:none;">
-      <span id="batch-count-label">0 Selected</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button id="btn-batch-select-all" class="btn-action-sm">Select All</button>
+        <span id="batch-count-label">0 Selected</span>
+      </div>
       <div style="display:flex;gap:6px;">
         <button id="btn-batch-delete" class="btn-action-sm" style="color:#f85149;">🗑 Delete</button>
         <button id="btn-batch-cancel" class="btn-action-sm">Cancel</button>
       </div>
     </div>
 
-    <!-- UPPER CONTENT: Song List (EXTENDS DIRECTLY TO THE BOTTOM) -->
     <main class="upper-content">
       <div class="section-title-row">
         <div>
@@ -493,18 +436,19 @@
           </div>
           <small id="track-count-label">0 songs • ~0m</small>
         </div>
-        <label class="btn-action" for="file-picker">➕ Add Songs</label>
-        <input type="file" id="file-picker" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus" multiple style="display:none;" />
+        <div style="display:flex;gap:6px;">
+          <button id="btn-download-entire-playlist" class="btn-action" title="Download all songs in this playlist">📥 Download All</button>
+          <label class="btn-action" for="file-picker">➕ Add Songs</label>
+          <input type="file" id="file-picker" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus" multiple style="display:none;" />
+        </div>
       </div>
       <ul id="song-list" class="song-list"></ul>
     </main>
 
-    <!-- Footer Attribution with Profile Trigger -->
     <footer class="app-footer" id="footer-dev-trigger" style="cursor:pointer;" title="Click to view Developer Profile">
       Made by & for <strong>Amarjeet kumar</strong> • <span>View Profile 👨‍💻</span>
     </footer>
 
-    <!-- LOWER SECTION: Fixed Bottom Player Bar (Supports Swipe Up/Left/Right) -->
     <div class="bottom-player-bar" id="mini-player">
       <div class="player-left-group" id="open-box-trigger">
         <img id="mini-cover" class="mini-art" src="my-icon.png" alt="Art" />
@@ -521,7 +465,6 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN PLAYER CARD MODAL -->
   <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
     <div id="ambient-glow-layer" class="ambient-glow"></div>
 
@@ -535,7 +478,6 @@
       <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
     </div>
 
-    <!-- UPPER FIXED PINNED PLAYER SECTION -->
     <div class="player-pinned-controls">
       <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="32"></canvas>
 
@@ -578,7 +520,6 @@
         <button id="box-btn-next" class="icon-btn-large">⏭</button>
       </div>
 
-      <!-- STICKY ACTION TOOLBAR -->
       <div class="card-tool-row">
         <button id="card-toggle-playlist" class="card-tool-btn">≡ Playlist</button>
         <button id="card-toggle-volume" class="card-tool-btn">🔊 Volume</button>
@@ -590,9 +531,7 @@
       </div>
     </div>
 
-    <!-- LOWER DEDICATED SCROLLABLE DRAWER VIEWPORT -->
     <div class="card-scrollable-drawers" id="card-drag-dismiss-area">
-      <!-- 1. Volume Drawer with Snap Detents -->
       <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Master Volume (Software Gain)</span>
@@ -611,18 +550,15 @@
         </div>
       </div>
 
-      <!-- 2. Equalizer & Bass Boost Drawer -->
       <div id="card-eq-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <label><input type="checkbox" id="card-eq-enable" checked /> DSP Active</label>
           <button id="btn-reset-eq-card" class="btn-action">Reset Defaults</button>
         </div>
-
         <div class="bass-boost-strip">
           <span>🔊 Bass Boost (<span id="val-bass-boost">0dB</span>)</span>
           <input type="range" id="slider-bass-boost" min="0" max="15" step="0.5" value="0" />
         </div>
-
         <div class="eq-container">
           <div class="eq-col"><span class="eq-val" id="val-preamp">14.1dB</span><input type="range" class="vertical-slider" id="eq-preamp" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">Pre</span></div>
           <div class="eq-col"><span class="eq-val" id="val-60">18.2dB</span><input type="range" class="vertical-slider" data-band="0" min="-20" max="20" step="0.1" value="18.2" /><span class="eq-freq">60</span></div>
@@ -638,7 +574,6 @@
         </div>
       </div>
 
-      <!-- 3. Timestamp Bookmarks Drawer -->
       <div id="card-timestamps-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>⏱️ Track Bookmarks & Chapters</span>
@@ -647,7 +582,6 @@
         <ul id="timestamp-markers-list" class="timestamp-list"></ul>
       </div>
 
-      <!-- 4. A-B Segment Looper Drawer -->
       <div id="card-looper-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Continuous A-B Section Repeater</span>
@@ -659,7 +593,6 @@
         </div>
       </div>
 
-      <!-- 5. Offline Lyrics & Notes Drawer -->
       <div id="card-lyrics-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Offline Lyrics & Song Notes</span>
@@ -668,7 +601,7 @@
         <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
       </div>
 
-      <!-- 6. View Playlist / Reorder Drawer (with 440px height & centered credit) -->
+      <!-- 6. View Playlist / Reorder Drawer (Matches Attached Screenshot Exactly) -->
       <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
           <span>Active Playlist Songs (Tap to Play / Reorder)</span>
