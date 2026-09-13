@@ -1,11 +1,11 @@
-const CACHE_NAME = 'ammu-player-v155';
+const CACHE_NAME = 'ammu-player-v160';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  './ammu-icon.png'
+  './my-icon.png'
 ];
 
 self.addEventListener('install', (e) => {
