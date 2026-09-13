@@ -48,7 +48,6 @@ if (bannerDismissBtn) bannerDismissBtn.addEventListener('click', () => {
   persistentInstallBanner.style.display = 'none';
 });
 
-// Haptic feedback helper
 function triggerHaptic(ms = 35) {
   if ('vibrate' in navigator) {
     try { navigator.vibrate(ms); } catch (_) {}
@@ -80,6 +79,12 @@ window.addEventListener('popstate', () => {
       window.history.pushState({ page: 'home' }, '');
       return;
     }
+  }
+  const popMenu = document.getElementById('track-context-menu');
+  if (popMenu && popMenu.style.display === 'flex') {
+    popMenu.style.display = 'none';
+    window.history.pushState({ page: 'home' }, '');
+    return;
   }
   window.history.pushState({ page: 'home' }, '');
 });
@@ -162,7 +167,6 @@ function showUndoToast(msg, onUndo, onCommit) {
   container.appendChild(toast);
 }
 
-// Fullscreen Floating Heart Animation Overlay
 function triggerHeartBurst(isFavorited) {
   const overlay = document.getElementById('heart-burst-overlay');
   overlay.innerHTML = '';
@@ -191,7 +195,7 @@ function triggerHeartBurst(isFavorited) {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmmuMusicDB_v150';
+const DB_NAME = 'AmmuMusicDB_v160';
 const DB_VER = 1;
 let db;
 
@@ -495,7 +499,6 @@ let eqEnabled = true;
 let currentVol = 0.20;
 let isVisualizerActive = true;
 
-// Audio Interruption & Focus Auto-Resume State
 let wasPlayingBeforeInterruption = false;
 let isManualPause = false;
 
@@ -547,7 +550,6 @@ function ensureAudioPipeline() {
   }
 }
 
-// Audio Interruption & Visibility Handling
 audio.addEventListener('play', () => {
   wasPlayingBeforeInterruption = true;
   isManualPause = false;
@@ -572,7 +574,6 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Battery Status Saver API
 if ('getBattery' in navigator) {
   navigator.getBattery().then((battery) => {
     function evaluateBattery() {
@@ -589,7 +590,6 @@ if ('getBattery' in navigator) {
   }).catch(() => {});
 }
 
-// Headphone / Bluetooth Disconnect Protection
 if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange !== undefined) {
   navigator.mediaDevices.ondevicechange = () => {
     if (!audio.paused) {
@@ -615,7 +615,6 @@ function setVolume(pct) {
   if (label) label.textContent = `${pct}%`;
 }
 
-// Volume Quick-Snap Buttons
 document.querySelectorAll('.vol-snap-btn').forEach(btn => {
   btn.onclick = () => {
     triggerHaptic(20);
@@ -625,7 +624,6 @@ document.querySelectorAll('.vol-snap-btn').forEach(btn => {
   };
 });
 
-// Spectrum Visualizer
 const visualizerCanvas = document.getElementById('audio-visualizer');
 const vCtx = visualizerCanvas.getContext('2d');
 function startVisualizerLoop() {
@@ -654,7 +652,6 @@ function startVisualizerLoop() {
   renderFrame();
 }
 
-// Dynamic Ambient Fluid Glow
 function updateAmbientGlow(imgEl) {
   try {
     const canvas = document.createElement('canvas');
@@ -694,6 +691,7 @@ let playNextQueue = [];
 let activePlayTimer = null;
 let tempUserAvatarBase64 = null;
 let availablePlaylistList = [];
+let activeContextTrack = null;
 
 // UI References
 const playlistTabs = document.getElementById('playlist-tabs');
@@ -727,6 +725,31 @@ const durTime = document.getElementById('dur-time');
 const seekTicksLayer = document.getElementById('seek-ticks-layer');
 const activeMarkerPill = document.getElementById('active-marker-pill');
 const activeMarkerName = document.getElementById('active-marker-name');
+
+const trackContextMenu = document.getElementById('track-context-menu');
+const menuBtnPlayNext = document.getElementById('menu-btn-play-next');
+const menuBtnRename = document.getElementById('menu-btn-rename');
+
+// Context Menu Action Listeners
+menuBtnPlayNext.onclick = () => {
+  if (activeContextTrack) {
+    queueSongPlayNext(activeContextTrack);
+  }
+  trackContextMenu.style.display = 'none';
+};
+
+menuBtnRename.onclick = () => {
+  if (activeContextTrack) {
+    openRenameModal(activeContextTrack);
+  }
+  trackContextMenu.style.display = 'none';
+};
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.context-menu-pop') && !e.target.closest('.btn-more-dots')) {
+    trackContextMenu.style.display = 'none';
+  }
+});
 
 // First-Launch Onboarding System
 async function checkOnboarding() {
@@ -762,18 +785,16 @@ document.getElementById('btn-complete-onboarding').onclick = async () => {
   showNotification(`Welcome to Ammu, ${name}!`);
 };
 
-// Onboarding Import Trigger
 document.getElementById('onboarding-import-file').onchange = (e) => {
   handleDirectImport(e.target.files[0], true);
 };
 
-// Playlist Create Modal - Import Shared Playlist Button Trigger
 document.getElementById('playlist-modal-import-file').onchange = (e) => {
   document.getElementById('playlist-create-modal').style.display = 'none';
   handleDirectImport(e.target.files[0], false);
 };
 
-// Anytime User Profile Edit
+// User Profile Edit
 const userProfileModal = document.getElementById('user-profile-modal');
 const editUserNameInput = document.getElementById('edit-user-name');
 const editUserAvatarInput = document.getElementById('edit-user-avatar');
@@ -810,55 +831,41 @@ document.getElementById('btn-save-user-profile').onclick = async () => {
   showNotification('Listener profile updated successfully!');
 };
 
-// Save Playlist Audio Files to Local Phone Storage (e.g. "[Username]'s music taste")
-document.getElementById('btn-download-playlist-to-storage').onclick = async () => {
+// Download Playlist Directly
+async function downloadEntirePlaylist() {
   triggerHaptic(35);
-  const folderName = `${userProfile.name}'s music taste`;
-  const playlistTracks = tracks.filter(t => t.blob && t.blob.size > 0);
-
-  if (!playlistTracks.length) {
-    return showNotification('No audio files available to save in this playlist.');
+  const available = tracks.filter(t => t.blob && t.blob.size > 0);
+  if (!available.length) {
+    return showNotification('No playable audio files to download in this playlist.');
   }
 
-  showNotification(`Exporting songs to "${folderName}"...`);
-
-  // Direct Directory Picker (Chromium / Supported Android)
-  if ('showDirectoryPicker' in window) {
-    try {
-      const rootDir = await window.showDirectoryPicker();
-      const targetDir = await rootDir.getDirectoryHandle(folderName, { create: true });
-
-      for (const t of playlistTracks) {
-        const fileHandle = await targetDir.getFileHandle(t.name, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(t.blob);
-        await writable.close();
-      }
-
-      showNotification(`Saved ${playlistTracks.length} song(s) inside "${folderName}"!`);
-      document.getElementById('author-modal').style.display = 'none';
-      return;
-    } catch (_) {
-      // User cancelled or fallback needed
-    }
-  }
-
-  // Fallback sequential blob download
-  for (let i = 0; i < playlistTracks.length; i++) {
-    const t = playlistTracks[i];
-    const url = URL.createObjectURL(t.blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${folderName}_${t.name}`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  showNotification(`Downloading ${available.length} song(s)...`);
+  for (let i = 0; i < available.length; i++) {
+    downloadSingleTrack(available[i], false);
     await new Promise(r => setTimeout(r, 200));
   }
-  showNotification(`Exported files to your Downloads folder.`);
+}
+
+document.getElementById('btn-download-entire-playlist').onclick = downloadEntirePlaylist;
+document.getElementById('btn-download-playlist-to-storage').onclick = async () => {
   document.getElementById('author-modal').style.display = 'none';
+  await downloadEntirePlaylist();
 };
+
+function downloadSingleTrack(trk, notify = true) {
+  if (!trk.blob || trk.blob.size === 0) {
+    return showNotification(`Cannot download: "${trk.name}" is missing from storage.`);
+  }
+  const url = URL.createObjectURL(trk.blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = trk.name.endsWith('.mp3') ? trk.name : `${trk.name}.mp3`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  if (notify) showNotification(`Downloaded: ${trk.name}`);
+}
 
 // Author Profile Modal
 document.getElementById('btn-view-playlist-author').onclick = () => {
@@ -885,7 +892,6 @@ document.getElementById('btn-toggle-art-mode').onclick = () => {
   document.getElementById('btn-toggle-art-mode').textContent = artModeIndex === 1 ? '🖼️ Art' : '💿 Disc';
 };
 
-// Double-Tap Cover Art to Seek (-10s / +10s)
 let lastTapTime = 0;
 const seekFeedbackOverlay = document.getElementById('art-seek-feedback');
 artDisplayBox.addEventListener('click', (e) => {
@@ -990,9 +996,7 @@ document.getElementById('btn-save-dev-profile').onclick = async () => {
   showNotification('Developer profile updated!');
 };
 
-// ==========================================
-// LISTENING ANALYTICS & TIME TRACKING
-// ==========================================
+// Listening Analytics
 document.getElementById('btn-open-stats').onclick = () => {
   triggerHaptic(20);
   renderListeningDashboard();
@@ -1050,7 +1054,6 @@ async function renderListeningDashboard() {
 
   renderMilestones(allTimeSecs);
 
-  // Top 5 Songs (Clickable to play)
   const allStats = await dbOps.getAllStats();
   allStats.sort((a, b) => b.count - a.count);
   const topListEl = document.getElementById('stats-top-songs-list');
@@ -1066,7 +1069,6 @@ async function renderListeningDashboard() {
     });
   }
 
-  // Playback History Timeline (Clickable to play)
   renderPlaybackHistoryTimeline();
 }
 
@@ -1302,21 +1304,18 @@ function base64ToBlob(base64) {
   return new Blob([uInt8Array], { type: contentType });
 }
 
-// Complete Full Profile & Library Exporter (with audio)
 document.getElementById('btn-export-full-profile').onclick = async () => {
   triggerHaptic(35);
   showNotification('Packaging full profile & media backup...');
   await executeUniversalExport(true, true, true, null);
 };
 
-// Metadata-Only Full Exporter (No heavy audio blobs)
 document.getElementById('btn-export-meta-profile').onclick = async () => {
   triggerHaptic(35);
   showNotification('Packaging lightweight metadata backup...');
   await executeUniversalExport(false, true, true, null);
 };
 
-// Granular Universal Export
 document.getElementById('btn-export-backup').onclick = async () => {
   triggerHaptic(35);
   const includeAudio = document.getElementById('chk-export-audio').checked;
@@ -1421,7 +1420,6 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   showNotification(`Exported to Downloads folder: ${fileName}`);
 }
 
-// Two-Step Pre-Import Engine with Smart Storage Matcher
 let pendingImportPayload = null;
 let auditMatchMap = new Map();
 
@@ -1451,7 +1449,6 @@ async function handleDirectImport(file, bypassOnboarding) {
       document.getElementById('pre-import-avatar').src = author.avatar || 'my-icon.png';
       document.getElementById('pre-import-file-meta').textContent = `Tracks: ${data.tracks.length} • Playlists: ${data.playlists.length}`;
 
-      // Run Storage Availability Match Audit
       const localAll = await dbOps.getAllTracks();
       const localNamesSet = new Set(localAll.filter(t => t.blob && t.blob.size > 0).map(t => t.name.trim().toLowerCase()));
 
@@ -1485,7 +1482,6 @@ async function handleDirectImport(file, bypassOnboarding) {
       document.getElementById('audit-badge-available').textContent = `✓ ${availableCount} Available`;
       document.getElementById('audit-badge-missing').textContent = `✕ ${missingCount} Not in Storage`;
 
-      // Render Playlists checklist
       const plBox = document.getElementById('pre-import-playlist-list');
       plBox.innerHTML = '';
       data.playlists.forEach(p => {
@@ -1508,7 +1504,6 @@ document.getElementById('btn-cancel-pre-import').onclick = () => {
   pendingImportPayload = null;
 };
 
-// Final Verified Import Execution
 document.getElementById('btn-confirm-final-import').onclick = async () => {
   if (!pendingImportPayload) return;
   triggerHaptic(40);
@@ -1695,7 +1690,6 @@ function renderFilteredTracks() {
       } else {
         if (isMissing) {
           triggerHaptic(15);
-          // Playback continues completely uninterrupted without affecting current song
           showNotification(`"${trk.name}" is not available in device storage.`);
           return;
         }
@@ -1703,38 +1697,58 @@ function renderFilteredTracks() {
       }
     };
 
+    // 4-Icon Row Structure: 1. Download, 2. Like, 3. Delete, 4. 3-Dots
     const actions = document.createElement('div');
-    actions.className = 'row-actions';
+    actions.className = 'row-actions-four';
 
-    const btnPlayNext = document.createElement('button');
-    btnPlayNext.className = 'btn-icon-sm';
-    btnPlayNext.innerHTML = '⏭️';
-    btnPlayNext.title = 'Play Next';
-    btnPlayNext.onclick = (e) => {
+    // 1. Download Button
+    const btnDownload = document.createElement('button');
+    btnDownload.className = 'btn-icon-sm';
+    btnDownload.innerHTML = '📥';
+    btnDownload.title = 'Download to device';
+    btnDownload.onclick = (e) => {
       e.stopPropagation();
-      if (isMissing) return showNotification(`Cannot queue: "${trk.name}" is missing from storage.`);
-      queueSongPlayNext(trk);
+      triggerHaptic(20);
+      downloadSingleTrack(trk, true);
     };
 
-    const btnRename = document.createElement('button');
-    btnRename.className = 'btn-icon-sm';
-    btnRename.innerHTML = '✏️';
-    btnRename.onclick = (e) => { e.stopPropagation(); openRenameModal(trk); };
+    // 2. Favorite / Like Button
+    const btnLike = document.createElement('button');
+    btnLike.className = 'btn-icon-sm song-heart-btn';
+    btnLike.innerHTML = isFav ? '❤️' : '💛';
+    btnLike.title = 'Favorite';
+    btnLike.onclick = async (e) => {
+      e.stopPropagation();
+      await toggleFavorite(trk);
+    };
 
-    const btnLikeRow = document.createElement('button');
-    btnLikeRow.className = 'btn-icon-sm song-heart-btn';
-    btnLikeRow.innerHTML = isFav ? '❤️' : '💛';
-    btnLikeRow.onclick = async (e) => { e.stopPropagation(); await toggleFavorite(trk); };
-
-    const del = document.createElement('button');
-    del.className = 'btn-del';
-    del.innerHTML = '🗑';
-    del.onclick = (e) => {
+    // 3. Delete Button (With 5s Undo & Immediate Playing Track Stop)
+    const btnDelete = document.createElement('button');
+    btnDelete.className = 'btn-icon-sm';
+    btnDelete.style.color = '#f85149';
+    btnDelete.innerHTML = '🗑';
+    btnDelete.title = 'Delete track';
+    btnDelete.onclick = (e) => {
       e.stopPropagation();
       executeTrackDeleteWithUndo(trk);
     };
 
-    actions.append(btnPlayNext, btnRename, btnLikeRow, del);
+    // 4. Three-Dots Menu (Play Next & Rename)
+    const btnMore = document.createElement('button');
+    btnMore.className = 'btn-icon-sm btn-more-dots';
+    btnMore.innerHTML = '⋮';
+    btnMore.title = 'More options';
+    btnMore.onclick = (e) => {
+      e.stopPropagation();
+      triggerHaptic(20);
+      activeContextTrack = trk;
+      const rect = btnMore.getBoundingClientRect();
+      trackContextMenu.style.top = `${rect.bottom + window.scrollY - 20}px`;
+      trackContextMenu.style.left = `${rect.left - 130}px`;
+      trackContextMenu.style.display = 'flex';
+    };
+
+    actions.append(btnDownload, btnLike, btnDelete, btnMore);
     li.append(info, actions);
 
     bindSongRowSwipeGestures(li, trk);
@@ -1753,21 +1767,50 @@ function queueSongPlayNext(trk) {
   showNotification(`"${trk.name}" queued to play next!`);
 }
 
+function stopPlayingTrackImmediately() {
+  audio.pause();
+  audio.src = '';
+  currentIndex = -1;
+  wasPlayingBeforeInterruption = false;
+  isManualPause = true;
+
+  miniTitle.textContent = 'No track playing';
+  miniSub.textContent = 'Tap or swipe up to expand';
+  boxTitle.textContent = 'Song Title';
+  boxPlaylist.textContent = 'Playlist: All';
+  syncButtons(false);
+  updateLikeButtonsUI(false);
+}
+
 // 5-Second Undo Safe Track Delete
 function executeTrackDeleteWithUndo(trk) {
   triggerHaptic(30);
+  const isPlayingThisTrack = (currentIndex !== -1 && tracks[currentIndex] && tracks[currentIndex].id === trk.id);
+  let savedCurrentTime = 0;
+
+  if (isPlayingThisTrack) {
+    savedCurrentTime = audio.currentTime;
+    stopPlayingTrackImmediately();
+  }
+
   allTracksRaw = allTracksRaw.filter(t => t.id !== trk.id);
   renderFilteredTracks();
 
   showUndoToast(`Removed "${trk.name}"`, async () => {
     allTracksRaw.push(trk);
     renderFilteredTracks();
+    if (isPlayingThisTrack) {
+      const restoredIdx = tracks.findIndex(t => t.id === trk.id);
+      if (restoredIdx !== -1) {
+        await playTrack(restoredIdx);
+        audio.currentTime = savedCurrentTime;
+      }
+    }
   }, async () => {
     await dbOps.deleteTrack(trk.id);
   });
 }
 
-// Song Row Touch Swipe Gestures
 function bindSongRowSwipeGestures(rowEl, trk) {
   let startX = 0;
   let startY = 0;
@@ -1810,7 +1853,7 @@ function bindSongRowSwipeGestures(rowEl, trk) {
   }, { passive: true });
 }
 
-// Multi-Select Engine with 5-Second Undo
+// Multi-Select Engine with Select All
 document.getElementById('btn-toggle-multi-select').onclick = () => {
   triggerHaptic(20);
   multiSelectMode = !multiSelectMode;
@@ -1819,11 +1862,25 @@ document.getElementById('btn-toggle-multi-select').onclick = () => {
   renderFilteredTracks();
 };
 
+document.getElementById('btn-batch-select-all').onclick = () => {
+  triggerHaptic(20);
+  if (selectedTrackIds.size === tracks.length) {
+    selectedTrackIds.clear();
+    document.getElementById('btn-batch-select-all').textContent = 'Select All';
+  } else {
+    selectedTrackIds = new Set(tracks.map(t => t.id));
+    document.getElementById('btn-batch-select-all').textContent = 'Deselect All';
+  }
+  document.getElementById('batch-count-label').textContent = `${selectedTrackIds.size} Selected`;
+  renderFilteredTracks();
+};
+
 function toggleSelectTrack(id) {
   triggerHaptic(15);
   if (selectedTrackIds.has(id)) selectedTrackIds.delete(id);
   else selectedTrackIds.add(id);
   document.getElementById('batch-count-label').textContent = `${selectedTrackIds.size} Selected`;
+  document.getElementById('btn-batch-select-all').textContent = (selectedTrackIds.size === tracks.length) ? 'Deselect All' : 'Select All';
   renderFilteredTracks();
 }
 
@@ -1839,6 +1896,11 @@ document.getElementById('btn-batch-delete').onclick = () => {
   const idsToDelete = new Set(selectedTrackIds);
   const deletedTracks = allTracksRaw.filter(t => idsToDelete.has(t.id));
   const count = idsToDelete.size;
+
+  const isPlayingDeleted = (currentIndex !== -1 && tracks[currentIndex] && idsToDelete.has(tracks[currentIndex].id));
+  if (isPlayingDeleted) {
+    stopPlayingTrackImmediately();
+  }
 
   allTracksRaw = allTracksRaw.filter(t => !idsToDelete.has(t.id));
   multiSelectMode = false;
@@ -1856,7 +1918,6 @@ document.getElementById('btn-batch-delete').onclick = () => {
   });
 };
 
-// Search & Sort Clear
 librarySearchInput.addEventListener('input', renderFilteredTracks);
 btnClearSearch.onclick = () => {
   librarySearchInput.value = '';
@@ -1864,7 +1925,6 @@ btnClearSearch.onclick = () => {
 };
 sortSelect.addEventListener('change', renderFilteredTracks);
 
-// One-Tap Song Name Cleaner
 document.getElementById('btn-clean-names').onclick = async () => {
   triggerHaptic(30);
   if (!allTracksRaw.length) return;
@@ -1887,7 +1947,7 @@ document.getElementById('btn-clean-names').onclick = async () => {
   loadTracks();
 };
 
-// Rename Single Track
+// Rename Track Modal
 const renameModal = document.getElementById('rename-modal');
 const renameInput = document.getElementById('rename-input');
 function openRenameModal(trk) {
@@ -1912,7 +1972,6 @@ document.getElementById('btn-confirm-rename').onclick = async () => {
   }
 };
 
-// Toggle Favorite Logic with Fullscreen Heart Burst Animation
 async function toggleFavorite(trk) {
   triggerHaptic(25);
   const songKey = trk.name;
@@ -2051,7 +2110,6 @@ btnConfirmPlaylist.onclick = async () => {
   showNotification(`Playlist "${name}" created!`);
 };
 
-// Add Songs with Duplicate Detection & Missing Flag Reset
 document.getElementById('file-picker').onchange = async (e) => {
   const files = Array.from(e.target.files);
   if (!files.length) return;
@@ -2066,7 +2124,6 @@ document.getElementById('file-picker').onchange = async (e) => {
     const file = files[i];
     const cleanName = file.name.trim().toLowerCase();
 
-    // If already exists as a missing ghost track, update it with real audio
     const matchedGhost = existingTracks.find(t => t.name.trim().toLowerCase() === cleanName && (!t.blob || t.blob.size === 0));
     if (matchedGhost) {
       matchedGhost.blob = file;
@@ -2095,7 +2152,7 @@ document.getElementById('file-picker').onchange = async (e) => {
   loadTracks();
 };
 
-// Playback Engine (Skips Missing Tracks Gracefully)
+// Playback Engine
 async function playTrack(idx) {
   if (idx < 0 || idx >= tracks.length) return;
 
@@ -2188,7 +2245,6 @@ function loopNext() {
 
   if (playMode === 'one') return playTrack(currentIndex);
 
-  // Find next available track with real audio
   let next = currentIndex;
   let attempts = 0;
   do {
@@ -2228,7 +2284,6 @@ modalBtnLike.onclick = () => {
   if (currentIndex !== -1 && tracks[currentIndex]) toggleFavorite(tracks[currentIndex]);
 };
 
-// Robust MediaSession Handler Re-binding
 function updateMediaSession() {
   if (!('mediaSession' in navigator) || currentIndex === -1) return;
   const trk = tracks[currentIndex];
@@ -2282,7 +2337,6 @@ document.getElementById('open-box-trigger').onclick = () => {
 };
 document.getElementById('btn-close-box').onclick = () => { playerBoxModal.style.display = 'none'; };
 
-// Pull-Down Drag to Dismiss Full Player
 let pullStartY = 0;
 const dragDismissArea = document.getElementById('card-drag-dismiss-area');
 dragDismissArea.addEventListener('touchstart', (e) => {
@@ -2372,11 +2426,7 @@ btnSleepTimer.onclick = () => {
   }
 };
 
-// ==========================================
-// SWIPE GESTURES (MINI-BAR, COVER ART, & MAIN SHELL)
-// ==========================================
-
-// 1. Mini Player Bar Gestures (Swipe Up -> Expand | Swipe Left -> Next | Swipe Right -> Prev)
+// Swipes
 let miniStartX = 0;
 let miniStartY = 0;
 miniPlayerBar.addEventListener('touchstart', (e) => {
@@ -2388,7 +2438,6 @@ miniPlayerBar.addEventListener('touchend', (e) => {
   const diffX = e.changedTouches[0].clientX - miniStartX;
   const diffY = e.changedTouches[0].clientY - miniStartY;
 
-  // Vertical Swipe Up
   if (diffY < -40 && Math.abs(diffX) < 60) {
     triggerHaptic(25);
     playerBoxModal.style.display = 'flex';
@@ -2398,7 +2447,6 @@ miniPlayerBar.addEventListener('touchend', (e) => {
     return;
   }
 
-  // Horizontal Swipes
   if (Math.abs(diffX) > 60 && Math.abs(diffY) < 50) {
     if (diffX < 0) {
       triggerHaptic(20);
@@ -2416,7 +2464,6 @@ miniPlayerBar.addEventListener('touchend', (e) => {
   }
 }, { passive: true });
 
-// 2. Fullscreen Album Cover Gestures (Horizontal Prev/Next | Vertical Slide Volume)
 let coverTouchX = 0;
 let coverTouchY = 0;
 let coverVolStart = 20;
@@ -2443,14 +2490,12 @@ artDisplayBox.addEventListener('touchend', (e) => {
   const diffX = e.changedTouches[0].clientX - coverTouchX;
   const diffY = e.changedTouches[0].clientY - coverTouchY;
 
-  // Swipe Down to Minimize
   if (diffY > 70 && Math.abs(diffX) < 50) {
     triggerHaptic(20);
     playerBoxModal.style.display = 'none';
     return;
   }
 
-  // Horizontal Track Skips
   if (Math.abs(diffX) > 60 && Math.abs(diffY) < 40) {
     if (diffX > 0) {
       triggerHaptic(25);
@@ -2468,7 +2513,6 @@ artDisplayBox.addEventListener('touchend', (e) => {
   }
 }, { passive: true });
 
-// 3. Main Screen Edge-to-Edge Swipe Between Playlists
 const mainViewport = document.getElementById('main-swipe-viewport');
 let mainTouchStartX = 0;
 let mainTouchStartY = 0;
@@ -2558,7 +2602,7 @@ document.getElementById('btn-save-ringtone').onclick = () => {
   trimmerModal.style.display = 'none';
 };
 
-// Embedded Panels
+// Drawers
 const panels = {
   vol: document.getElementById('card-volume-panel'),
   eq: document.getElementById('card-eq-panel'),
@@ -2619,7 +2663,7 @@ document.getElementById('btn-save-lyrics').onclick = async () => {
   showNotification('Lyrics saved offline!');
 };
 
-// Timestamps & Markers with 5-Second Undo
+// Timestamps
 const timestampModal = document.getElementById('timestamp-modal');
 const timestampNameInput = document.getElementById('timestamp-name-input');
 const timestampTimePreview = document.getElementById('timestamp-time-preview');
@@ -2758,7 +2802,6 @@ function updateActiveTimestampBadge() {
   }
 }
 
-// Session State Memory
 function saveCurrentSessionState() {
   if (currentIndex !== -1 && tracks[currentIndex]) {
     localStorage.setItem('ammu_last_song', tracks[currentIndex].name);
@@ -2809,7 +2852,7 @@ seekBar.oninput = () => {
   if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
 };
 
-// In-Card Playlist Reorder & Temporary "Play Next" Display
+// In-Card Drawer Playlist Renderer (Restores Exact Screenshot Look with Animated Now Playing Equalizer)
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
   if (!tracks.length && !playNextQueue.length) {
@@ -2822,10 +2865,12 @@ function renderCardReorderList() {
   tracks.forEach((trk, idx) => {
     const isThisPlaying = (currentIndex !== -1 && tracks[currentIndex] && (tracks[currentIndex].name === trk.name));
     const isMissing = trk.isMissing || (!trk.blob || trk.blob.size === 0);
+
     const li = document.createElement('li');
-    li.className = `song-row ${isThisPlaying ? 'playing-in-drawer' : ''} ${isMissing ? 'missing-storage' : ''}`;
+    li.className = `drawer-track-row ${isThisPlaying ? 'now-playing-active' : ''} ${isMissing ? 'missing-storage' : ''}`;
+    
     li.innerHTML = `
-      <span class="song-name" style="max-width:65%;cursor:pointer;">
+      <span class="song-name" style="max-width:68%;cursor:pointer;">
         <strong>${idx + 1}.</strong> ${trk.name}
         ${isMissing ? '<span class="missing-tag-badge">Missing</span>' : ''}
         ${isThisPlaying ? `
@@ -2840,9 +2885,9 @@ function renderCardReorderList() {
           </span>
         ` : ''}
       </span>
-      <div>
-        <button class="btn-action" onclick="shiftTrack(${idx}, -1)">▲</button>
-        <button class="btn-action" onclick="shiftTrack(${idx}, 1)">▼</button>
+      <div class="drawer-reorder-btns">
+        <button class="drawer-shift-btn" onclick="shiftTrack(${idx}, -1)">▲</button>
+        <button class="drawer-shift-btn" onclick="shiftTrack(${idx}, 1)">▼</button>
       </div>
     `;
 
@@ -2858,9 +2903,9 @@ function renderCardReorderList() {
     if (isThisPlaying && playNextQueue.length > 0) {
       playNextQueue.forEach((queuedTrk, qIdx) => {
         const qLi = document.createElement('li');
-        qLi.className = 'song-row';
+        qLi.className = 'drawer-track-row';
         qLi.style.border = '1px dashed var(--accent-light)';
-        qLi.style.background = '#0e1d16';
+        qLi.style.background = '#091510';
         qLi.innerHTML = `
           <span class="song-name" style="max-width:75%;cursor:pointer;">
             <span style="color:var(--accent-light);font-size:0.75rem;font-weight:bold;">[Up Next]</span> ${queuedTrk.name}
