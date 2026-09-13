@@ -28,6 +28,23 @@
     <button id="pl-menu-btn-delete" class="menu-pop-item" style="color:#f85149;">🗑️ Delete Playlist</button>
   </div>
 
+  <!-- Passkey Verification Modal -->
+  <div id="passkey-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <h3>🔒 Creator Passkey Required</h3>
+      <p class="modal-desc">This playlist or author profile is protected by its original curator. Enter the passkey to unlock editing permissions.</p>
+      <div class="form-group text-left">
+        <label for="passkey-input">Enter Passkey</label>
+        <input type="password" id="passkey-input" class="input-text" placeholder="Passkey" autocomplete="off" />
+      </div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button type="button" id="btn-cancel-passkey" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-passkey" class="btn-primary-large" style="width:auto;padding:10px 20px;">Unlock</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
   <div id="persistent-install-banner" class="install-banner-bar" style="display:none;">
     <div class="install-banner-info">
       <img src="my-icon.png" class="install-banner-icon" alt="App Icon" />
@@ -97,7 +114,7 @@
     </div>
   </div>
 
-  <!-- Edit Playlist Details Modal (Name and Icon) -->
+  <!-- Edit Playlist Details Modal -->
   <div id="edit-playlist-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
       <h3>✏️ Edit Playlist Details</h3>
@@ -216,7 +233,7 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
+  <!-- Settings Modal with Passkey & Selective Backup Options -->
   <div id="settings-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box modal-box-large">
       <h3>⚙️ Studio Preferences & Universal Data Center</h3>
@@ -255,6 +272,13 @@
         <p id="settings-current-user-lbl" style="font-size:0.75rem;color:var(--text-muted);">Active listener: Amarjeet Kumar</p>
       </div>
 
+      <!-- Export Creator Passkey Configuration -->
+      <div class="backup-management-box" style="margin-top:10px;">
+        <h4>🔒 Export Protection Passkey</h4>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 6px 0;">Set a passkey to lock your author identity and playlist details on exported files.</p>
+        <input type="text" id="export-passkey-input" class="input-text" placeholder="Creator Passkey (Optional)" autocomplete="off" />
+      </div>
+
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>📦 Complete Profile & Library Backup</h4>
         <p style="font-size:0.75rem;color:var(--text-muted);margin:4px 0 8px 0;">Saves to "Downloads/backup [Author]'s music taste"</p>
@@ -271,6 +295,7 @@
           <div id="export-playlist-checklist" class="mini-checklist-box"></div>
           <label style="font-weight:600;display:block;margin-top:6px;margin-bottom:4px;">Export Content:</label>
           <label class="checkbox-label"><input type="checkbox" id="chk-export-audio" checked /> Include Song Audio Files</label>
+          <label class="checkbox-label"><input type="checkbox" id="chk-export-trimmed-clips" checked /> Include Trimmed Audio Clips (.mp3)</label>
           <label class="checkbox-label"><input type="checkbox" id="chk-export-timestamps" checked /> Include Saved Timestamps / Markers</label>
           <label class="checkbox-label"><input type="checkbox" id="chk-export-images" checked /> Include Custom Covers & App Logos</label>
         </div>
@@ -290,7 +315,7 @@
 
       <div class="backup-management-box" style="margin-top:10px;">
         <div class="panel-header-row">
-          <h4 style="margin:0;">📜 Export / Import Activity Audit</h4>
+          <h4 style="margin:0;">📜 Export / Import Activity Audit (IST)</h4>
           <button id="btn-clear-history" class="btn-dim-sm" style="font-size:0.72rem;color:#f85149;">Clear Log</button>
         </div>
         <ul id="audit-history-list" class="history-list-box"></ul>
@@ -304,7 +329,7 @@
     </div>
   </div>
 
-  <!-- Pre-Import Verification Modal -->
+  <!-- Pre-Import Verification Modal with Passkey Input -->
   <div id="pre-import-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box modal-box-large">
       <h3>🔍 Storage Matcher & Verification</h3>
@@ -315,6 +340,13 @@
           <p id="pre-import-file-meta" style="font-size:0.75rem;color:var(--text-muted);">Payload info</p>
         </div>
       </div>
+      
+      <!-- Creator Passkey unlock field on import -->
+      <div id="pre-import-passkey-container" class="form-group" style="display:none;background:#090d15;padding:8px;border-radius:8px;border:1px solid var(--border);">
+        <label for="pre-import-passkey-input" style="color:var(--accent-light);">🔑 Creator Passkey (Optional Unlock)</label>
+        <input type="password" id="pre-import-passkey-input" class="input-text" placeholder="Enter passkey to enable full editing" autocomplete="off" />
+      </div>
+
       <div class="storage-audit-badges-row">
         <span class="audit-badge badge-green" id="audit-badge-available">✓ 0 Available</span>
         <span class="audit-badge badge-red" id="audit-badge-missing">✕ 0 Not in Storage</span>
@@ -330,6 +362,7 @@
       <div class="form-group">
         <label class="checkbox-label"><input type="checkbox" id="chk-import-markers" checked /> Import Timestamp Markers</label>
         <label class="checkbox-label"><input type="checkbox" id="chk-import-lyrics" checked /> Import Offline Lyrics</label>
+        <label class="checkbox-label"><input type="checkbox" id="chk-import-clips" checked /> Import Trimmed Audio Clips</label>
       </div>
       <div class="modal-actions">
         <button type="button" id="btn-cancel-pre-import" class="btn-action">Cancel</button>
@@ -352,10 +385,10 @@
     </div>
   </div>
 
-  <!-- Real Audio Trimmer Modal -->
+  <!-- Real MP3 Audio Trimmer Modal -->
   <div id="trimmer-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
-      <h3>✂️ Audio Trimmer & Slicer</h3>
+      <h3>✂️ Audio Trimmer (.mp3 Compressed)</h3>
       <p id="trimmer-track-name" style="font-size:0.8rem;color:var(--accent-light);margin-bottom:8px;"></p>
       <div class="form-group">
         <label>Start Time: <span id="lbl-trim-start">0.0s</span></label>
@@ -365,7 +398,7 @@
         <label>End Time: <span id="lbl-trim-end">30.0s</span></label>
         <input type="range" id="trim-end-range" min="0" max="100" step="0.5" value="30" />
       </div>
-      <button id="btn-save-ringtone" class="btn-primary-large" style="margin-top:10px;">✂️ Cut & Save Offline Clip</button>
+      <button id="btn-save-ringtone" class="btn-primary-large" style="margin-top:10px;">✂️ Cut & Save Offline MP3 Clip</button>
       <div class="modal-actions" style="margin-top:8px;">
         <button type="button" id="btn-cancel-trimmer" class="btn-action">Cancel</button>
       </div>
@@ -679,7 +712,7 @@
       <!-- 7. Trimmed Clips Showcase Drawer -->
       <div id="card-trimmer-panel" class="embedded-card-panel" style="display:none;">
         <div class="panel-header-row">
-          <span>✂️ Saved Clips for Current Song</span>
+          <span>✂️ Saved MP3 Clips for Current Song</span>
           <button id="btn-open-trim-dialog" class="btn-action" style="color:var(--accent-light);">➕ New Trim</button>
         </div>
         <ul id="trimmed-clips-list" class="timestamp-list" style="max-height:180px;"></ul>
