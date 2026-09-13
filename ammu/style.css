@@ -378,7 +378,7 @@ body {
 
 /* Active Drawer Playlist Container (Exact Screenshot Style) */
 .card-compact-list {
-  max-height: 440px;
+  max-height: 400px;
   overflow-y: auto;
   padding-right: 4px;
   display: flex;
