@@ -623,6 +623,7 @@ function ensureAudioPipeline() {
 
 // Hardware Audio Output Detection & Automatic Profile Switching
 // Hardware Audio Output Detection & Automatic Profile Switching
+// Audio Output Hardware Listener & Profile Engine
 async function detectAudioOutputDevices() {
   try {
     let btFound = false;
@@ -651,19 +652,33 @@ async function detectAudioOutputDevices() {
     }
 
     if (btFound) {
+      // 1. EARPHONES / BLUETOOTH CONNECTED
       isBluetoothConnected = true;
       const formattedName = `🎧 ${deviceLabel}`;
       updateOutputBadges(formattedName);
 
-      // Bluetooth Profile: EQ ON, Volume 20%
+      // Auto-profile: DSP ON, Volume 20%
       applyDSPState(true);
       setVolume(20);
+      showNotification(`Connected: ${deviceLabel} (DSP ON • Vol 20%)`);
     } else {
+      // 2. EARPHONES DISCONNECTED / SYSTEM SOUND
+      const wasListeningOnHeadphones = isBluetoothConnected;
       isBluetoothConnected = false;
       const formattedName = '🔊 System Sound';
       updateOutputBadges(formattedName);
 
-      // System Sound Profile: EQ OFF, Volume 100%
+      // If user was actively listening through earphones and disconnected:
+      if (wasListeningOnHeadphones && !audio.paused) {
+        isManualPause = true;
+        wasPlayingBeforeInterruption = false;
+        audio.pause();
+        syncButtons(false);
+        syncGlobalEqualizerBars(false);
+        showNotification('Earphones disconnected: Playback paused');
+      }
+
+      // Auto-profile: DSP OFF, Volume 100%
       applyDSPState(false);
       setVolume(100);
     }
@@ -683,10 +698,13 @@ function updateOutputBadges(displayText) {
   if (fullBadge) fullBadge.textContent = displayText;
 }
 
+// Live hardware change listeners
 if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
-  navigator.mediaDevices.addEventListener('devicechange', detectAudioOutputDevices);
+  navigator.mediaDevices.addEventListener('devicechange', () => {
+    detectAudioOutputDevices();
+    setTimeout(detectAudioOutputDevices, 350);
+  });
 }
-
 function applyDSPState(enabled) {
   eqEnabled = enabled;
   const chk = document.getElementById('card-eq-enable');
