@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#171f2d" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title id="html-title">Ammu</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+  <link id="app-favicon" rel="icon" type="image/png" href="my-icon.png" />
+</head>
+<body>
+  <div id="toast-container" class="toast-container"></div>
+  <div id="heart-burst-overlay" class="heart-burst-overlay" style="display:none;"></div>
+
+  <!-- Context Menu for Track 3-Dots -->
+  <div id="track-context-menu" class="context-menu-pop" style="display:none;">
+    <button id="menu-btn-play-next" class="menu-pop-item">⏭️ Play Next</button>
+    <button id="menu-btn-rename" class="menu-pop-item">✏️ Rename Track</button>
+  </div>
+
+  <!-- Context Menu for Playlist 3-Dots -->
+  <div id="playlist-context-menu" class="context-menu-pop" style="display:none;">
+    <button id="pl-menu-btn-edit" class="menu-pop-item">✏️ Edit Details</button>
+    <button id="pl-menu-btn-delete" class="menu-pop-item" style="color:#f85149;">🗑️ Delete Playlist</button>
+  </div>
+
+  <!-- Passkey Verification Modal -->
+  <div id="passkey-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <h3>🔒 Creator Passkey Required</h3>
+      <p class="modal-desc">This playlist or author profile is protected. Enter the passkey to unlock editing permissions permanently on this device.</p>
+      <div class="form-group text-left">
+        <label for="passkey-input">Enter Passkey</label>
+        <input type="password" id="passkey-input" class="input-text" placeholder="Passkey" autocomplete="off" />
+      </div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button type="button" id="btn-cancel-passkey" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-passkey" class="btn-primary-large" style="width:auto;padding:10px 20px;">Unlock</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <div id="persistent-install-banner" class="install-banner-bar" style="display:none;">
+    <div class="install-banner-info">
+      <img src="my-icon.png" class="install-banner-icon" alt="App Icon" />
+      <div>
+        <strong>Install Ammu</strong>
+        <p>Full background & lock-screen audio</p>
+      </div>
+    </div>
+    <div class="install-banner-actions">
+      <button id="btn-banner-install" class="btn-primary-sm">📥 Install</button>
+      <button id="btn-banner-dismiss" class="btn-dim-sm">✕</button>
+    </div>
+  </div>
+
+  <div id="resume-playback-chip" class="resume-chip" style="display:none;">
+    <span id="resume-chip-text">Resume last session?</span>
+    <button id="btn-resume-session" class="btn-primary-sm">Resume</button>
+    <button id="btn-dismiss-resume" class="btn-dim-sm">✕</button>
+  </div>
+
+  <!-- Onboarding Modal -->
+  <div id="onboarding-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <div class="welcome-icon">🎧</div>
+      <h2>Welcome to Ammu</h2>
+      <p class="modal-desc">Create your local listener profile or import an existing one. 100% Offline.</p>
+      <div class="form-group text-left">
+        <label for="onboarding-name">Your Name</label>
+        <input type="text" id="onboarding-name" class="input-text" placeholder="Enter your name" />
+      </div>
+      <div class="form-group text-left">
+        <label for="onboarding-avatar">Profile Photo</label>
+        <input type="file" id="onboarding-avatar" accept="image/*" />
+        <div class="preview-row">
+          <img id="onboarding-avatar-preview" src="my-icon.png" alt="Preview" />
+          <span>Upload avatar (Optional)</span>
+        </div>
+      </div>
+      <button id="btn-complete-onboarding" class="btn-primary-large" style="margin-top:14px;">Let's Play Music</button>
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+        <label class="btn-action" for="onboarding-import-file" style="display:block;cursor:pointer;text-align:center;">📥 Import Existing Profile & All Data</label>
+        <input type="file" id="onboarding-import-file" accept=".json" style="display:none;" />
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Edit User Profile Modal -->
+  <div id="user-profile-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <h3>👤 Edit Listener Profile</h3>
+      <p class="modal-desc">Update your personal listener identity anytime.</p>
+      <img id="user-edit-avatar-preview" class="dev-avatar" src="my-icon.png" alt="Avatar" style="margin:8px auto;" />
+      <div class="form-group text-left">
+        <label for="edit-user-name">Your Name</label>
+        <input type="text" id="edit-user-name" class="input-text" />
+      </div>
+      <div class="form-group text-left">
+        <label for="edit-user-avatar">Change Photo</label>
+        <input type="file" id="edit-user-avatar" accept="image/*" />
+      </div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button type="button" id="btn-cancel-user-profile" class="btn-action">Cancel</button>
+        <button type="button" id="btn-save-user-profile" class="btn-primary-large" style="width:auto;padding:10px 20px;">Save Profile</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Edit Playlist Details Modal -->
+  <div id="edit-playlist-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+      <h3>✏️ Edit Playlist Details</h3>
+      <div class="form-group">
+        <label for="edit-playlist-name-input">Playlist Title</label>
+        <input type="text" id="edit-playlist-name-input" class="input-text" />
+        <small id="edit-pl-name-warning" style="color:#f0883e;font-size:0.75rem;display:none;">Favorites playlist name cannot be modified.</small>
+      </div>
+      <div class="form-group">
+        <label for="edit-playlist-author-input">Playlist Author Name</label>
+        <input type="text" id="edit-playlist-author-input" class="input-text" />
+      </div>
+      <div class="form-group">
+        <label for="edit-playlist-art-input">Change Playlist Icon / Cover</label>
+        <input type="file" id="edit-playlist-art-input" accept="image/*" />
+        <div class="preview-row">
+          <img id="edit-playlist-preview-img" src="my-icon.png" alt="Preview" />
+          <span>Selected Icon</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-edit-playlist" class="btn-action">Cancel</button>
+        <button type="button" id="btn-save-edit-playlist" class="btn-primary-large" style="width:auto;padding:10px 20px;">Update</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Analytics Modal -->
+  <div id="stats-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box modal-box-large">
+      <div class="panel-header-row">
+        <h3>📊 Listening Insights & Analytics</h3>
+        <button id="btn-close-stats" class="btn-dim-sm">✕</button>
+      </div>
+      <div class="stats-time-grid">
+        <div class="stat-card"><span class="stat-num" id="stat-time-today">0m</span><span class="stat-lbl">Played Today</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-time-week">0m</span><span class="stat-lbl">This Week</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-time-month">0h</span><span class="stat-lbl">This Month</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-time-all">0h</span><span class="stat-lbl">All-Time Play</span></div>
+      </div>
+      <div class="backup-management-box" style="margin-top:10px;">
+        <h4>🏆 Milestone Badges & Routine</h4>
+        <p id="stat-peak-hour-lbl" style="font-size:0.75rem;color:var(--accent-light);margin-bottom:6px;">Peak listening time: Calculating...</p>
+        <div id="milestone-badges-row" class="badges-row"></div>
+      </div>
+      <div class="backup-management-box" style="margin-top:10px;">
+        <h4>🔥 Top 5 Most Replayed Songs (Tap to Play)</h4>
+        <ul id="stats-top-songs-list" class="history-list-box clickable-stat-list" style="max-height:130px;margin-top:6px;"></ul>
+      </div>
+      <div class="backup-management-box" style="margin-top:10px;">
+        <div class="panel-header-row">
+          <h4 style="margin:0;">🕒 Recent Playback History (Tap to Play)</h4>
+          <button id="btn-clear-play-history" class="btn-dim-sm" style="font-size:0.72rem;color:#f85149;">Clear History</button>
+        </div>
+        <ul id="stats-history-list" class="history-list-box clickable-stat-list" style="max-height:160px;margin-top:6px;"></ul>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Author Modal -->
+  <div id="author-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <img id="author-avatar-display" class="dev-avatar" src="my-icon.png" alt="Author" style="margin:0 auto 10px auto;" />
+      <h3 id="author-name-display">Author Name</h3>
+      <p id="author-status-tag" class="dev-tagline">Original Playlist Curator</p>
+      <div class="dev-contact-details" style="margin-top:10px;text-align:left;">
+        <p>🎵 <strong>Playlist:</strong> <span id="author-pl-name">All</span></p>
+        <p>📊 <strong>Total Tracks:</strong> <span id="author-track-count">0</span></p>
+        <p>📅 <strong>Created:</strong> <span id="author-created-date">Offline</span></p>
+      </div>
+      <button id="btn-download-playlist-to-storage" class="btn-primary-large" style="margin-top:12px;">📁 Save Songs to Downloads</button>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button type="button" id="btn-close-author" class="btn-action">Close</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Developer Modal -->
+  <div id="dev-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box dev-profile-box">
+      <div class="dev-header">
+        <img id="dev-avatar-img" class="dev-avatar" src="my-icon.png" alt="Amarjeet Kumar" />
+        <div>
+          <h3 id="dev-name-display">Amarjeet Kumar</h3>
+          <p id="dev-title-display" class="dev-tagline">Lead Audio Architect & Engineer</p>
+        </div>
+      </div>
+      <div class="dev-body">
+        <p id="dev-bio-display" class="dev-bio">Built with passion for high-fidelity audio, offline-first Web Audio digital signal processing, and clean UX.</p>
+        <div class="dev-contact-details">
+          <p>📍 <strong>Location:</strong> <span id="dev-location-display">Bihar, India</span></p>
+          <p>📧 <strong>Email:</strong> <span id="dev-email-display">amarjeet.kumar.dev@gmail.com</span></p>
+        </div>
+        <div class="dev-social-grid">
+          <a id="dev-link-github" class="dev-chip-link" href="#" target="_blank">🐙 GitHub</a>
+          <a id="dev-link-linkedin" class="dev-chip-link" href="#" target="_blank">💼 LinkedIn</a>
+          <a id="dev-link-instagram" class="dev-chip-link" href="#" target="_blank">📸 Instagram</a>
+        </div>
+        <details class="dev-edit-drawer" style="margin-top:12px;">
+          <summary style="cursor:pointer;font-size:0.78rem;color:var(--accent-light);">✏️ Edit Developer Card Info</summary>
+          <div class="form-group" style="margin-top:8px;">
+            <label>Full Name</label><input type="text" id="edit-dev-name" class="input-text" />
+            <label>Tagline / Title</label><input type="text" id="edit-dev-title" class="input-text" />
+            <label>Bio</label><textarea id="edit-dev-bio" class="input-text" style="height:60px;resize:none;"></textarea>
+            <label>Location</label><input type="text" id="edit-dev-location" class="input-text" />
+            <label>Email Address</label><input type="text" id="edit-dev-email" class="input-text" />
+            <label>Avatar Photo</label><input type="file" id="edit-dev-avatar" accept="image/*" />
+            <button id="btn-save-dev-profile" class="btn-primary-large" style="margin-top:8px;padding:8px;">Save Developer Info</button>
+          </div>
+        </details>
+      </div>
+      <div class="modal-actions" style="margin-top:10px;">
+        <button type="button" id="btn-close-dev" class="btn-primary-large">Close</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box modal-box-large">
+      <h3>⚙️ Studio Preferences & Universal Data Center</h3>
+      <div class="form-group">
+        <label for="custom-app-name">App Title</label>
+        <input type="text" id="custom-app-name" class="input-text" placeholder="e.g. Ammu" />
+      </div>
+      <div class="form-group">
+        <label for="custom-app-logo">App Logo Badge</label>
+        <input type="file" id="custom-app-logo" accept="image/*" />
+        <div class="preview-row">
+          <img id="settings-logo-preview" src="my-icon.png" alt="Logo Preview" />
+          <span>Upload custom in-app logo</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Theme Color Accent</label>
+        <div class="theme-picker-row">
+          <button class="theme-circle-btn" data-color="#2ea043" style="background:#2ea043;"></button>
+          <button class="theme-circle-btn" data-color="#1f6feb" style="background:#1f6feb;"></button>
+          <button class="theme-circle-btn" data-color="#a371f7" style="background:#a371f7;"></button>
+          <button class="theme-circle-btn" data-color="#f0883e" style="background:#f0883e;"></button>
+          <button class="theme-circle-btn" data-color="#f85149" style="background:#f85149;"></button>
+          <button class="theme-circle-btn" data-color="#e3b341" style="background:#e3b341;"></button>
+        </div>
+        <label class="checkbox-label" style="margin-top:8px;">
+          <input type="checkbox" id="chk-amoled-mode" /> Pure AMOLED Midnight Black (#000000)
+        </label>
+      </div>
+
+      <div class="backup-management-box">
+        <div class="panel-header-row">
+          <h4>👤 Listener Identity</h4>
+          <button id="btn-open-edit-user-profile" class="btn-action-sm">✏️ Edit My Profile</button>
+        </div>
+        <p id="settings-current-user-lbl" style="font-size:0.75rem;color:var(--text-muted);">Active listener: Amarjeet Kumar</p>
+      </div>
+
+      <div class="backup-management-box" style="margin-top:10px;">
+        <h4>🔒 Export Protection Passkey</h4>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 6px 0;">Set a passkey to lock original author and playlist details on exported files.</p>
+        <input type="text" id="export-passkey-input" class="input-text" placeholder="Creator Passkey (Optional)" autocomplete="off" />
+      </div>
+
+      <div class="backup-management-box" style="margin-top:10px;">
+        <h4>📦 Complete Profile & Library Backup</h4>
+        <div class="backup-btn-row">
+          <button id="btn-export-full-profile" class="btn-primary-large" style="flex:1;">💾 Full Backup (with Audio)</button>
+          <button id="btn-export-meta-profile" class="btn-action" style="flex:1;">⚡ Metadata Only</button>
+        </div>
+      </div>
+
+      <div class="backup-management-box" style="margin-top:10px;">
+        <h4>📦 Selective Library & Playlist Export</h4>
+        <div class="export-options-box">
+          <label style="font-weight:600;display:block;margin-bottom:4px;">Playlists to Include:</label>
+          <div id="export-playlist-checklist" class="mini-checklist-box"></div>
+          <label style="font-weight:600;display:block;margin-top:6px;margin-bottom:4px;">Export Content:</label>
+          <label class="checkbox-label"><input type="checkbox" id="chk-export-audio" checked /> Include Song Audio Files</label>
+          <label class="checkbox-label"><input type="checkbox" id="chk-export-trimmed-clips" checked /> Include Trimmed Audio Clips (.mp3)</label>
+          <label class="checkbox-label"><input type="checkbox" id="chk-export-timestamps" checked /> Include Saved Timestamps / Markers</label>
+          <label class="checkbox-label"><input type="checkbox" id="chk-export-images" checked /> Include Custom Covers & App Logos</label>
+        </div>
+        <div class="backup-btn-row">
+          <button id="btn-export-backup" class="btn-primary-large" style="flex:1;">💾 Export Backup</button>
+        </div>
+      </div>
+
+      <div class="backup-management-box" style="margin-top:10px;">
+        <h4>📥 Restore Backup</h4>
+        <div class="backup-btn-row">
+          <label class="btn-action" for="import-backup-file" style="flex:1;text-align:center;cursor:pointer;">📂 Select Backup File (.json)</label>
+          <input type="file" id="import-backup-file" accept=".json" style="display:none;" />
+        </div>
+      </div>
+
+      <div class="backup-management-box" style="margin-top:10px;">
+        <div class="panel-header-row">
+          <h4 style="margin:0;">📜 Export / Import Activity Audit (IST)</h4>
+          <button id="btn-clear-history" class="btn-dim-sm" style="font-size:0.72rem;color:#f85149;">Clear Log</button>
+        </div>
+        <ul id="audit-history-list" class="history-list-box"></ul>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-settings" class="btn-action">Cancel</button>
+        <button type="button" id="btn-save-settings" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Save Preferences</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Pre-Import Verification Modal -->
+  <div id="pre-import-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box modal-box-large">
+      <h3>🔍 Storage Matcher & Verification</h3>
+      <div class="pre-import-author-card">
+        <img id="pre-import-avatar" src="my-icon.png" class="dev-avatar" alt="Author" />
+        <div>
+          <h4 id="pre-import-author-name">Author</h4>
+          <p id="pre-import-file-meta" style="font-size:0.75rem;color:var(--text-muted);">Payload info</p>
+        </div>
+      </div>
+      
+      <div id="pre-import-passkey-container" class="form-group" style="display:none;background:#090d15;padding:8px;border-radius:8px;border:1px solid var(--border);">
+        <label for="pre-import-passkey-input" style="color:var(--accent-light);">🔑 Creator Passkey (Unlock Permanent Editing)</label>
+        <input type="password" id="pre-import-passkey-input" class="input-text" placeholder="Enter creator passkey" autocomplete="off" />
+      </div>
+
+      <div class="storage-audit-badges-row">
+        <span class="audit-badge badge-green" id="audit-badge-available">✓ 0 Available</span>
+        <span class="audit-badge badge-red" id="audit-badge-missing">✕ 0 Not in Storage</span>
+      </div>
+      <div class="form-group">
+        <label>Storage Match Audit:</label>
+        <div id="pre-import-audit-checklist" class="mini-checklist-box" style="max-height:120px;"></div>
+      </div>
+      <div class="form-group">
+        <label>Select Playlists to Import:</label>
+        <div id="pre-import-playlist-list" class="mini-checklist-box"></div>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label"><input type="checkbox" id="chk-import-markers" checked /> Import Timestamp Markers</label>
+        <label class="checkbox-label"><input type="checkbox" id="chk-import-lyrics" checked /> Import Offline Lyrics</label>
+        <label class="checkbox-label"><input type="checkbox" id="chk-import-clips" checked /> Import Trimmed Audio Clips</label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-pre-import" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-final-import" class="btn-primary-large" style="width:auto;padding:10px 20px;">Confirm & Import</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Import Success Modal -->
+  <div id="import-success-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <div style="font-size:2.8rem;margin-bottom:4px;">🎉</div>
+      <h2>Import Completed</h2>
+      <img id="success-author-avatar" src="my-icon.png" class="dev-avatar" style="margin:8px auto;" alt="Author" />
+      <p id="success-author-label" style="font-size:0.85rem;font-weight:600;"></p>
+      <div id="success-songs-summary" class="mini-checklist-box" style="max-height:140px;text-align:left;margin:10px 0;"></div>
+      <button id="btn-close-success-summary" class="btn-primary-large">Done</button>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Real MP3 Audio Trimmer Modal -->
+  <div id="trimmer-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+      <h3>✂️ Audio Trimmer (.mp3 Compressed)</h3>
+      <p id="trimmer-track-name" style="font-size:0.8rem;color:var(--accent-light);margin-bottom:8px;"></p>
+      <div class="form-group">
+        <label>Start Time: <span id="lbl-trim-start">0.0s</span></label>
+        <input type="range" id="trim-start-range" min="0" max="100" step="0.5" value="0" />
+      </div>
+      <div class="form-group">
+        <label>End Time: <span id="lbl-trim-end">30.0s</span></label>
+        <input type="range" id="trim-end-range" min="0" max="100" step="0.5" value="30" />
+      </div>
+      <button id="btn-save-ringtone" class="btn-primary-large" style="margin-top:10px;">✂️ Cut & Save Offline MP3 Clip</button>
+      <div class="modal-actions" style="margin-top:8px;">
+        <button type="button" id="btn-cancel-trimmer" class="btn-action">Cancel</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Rename Modal -->
+  <div id="rename-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+      <h3>✏️ Rename Track</h3>
+      <div class="form-group">
+        <label for="rename-input">Track Title</label>
+        <input type="text" id="rename-input" class="input-text" autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-rename" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-rename" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Update</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Timestamp Marker Modal -->
+  <div id="timestamp-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+      <h3>⏱️ Save Timestamp</h3>
+      <div class="form-group">
+        <label for="timestamp-name-input">Marker Name</label>
+        <input type="text" id="timestamp-name-input" class="input-text" placeholder="Chorus / Best Part" autocomplete="off" />
+        <small id="timestamp-time-preview" style="color:var(--accent-light);font-size:0.8rem;margin-top:4px;">At: 0:00</small>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-timestamp" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-timestamp" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Save Marker</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- Create Playlist Modal -->
+  <div id="playlist-create-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+      <h3>Create New Playlist</h3>
+      <div class="form-group">
+        <label for="new-playlist-name">Playlist Name</label>
+        <input type="text" id="new-playlist-name" placeholder="e.g. My Favorites" class="input-text" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label for="new-playlist-img">Choose Album Art (Optional)</label>
+        <input type="file" id="new-playlist-img" accept="image/*" />
+        <div class="preview-row">
+          <img id="preview-art-tag" src="my-icon.png" alt="Preview" />
+          <span id="preview-status-text">Default art selected</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-playlist" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-playlist" class="btn-primary-large btn-touch-target" style="width:auto;padding:10px 20px;">Create</button>
+      </div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px;">
+        <label class="btn-action" for="playlist-modal-import-file" style="display:block;cursor:pointer;text-align:center;font-size:0.8rem;">📥 Import Shared Playlist File (.json)</label>
+        <input type="file" id="playlist-modal-import-file" accept=".json" style="display:none;" />
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <input type="file" id="edit-cover-input" accept="image/*" style="display:none;" />
+
+  <div class="app-layout" id="main-swipe-viewport">
+    <header class="app-top">
+      <div class="brand-container" id="brand-edit-trigger" title="Tap to customize app branding">
+        <img id="header-app-logo" class="app-logo-badge" src="my-icon.png" alt="Logo" />
+        <div class="brand-text-col">
+          <span class="brand-title" id="display-app-name">Ammu</span>
+          <span class="badge">Pure Audio</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button id="btn-open-stats" class="btn-action" title="Listening Insights & History">📊</button>
+        <button id="btn-open-dev" class="btn-action" title="Developer Profile">👨‍💻</button>
+        <button id="btn-open-settings" class="btn-action" title="Settings">⚙️</button>
+        <button id="btn-header-install" class="btn-action btn-install">📥 Install</button>
+        <button id="btn-open-create-playlist" class="btn-action">➕ New</button>
+      </div>
+    </header>
+
+    <div class="playlist-chips" id="playlist-tabs"></div>
+
+    <div class="search-sort-bar">
+      <div class="search-input-wrapper">
+        <input type="text" id="library-search-input" class="search-field" placeholder="🔍 Search songs in current list..." />
+        <button id="btn-clear-search" class="btn-clear-input" style="display:none;">✕</button>
+      </div>
+      <select id="sort-select" class="sort-dropdown">
+        <option value="default">Sort: Manual</option>
+        <option value="az">Name: A to Z</option>
+        <option value="za">Name: Z to A</option>
+      </select>
+      <button id="btn-clean-names" class="btn-action-sm" title="One-tap clean clutter tags from song names">✨ Clean</button>
+      <button id="btn-toggle-multi-select" class="btn-action-sm" title="Bulk actions">☑️ Select</button>
+    </div>
+
+    <!-- Batch Multi-Select Action Bar -->
+    <div id="batch-action-bar" class="batch-bar" style="display:none;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button id="btn-batch-select-all" class="btn-action-sm">Select All</button>
+        <span id="batch-count-label">0 Selected</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button id="btn-batch-delete" class="btn-action-sm" style="color:#f85149;">🗑 Delete</button>
+        <button id="btn-batch-cancel" class="btn-action-sm">Cancel</button>
+      </div>
+    </div>
+
+    <main class="upper-content" id="upper-content-viewport">
+      <div class="section-title-row">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <h2 id="view-playlist-name">Tracks</h2>
+            <button id="btn-view-playlist-author" class="btn-author-pill">👤 Author</button>
+          </div>
+          <small id="track-count-label">0 songs • ~0m</small>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button id="btn-download-entire-playlist" class="btn-action" title="Download all songs in this playlist">📥 Download All</button>
+          <label class="btn-action" for="file-picker">➕ Add Songs</label>
+          <input type="file" id="file-picker" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus" multiple style="display:none;" />
+        </div>
+      </div>
+      <ul id="song-list" class="song-list"></ul>
+    </main>
+
+    <footer class="app-footer" id="footer-dev-trigger" style="cursor:pointer;" title="Click to view Developer Profile">
+      Made by & for <strong>Amarjeet kumar</strong> • <span>View Profile 👨‍💻</span>
+    </footer>
+
+    <div class="bottom-player-bar" id="mini-player">
+      <div class="player-left-group" id="open-box-trigger">
+        <img id="mini-cover" class="mini-art" src="my-icon.png" alt="Art" />
+        <div class="mini-meta">
+          <span class="mini-title" id="mini-title">No track playing</span>
+          <span class="mini-sub" id="mini-sub">Tap or swipe up to expand</span>
+        </div>
+      </div>
+
+      <div class="player-bar-actions">
+        <button id="bar-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
+        <button id="bar-btn-play" class="play-btn-large" title="Play/Pause">▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Player Card Modal -->
+  <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
+    <div id="ambient-glow-layer" class="ambient-glow"></div>
+
+    <div class="card-top-nav">
+      <button id="btn-close-box" class="btn-action">▼ Minimize</button>
+      <div class="card-nav-controls">
+        <button id="btn-toggle-art-mode" class="chip-action-sm" title="Artwork Mode">💿 Disc</button>
+        <button id="btn-speed-toggle" class="chip-action-sm">1.0x</button>
+        <button id="btn-sleep-timer" class="chip-action-sm">⏱️ Off</button>
+      </div>
+      <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
+    </div>
+
+    <div class="player-pinned-controls">
+      <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="32"></canvas>
+
+      <div class="detail-art-container mode-standard" id="art-display-box" title="Double tap Left: -10s | Right: +10s | Slide Up/Down: Volume">
+        <img id="box-cover" src="my-icon.png" alt="Album Art" />
+        <div class="vinyl-grooves"></div>
+        <div class="vinyl-center-hole"></div>
+        <div id="art-seek-feedback" class="seek-feedback-overlay"></div>
+        <button id="btn-edit-art" class="btn-edit-cover" title="Change Album Image">📷 Change Image</button>
+      </div>
+
+      <div class="detail-titles">
+        <h2 id="box-title">Song Title</h2>
+        <p id="box-playlist">Playlist: All</p>
+      </div>
+
+      <div class="current-marker-badge-row">
+        <span id="active-marker-pill" class="active-marker-pill" style="display:none;">📍 <span id="active-marker-name">Verse</span></span>
+      </div>
+
+      <div class="progress-bar-box">
+        <span id="curr-time">0:00</span>
+        <div class="seek-track-wrapper">
+          <input type="range" id="seek-bar" min="0" max="100" value="0" />
+          <div id="seek-ticks-layer" class="seek-ticks-layer"></div>
+        </div>
+        <span id="dur-time">0:00</span>
+      </div>
+
+      <div class="quick-jump-row">
+        <button id="btn-skip-backward" class="jump-btn">⏪ -10s</button>
+        <button id="btn-mode-shuffle" class="jump-btn">🔀 Off</button>
+        <button id="btn-mode-repeat" class="jump-btn">🔁 All</button>
+        <button id="btn-skip-forward" class="jump-btn">⏩ +10s</button>
+      </div>
+
+      <div class="box-player-controls">
+        <button id="box-btn-prev" class="icon-btn-large">⏮</button>
+        <button id="box-btn-play" class="play-btn-huge">▶</button>
+        <button id="box-btn-next" class="icon-btn-large">⏭</button>
+      </div>
+
+      <div class="card-tool-row">
+        <button id="card-toggle-playlist" class="card-tool-btn">≡ Playlist</button>
+        <button id="card-toggle-volume" class="card-tool-btn">🔊 Volume</button>
+        <button id="card-toggle-eq" class="card-tool-btn">🎛 EQ & Bass</button>
+        <button id="card-toggle-timestamps" class="card-tool-btn">⏱️ Markers</button>
+        <button id="card-toggle-looper" class="card-tool-btn">🔄 A-B Loop</button>
+        <button id="card-toggle-trimmer" class="card-tool-btn">✂️ Trim</button>
+        <button id="card-toggle-lyrics" class="card-tool-btn">📝 Lyrics</button>
+      </div>
+    </div>
+
+    <div class="card-scrollable-drawers" id="card-drag-dismiss-area">
+      <!-- 1. Volume Drawer -->
+      <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Master Volume (Software Gain)</span>
+          <span id="card-vol-label">20%</span>
+        </div>
+        <div class="vol-slider-row">
+          <span>🔈</span>
+          <input type="range" id="card-vol-slider" min="0" max="100" value="20" />
+          <span>🔊</span>
+        </div>
+        <div class="vol-snap-row">
+          <button class="vol-snap-btn" data-vol="20">20% (Default)</button>
+          <button class="vol-snap-btn" data-vol="50">50%</button>
+          <button class="vol-snap-btn" data-vol="80">80%</button>
+          <button class="vol-snap-btn" data-vol="100">100%</button>
+        </div>
+        <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+      </div>
+
+      <!-- 2. Equalizer & Bass Boost Drawer -->
+      <div id="card-eq-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <label><input type="checkbox" id="card-eq-enable" checked /> DSP Active</label>
+          <button id="btn-reset-eq-card" class="btn-action">Reset Defaults</button>
+        </div>
+        <div class="bass-boost-strip">
+          <span>🔊 Bass Boost (<span id="val-bass-boost">0dB</span>)</span>
+          <input type="range" id="slider-bass-boost" min="0" max="15" step="0.5" value="0" />
+        </div>
+        <div class="eq-container">
+          <div class="eq-col"><span class="eq-val" id="val-preamp">14.1dB</span><input type="range" class="vertical-slider" id="eq-preamp" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">Pre</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-60">18.2dB</span><input type="range" class="vertical-slider" data-band="0" min="-20" max="20" step="0.1" value="18.2" /><span class="eq-freq">60</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-170">11.8dB</span><input type="range" class="vertical-slider" data-band="1" min="-20" max="20" step="0.1" value="11.8" /><span class="eq-freq">170</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-310">3.7dB</span><input type="range" class="vertical-slider" data-band="2" min="-20" max="20" step="0.1" value="3.7" /><span class="eq-freq">310</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-600">-1.7dB</span><input type="range" class="vertical-slider" data-band="3" min="-20" max="20" step="0.1" value="-1.7" /><span class="eq-freq">600</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-1000">-7.8dB</span><input type="range" class="vertical-slider" data-band="4" min="-20" max="20" step="0.1" value="-7.8" /><span class="eq-freq">1k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-3000">2.1dB</span><input type="range" class="vertical-slider" data-band="5" min="-20" max="20" step="0.1" value="2.1" /><span class="eq-freq">3k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-6000">9.8dB</span><input type="range" class="vertical-slider" data-band="6" min="-20" max="20" step="0.1" value="9.8" /><span class="eq-freq">6k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-12000">14.1dB</span><input type="range" class="vertical-slider" data-band="7" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">12k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-14000">-3.6dB</span><input type="range" class="vertical-slider" data-band="8" min="-20" max="20" step="0.1" value="-3.6" /><span class="eq-freq">14k</span></div>
+          <div class="eq-col"><span class="eq-val" id="val-16000">11.6dB</span><input type="range" class="vertical-slider" data-band="9" min="-20" max="20" step="0.1" value="11.6" /><span class="eq-freq">16k</span></div>
+        </div>
+        <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+      </div>
+
+      <!-- 3. Timestamp Bookmarks Drawer -->
+      <div id="card-timestamps-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>⏱️ Track Bookmarks & Chapters</span>
+          <button type="button" id="btn-add-timestamp" class="btn-action" style="color:var(--accent-light);">➕ Add Current Time</button>
+        </div>
+        <ul id="timestamp-markers-list" class="timestamp-list"></ul>
+        <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+      </div>
+
+      <!-- 4. A-B Segment Looper Drawer -->
+      <div id="card-looper-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Continuous A-B Section Repeater</span>
+          <button id="btn-clear-loop" class="btn-action">Clear Loop</button>
+        </div>
+        <div class="looper-action-row">
+          <button id="btn-set-point-a" class="btn-action">Set Point A: <span id="label-point-a">--:--</span></button>
+          <button id="btn-set-point-b" class="btn-action">Set Point B: <span id="label-point-b">--:--</span></button>
+        </div>
+        <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+      </div>
+
+      <!-- 5. Offline Lyrics & Notes Drawer -->
+      <div id="card-lyrics-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Offline Lyrics & Song Notes</span>
+          <button id="btn-save-lyrics" class="btn-action">Save</button>
+        </div>
+        <textarea id="lyrics-textarea" class="lyrics-box" placeholder="Type or paste song lyrics or notes here..."></textarea>
+        <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+      </div>
+
+      <!-- 6. View Playlist / Reorder Drawer -->
+      <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>Active Playlist Songs (Tap to Play / Reorder)</span>
+        </div>
+        <ul id="card-reorder-list" class="song-list card-compact-list" style="margin-top:6px;"></ul>
+        <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+      </div>
+
+      <!-- 7. Trimmed Clips Showcase Drawer -->
+      <div id="card-trimmer-panel" class="embedded-card-panel" style="display:none;">
+        <div class="panel-header-row">
+          <span>✂️ Saved MP3 Clips for Current Song</span>
+          <button id="btn-open-trim-dialog" class="btn-action" style="color:var(--accent-light);">➕ New Trim</button>
+        </div>
+        <ul id="trimmed-clips-list" class="timestamp-list" style="max-height:180px;"></ul>
+        <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <audio id="audio-engine" playsinline preload="auto"></audio>
+  <script src="app.js"></script>
+</body>
+</html>
