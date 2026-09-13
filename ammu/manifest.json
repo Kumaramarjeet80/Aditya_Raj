@@ -10,25 +10,25 @@
   "theme_color": "#171f2d",
   "icons": [
     {
-      "src": "ammu-icon.png",
+      "src": "my-icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "ammu-icon.png",
+      "src": "my-icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "ammu-icon.png",
+      "src": "my-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "ammu-icon.png",
+      "src": "my-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
