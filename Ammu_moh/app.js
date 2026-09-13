@@ -622,55 +622,65 @@ function ensureAudioPipeline() {
 }
 
 // Hardware Audio Output Detection & Automatic Profile Switching
+// Hardware Audio Output Detection & Automatic Profile Switching
 async function detectAudioOutputDevices() {
   try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-      updateOutputBadges('System Sound', false);
-      return;
-    }
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
-
     let btFound = false;
     let deviceLabel = 'System Sound';
 
-    for (const dev of audioOutputs) {
-      const lbl = dev.label.toLowerCase();
-      if (lbl.includes('bluetooth') || lbl.includes('wireless') || lbl.includes('headphone') || lbl.includes('buds') || lbl.includes('airpods') || lbl.includes('headset')) {
-        btFound = true;
-        deviceLabel = dev.label.replace(/\(.*\)/, '').trim() || 'Bluetooth Audio';
-        break;
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
+
+      for (const dev of audioOutputs) {
+        const lbl = dev.label.toLowerCase();
+        if (
+          lbl.includes('bluetooth') ||
+          lbl.includes('wireless') ||
+          lbl.includes('headphone') ||
+          lbl.includes('buds') ||
+          lbl.includes('airpods') ||
+          lbl.includes('headset') ||
+          lbl.includes('earphones')
+        ) {
+          btFound = true;
+          deviceLabel = dev.label.replace(/\(.*\)/, '').trim() || 'Bluetooth Audio';
+          break;
+        }
       }
     }
 
-    if (btFound && !isBluetoothConnected) {
+    if (btFound) {
       isBluetoothConnected = true;
-      updateOutputBadges(`🎧 ${deviceLabel}`, true);
-      // Auto Profile: Bluetooth -> EQ ON & Vol 20%
+      const formattedName = `🎧 ${deviceLabel}`;
+      updateOutputBadges(formattedName);
+
+      // Bluetooth Profile: EQ ON, Volume 20%
       applyDSPState(true);
       setVolume(20);
-      showNotification(`Connected: ${deviceLabel} (Studio EQ ON • Vol 20%)`);
-    } else if (!btFound && isBluetoothConnected) {
+    } else {
       isBluetoothConnected = false;
-      updateOutputBadges('🔊 System Sound', false);
-      // Auto Profile: System Speaker -> EQ OFF & Vol 100%
+      const formattedName = '🔊 System Sound';
+      updateOutputBadges(formattedName);
+
+      // System Sound Profile: EQ OFF, Volume 100%
       applyDSPState(false);
       setVolume(100);
-      showNotification('Output: System Sound (DSP Flat • Vol 100%)');
-    } else {
-      updateOutputBadges(isBluetoothConnected ? `🎧 ${deviceLabel}` : '🔊 System Sound', isBluetoothConnected);
     }
   } catch (_) {
-    updateOutputBadges('🔊 System Sound', false);
+    isBluetoothConnected = false;
+    updateOutputBadges('🔊 System Sound');
+    applyDSPState(false);
+    setVolume(100);
   }
 }
 
-function updateOutputBadges(name, isBT) {
-  currentOutputName = name;
+function updateOutputBadges(displayText) {
+  currentOutputName = displayText;
   const miniBadge = document.getElementById('mini-audio-output-badge');
   const fullBadge = document.getElementById('fullscreen-audio-output-badge');
-  if (miniBadge) miniBadge.textContent = name;
-  if (fullBadge) fullBadge.textContent = name;
+  if (miniBadge) miniBadge.textContent = displayText;
+  if (fullBadge) fullBadge.textContent = displayText;
 }
 
 if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
@@ -682,11 +692,27 @@ function applyDSPState(enabled) {
   const chk = document.getElementById('card-eq-enable');
   if (chk) chk.checked = enabled;
 
-  filters.forEach((f, i) => {
-    f.gain.value = eqEnabled ? parseFloat(document.querySelectorAll('[data-band]')[i].value) : 0;
-  });
+  if (filters && filters.length) {
+    filters.forEach((f, i) => {
+      const slider = document.querySelector(`[data-band="${i}"]`);
+      const val = slider ? parseFloat(slider.value) : defaultGains[i];
+      f.gain.value = eqEnabled ? val : 0;
+    });
+  }
+
   if (preampGain && audioCtx) {
-    preampGain.gain.setValueAtTime(eqEnabled ? Math.pow(10, parseFloat(document.getElementById('eq-preamp').value) / 20) * 0.35 : 1, audioCtx.currentTime);
+    const pSlider = document.getElementById('eq-preamp');
+    const pVal = pSlider ? parseFloat(pSlider.value) : defaultPreamp;
+    preampGain.gain.setValueAtTime(
+      eqEnabled ? Math.pow(10, pVal / 20) * 0.35 : 1,
+      audioCtx.currentTime
+    );
+  }
+
+  if (bassFilterNode) {
+    const bSlider = document.getElementById('slider-bass-boost');
+    const bVal = bSlider ? parseFloat(bSlider.value) : 0;
+    bassFilterNode.gain.value = eqEnabled ? bVal : 0;
   }
 }
 
