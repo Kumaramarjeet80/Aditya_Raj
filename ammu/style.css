@@ -248,7 +248,7 @@ body {
   color: white;
 }
 
-/* Playlist Chips */
+/* Playlist Chips Bar with Visible 3-Dots */
 .playlist-chips {
   display: flex;
   gap: 8px;
@@ -265,7 +265,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 16px;
   font-size: 0.8rem;
   background: var(--bg-surface);
@@ -287,6 +287,18 @@ body {
   height: 20px;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.chip-dots-btn {
+  background: transparent;
+  border: none;
+  color: #f0f6fc;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 /* Sticky Toolbar */
@@ -351,7 +363,7 @@ body {
   font-weight: 600;
 }
 
-/* Song List Viewport */
+/* Upper Content (Preserves Scroll Position on Selection) */
 .upper-content {
   flex: 1;
   overflow-y: auto;
@@ -376,9 +388,9 @@ body {
   gap: 8px;
 }
 
-/* Active Drawer Playlist Container (Exact Screenshot Style) */
+/* Active In-Card Playlist Drawer (Exact 440px Height) */
 .card-compact-list {
-  max-height: 400px;
+  max-height: 440px;
   overflow-y: auto;
   padding-right: 4px;
   display: flex;
@@ -386,7 +398,6 @@ body {
   gap: 6px;
 }
 
-/* Drawer Card Item Styled to Match User's Screenshot */
 .drawer-track-row {
   display: flex;
   align-items: center;
@@ -506,6 +517,7 @@ body {
   border: 1px solid #f85149;
 }
 
+/* Universal Working Equalizer Animation */
 .now-playing-badge-group {
   display: inline-flex;
   align-items: center;
@@ -544,6 +556,7 @@ body {
 
 .mini-equalizer-bars.paused .eq-bar {
   height: 4px !important;
+  animation: none !important;
 }
 
 @keyframes miniEq {
@@ -589,18 +602,26 @@ body {
   justify-content: center;
 }
 
-/* 3-Dot Popup Context Menu */
+/* Enlarged, Highly Visible 3-Dots Button */
+.btn-more-dots {
+  font-size: 1.35rem !important;
+  color: #f0f6fc !important;
+  padding: 4px 6px !important;
+  line-height: 1;
+}
+
+/* Context Menu Popups */
 .context-menu-pop {
   position: fixed;
-  background: #1b2638;
+  background: #1c2635;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px;
+  border-radius: 10px;
+  padding: 6px;
   z-index: 10000;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.85);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .menu-pop-item {
@@ -615,7 +636,7 @@ body {
 }
 
 .menu-pop-item:hover {
-  background: #233147;
+  background: #273447;
 }
 
 /* Bottom Mini Player Bar */
@@ -786,7 +807,7 @@ body {
   cursor: pointer;
 }
 
-/* PINNED UPPER CONTROLS */
+/* Pinned Player Controls */
 .player-pinned-controls {
   flex-shrink: 0;
   padding: 8px 16px 4px 16px;
