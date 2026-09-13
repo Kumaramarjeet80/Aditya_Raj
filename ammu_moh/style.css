@@ -1634,3 +1634,7 @@ body {
   gap: 8px;
   margin-top: 14px;
 }
+/* Ensure Edit Profile modal appears above the Settings modal */
+#user-profile-modal {
+  z-index: 10001;
+}
