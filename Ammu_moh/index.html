@@ -551,10 +551,8 @@
         <img id="mini-cover" class="mini-art" src="my-icon.png" alt="Art" />
         <div class="mini-meta">
           <span class="mini-title" id="mini-title">No track playing</span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span class="mini-sub" id="mini-sub">Tap or swipe up to expand</span>
-            <span id="mini-audio-output-badge" class="device-output-badge">🔊 System Sound</span>
-          </div>
+          <span class="mini-sub" id="mini-sub">Playlist: All</span>
+          <span class="mini-output-line" id="mini-audio-output-badge">🔊 System Sound</span>
         </div>
       </div>
 
@@ -572,7 +570,6 @@
     <div class="card-top-nav">
       <button id="btn-close-box" class="btn-action">▼ Minimize</button>
       <div class="card-nav-controls">
-        <span id="fullscreen-audio-output-badge" class="device-output-badge">🔊 System Sound</span>
         <button id="btn-speed-toggle" class="chip-action-sm">1.0x</button>
         <button id="btn-sleep-timer" class="chip-action-sm">⏱️ Off</button>
       </div>
@@ -594,8 +591,10 @@
       <div class="detail-titles">
         <h2 id="box-title">Song Title</h2>
         <p id="box-playlist">Playlist: All</p>
+        <div class="fullscreen-output-row">
+          <span id="fullscreen-audio-output-badge" class="device-output-badge">🔊 System Sound</span>
+        </div>
       </div>
-
       <div class="current-marker-badge-row">
         <span id="active-marker-pill" class="active-marker-pill" style="display:none;">📍 <span id="active-marker-name">Verse</span></span>
       </div>
