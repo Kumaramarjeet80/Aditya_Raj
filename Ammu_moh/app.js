@@ -624,61 +624,92 @@ function ensureAudioPipeline() {
 // Hardware Audio Output Detection & Automatic Profile Switching
 // Hardware Audio Output Detection & Automatic Profile Switching
 // Audio Output Hardware Listener & Profile Engine
+// Smart Audio Output Detection & Profile Automation Engine
 async function detectAudioOutputDevices() {
   try {
     let btFound = false;
     let deviceLabel = 'System Sound';
 
     if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      
+      // Check both audio output sinks and audio input headsets (vital for mobile sandbox)
+      const audioOutputs = allDevices.filter(d => d.kind === 'audiooutput');
+      const audioInputs = allDevices.filter(d => d.kind === 'audioinput');
 
+      // 1. Inspect Audio Outputs
       for (const dev of audioOutputs) {
         const lbl = dev.label.toLowerCase();
-        if (
-          lbl.includes('bluetooth') ||
-          lbl.includes('wireless') ||
-          lbl.includes('headphone') ||
-          lbl.includes('buds') ||
-          lbl.includes('airpods') ||
-          lbl.includes('headset') ||
-          lbl.includes('earphones')
-        ) {
+        
+        // Skip built-in hardware that combines speaker/headphone labels
+        const isBuiltInSpeaker = lbl.includes('speaker') || 
+                                 lbl.includes('internal') || 
+                                 lbl.includes('built-in') || 
+                                 lbl.includes('realtek') || 
+                                 lbl.includes('integrated');
+
+        // Target true external headphone / Bluetooth markers
+        const isTrueHeadphone = lbl.includes('bluetooth') || 
+                                lbl.includes('wireless') || 
+                                lbl.includes('buds') || 
+                                lbl.includes('airpods') || 
+                                lbl.includes('neckband') || 
+                                lbl.includes('headset') ||
+                                (lbl.includes('headphone') && !lbl.includes('speaker'));
+
+        if (isTrueHeadphone && !isBuiltInSpeaker) {
           btFound = true;
           deviceLabel = dev.label.replace(/\(.*\)/, '').trim() || 'Bluetooth Audio';
           break;
         }
       }
+
+      // 2. Mobile Browser Fallback: Inspect Audio Inputs (Microphones / Headsets)
+      if (!btFound) {
+        for (const inDev of audioInputs) {
+          const inLbl = inDev.label.toLowerCase();
+          if (
+            inLbl.includes('headset') || 
+            inLbl.includes('bluetooth') || 
+            inLbl.includes('wireless') || 
+            inLbl.includes('wired') ||
+            inLbl.includes('earphones')
+          ) {
+            btFound = true;
+            deviceLabel = inDev.label.replace(/\(.*\)/, '').trim() || 'Headset / Bluetooth';
+            break;
+          }
+        }
+      }
     }
 
     if (btFound) {
-      // 1. EARPHONES / BLUETOOTH CONNECTED
+      // HEADPHONES / BLUETOOTH CONNECTED
       isBluetoothConnected = true;
       const formattedName = `🎧 ${deviceLabel}`;
       updateOutputBadges(formattedName);
 
-      // Auto-profile: DSP ON, Volume 20%
+      // Rule: DSP Active (ON), Volume 20%
       applyDSPState(true);
       setVolume(20);
-      showNotification(`Connected: ${deviceLabel} (DSP ON • Vol 20%)`);
     } else {
-      // 2. EARPHONES DISCONNECTED / SYSTEM SOUND
+      // SYSTEM SOUND / BUILT-IN SPEAKERS
       const wasListeningOnHeadphones = isBluetoothConnected;
       isBluetoothConnected = false;
       const formattedName = '🔊 System Sound';
       updateOutputBadges(formattedName);
 
-      // If user was actively listening through earphones and disconnected:
+      // If headphones were unplugged/disconnected mid-song, pause immediately
       if (wasListeningOnHeadphones && !audio.paused) {
         isManualPause = true;
         wasPlayingBeforeInterruption = false;
         audio.pause();
         syncButtons(false);
         syncGlobalEqualizerBars(false);
-        showNotification('Earphones disconnected: Playback paused');
+        showNotification('Headphones disconnected: Playback paused');
       }
 
-      // Auto-profile: DSP OFF, Volume 100%
+      // Rule: DSP Inactive (OFF / Flat), Volume 100%
       applyDSPState(false);
       setVolume(100);
     }
@@ -698,7 +729,7 @@ function updateOutputBadges(displayText) {
   if (fullBadge) fullBadge.textContent = displayText;
 }
 
-// Live hardware change listeners
+// Live hardware change listeners with double buffer for Bluetooth handshakes
 if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
   navigator.mediaDevices.addEventListener('devicechange', () => {
     detectAudioOutputDevices();
