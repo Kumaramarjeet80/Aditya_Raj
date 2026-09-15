@@ -5,7 +5,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // =============================================================
-// DOM REFERENCES (TOP-LEVEL INITIALIZATION)
+// DOM REFERENCES
 // =============================================================
 const playlistTabs = document.getElementById('playlist-tabs');
 const songList = document.getElementById('song-list');
@@ -103,7 +103,7 @@ const timestampTimePreview = document.getElementById('timestamp-time-preview');
 const timestampMarkersList = document.getElementById('timestamp-markers-list');
 const lyricsTextarea = document.getElementById('lyrics-textarea');
 
-// Processing Modal Elements
+// Global Processing Modal
 const globalProcessingModal = document.getElementById('global-processing-modal');
 const processingStatusMsg = document.getElementById('processing-status-msg');
 const processingProgressBar = document.getElementById('processing-progress-bar');
@@ -118,7 +118,6 @@ function showProcessingModal(title = 'Processing Audio Data...') {
   if (processingStatusMsg) processingStatusMsg.textContent = 'Please wait...';
   isOperationCancelled = false;
 
-  // Only render if operation exceeds 1 second
   if (processingTimer) clearTimeout(processingTimer);
   processingTimer = setTimeout(() => {
     if (globalProcessingModal) globalProcessingModal.style.display = 'flex';
@@ -146,7 +145,7 @@ if (btnCancelProcessingTask) {
 }
 
 // =============================================================
-// INDIAN STANDARD TIME (IST) FORMATTERS
+// INDIAN STANDARD TIME FORMATTERS
 // =============================================================
 function getIndianStandardTime(dateObj = new Date()) {
   return new Intl.DateTimeFormat('en-IN', {
@@ -171,7 +170,7 @@ function getIndianStandardDateOnly(dateObj = new Date()) {
 }
 
 // =============================================================
-// OFFLINE WEB CRYPTO (AES-GCM-256 & SHA-256)
+// CRYPTO HELPERS
 // =============================================================
 async function hashPasskey(passkey) {
   if (!passkey) return '';
@@ -266,7 +265,7 @@ async function triggerPWAInstall() {
     }
     deferredPrompt = null;
   } else {
-    alert('To install the app:\n1. Tap the 3 dots (⋮) in your browser.\n2. Tap "Install app" (or "Add to Home screen").');
+    alert('To install the app:\n1. Tap the 3 dots in your browser.\n2. Tap "Install app" (or "Add to Home screen").');
   }
 }
 
@@ -467,7 +466,7 @@ function showEmotionalMessage(isLiked) {
   }
 
   container.style.display = 'none';
-  void container.offsetWidth; // Trigger reflow
+  void container.offsetWidth;
 
   if (isLiked) {
     emojiEl.innerHTML = '&#129401;';
@@ -489,7 +488,7 @@ function showEmotionalMessage(isLiked) {
 // =============================================================
 // INDEXEDDB DATABASE ENGINE
 // =============================================================
-const DB_NAME = 'AmmuMusicDB_v280';
+const DB_NAME = 'AmmuMusicDB_v290';
 const DB_VER = 1;
 let db;
 
@@ -853,7 +852,6 @@ let crossfadeGainNode = null;
 let preampGain = null;
 let bassFilterNode = null;
 let analyserNode = null;
-let keepAliveSilentOsc = null;
 
 // VLC EQ Frequencies
 const vlcBands = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
@@ -863,14 +861,15 @@ let vlcFilters = [];
 // Vivo EQ Frequencies
 const vivoBands = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 let vivoFilters = [];
-let activeEqEngine = 'vlc'; // 'vlc' OR 'vivo' (Exclusive)
+let activeEqEngine = 'vlc'; // 'vlc' OR 'vivo' (Strictly Mutually Exclusive)
 let eqEnabled = false;
 let currentVol = 1.0;
 let currentCrossfadeDuration = 2;
 
-// Interruption & Notification Handling
+// Interruption & Wake Lock Tracking
 let wasPlayingBeforeInterruption = false;
 let isManualPause = false;
+let screenWakeLock = null;
 
 const vivoOfficialPresets = {
   custom: [12, 8, 5, 2, -2, -6, -8, -11, -3, 7],
@@ -949,29 +948,35 @@ function ensureAudioPipeline() {
     crossfadeGainNode.connect(masterGainNode);
     masterGainNode.connect(audioCtx.destination);
 
-    // Persistent Background Oscillator: keeps audio stream alive on lock screen
-    try {
-      const silentOsc = audioCtx.createOscillator();
-      const silentGain = audioCtx.createGain();
-      silentGain.gain.value = 0.00001; // Silent
-      silentOsc.connect(silentGain);
-      silentGain.connect(audioCtx.destination);
-      silentOsc.start();
-      keepAliveSilentOsc = silentOsc;
-    } catch (_) {}
-
     startVisualizerLoop();
   } catch (e) {
     console.warn('Web Audio DSP pipeline fallback:', e);
   }
 }
 
-// Anti-Noise Buffer Flush: Eliminates static/noise burst when resuming
+// Anti-Noise Buffer Flush
 function cleanAudioBufferResume() {
   if (!audioCtx || !masterGainNode) return;
   const now = audioCtx.currentTime;
   masterGainNode.gain.setValueAtTime(0.0001, now);
   masterGainNode.gain.linearRampToValueAtTime(currentVol, now + 0.035);
+}
+
+// Background Wake Lock Protection
+async function acquireWakeLock() {
+  try {
+    if ('wakeLock' in navigator && !screenWakeLock) {
+      screenWakeLock = await navigator.wakeLock.request('screen');
+      screenWakeLock.addEventListener('release', () => { screenWakeLock = null; });
+    }
+  } catch (_) {}
+}
+
+function releaseWakeLock() {
+  if (screenWakeLock) {
+    try { screenWakeLock.release(); } catch (_) {}
+    screenWakeLock = null;
+  }
 }
 
 // Mutually Exclusive DSP Switcher
@@ -981,7 +986,6 @@ function applyDSPState(enabled) {
   if (chk) chk.checked = enabled;
 
   if (activeEqEngine === 'vlc') {
-    // Engage VLC, completely bypass Vivo
     if (vlcFilters && vlcFilters.length) {
       vlcFilters.forEach((f, i) => {
         const slider = document.querySelector(`[data-vlc-band="${i}"]`);
@@ -993,7 +997,6 @@ function applyDSPState(enabled) {
       vivoFilters.forEach(f => { if (f) f.gain.value = 0; });
     }
   } else {
-    // Engage Vivo, completely bypass VLC
     if (vlcFilters && vlcFilters.length) {
       vlcFilters.forEach(f => { if (f) f.gain.value = 0; });
     }
@@ -1021,7 +1024,7 @@ function applyDSPState(enabled) {
 
   if (eqEnabled) {
     setVolume(20);
-    showNotification(`DSP Active: ${activeEqEngine === 'vlc' ? 'VLC EQ' : 'Vivo Studio EQ'} Engaged (20% Vol)`);
+    showNotification(`DSP Active: ${activeEqEngine === 'vlc' ? 'VLC EQ' : 'Vivo Studio EQ'} (20% Vol)`);
   } else {
     setVolume(100);
     showNotification('DSP Bypassed: Flat Response (100% Vol)');
@@ -1052,7 +1055,7 @@ document.querySelectorAll('.vol-snap-btn').forEach(btn => {
   };
 });
 
-// Mutually Exclusive Switchers: Clicking one switches mode and deactivates the other
+// Dual EQ Tab Switching
 const btnTabVlc = document.getElementById('btn-tab-vlc-eq');
 const btnTabVivo = document.getElementById('btn-tab-vivo-eq');
 
@@ -1085,14 +1088,13 @@ if (btnTabVivo) {
   };
 }
 
-// Quick EQ Presets Strip
+// Quick Presets
 document.querySelectorAll('.quick-preset-chip').forEach(chip => {
   chip.onclick = () => {
     triggerHaptic(20);
     document.querySelectorAll('.quick-preset-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
-    const p = chip.dataset.preset;
-    applyQuickPreset(p);
+    applyQuickPreset(chip.dataset.preset);
   };
 });
 
@@ -1112,7 +1114,7 @@ function applyQuickPreset(type) {
   showNotification(`Preset Applied: ${type.toUpperCase()}`);
 }
 
-// Vivo Studio Preset Map
+// Vivo Preset Handling
 function applyVivoPreset(presetKey, customGains = null) {
   activeVivoPresetKey = presetKey;
   currentVivoGains = customGains ? [...customGains] : [...(vivoOfficialPresets[presetKey] || vivoOfficialPresets.custom)];
@@ -1134,8 +1136,7 @@ function applyVivoPreset(presetKey, customGains = null) {
 document.querySelectorAll('.vivo-preset-btn').forEach(btn => {
   btn.onclick = () => {
     triggerHaptic(20);
-    const key = btn.dataset.vpreset;
-    applyVivoPreset(key);
+    applyVivoPreset(btn.dataset.vpreset);
   };
 });
 
@@ -1423,7 +1424,7 @@ if (miniPlayerBar) {
   }, { passive: true });
 }
 
-// Fluid Pull-Down Dismiss on Fullscreen Card
+// Fluid Pull-Down Dismiss
 let dragStartY = 0;
 let isDraggingCard = false;
 
@@ -1500,17 +1501,27 @@ function updateAmbientGlow(imgEl) {
   } catch (_) {}
 }
 
-// Android Audio Interruption & Notification Listeners
-audio.addEventListener('pause', () => {
-  if (!isManualPause && currentPlayingTrack) {
-    wasPlayingBeforeInterruption = true;
-  }
-});
-
+// Native Synchronized Engine Listeners
 audio.addEventListener('play', () => {
   isManualPause = false;
   wasPlayingBeforeInterruption = false;
+  acquireWakeLock();
   cleanAudioBufferResume();
+  syncButtons(true);
+  syncGlobalEqualizerBars(true);
+  if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, true);
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+});
+
+audio.addEventListener('pause', () => {
+  releaseWakeLock();
+  syncButtons(false);
+  syncGlobalEqualizerBars(false);
+  if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, false);
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+  if (!isManualPause && currentPlayingTrack) {
+    wasPlayingBeforeInterruption = true;
+  }
 });
 
 window.addEventListener('focus', () => {
@@ -1551,6 +1562,7 @@ let activeContextTrack = null;
 let activeContextPlaylist = null;
 let tempEditPlaylistArt = null;
 let isCurrentAdminKeyRevealed = false;
+let currentActiveBlobUrl = null;
 
 // Header Settings Trigger
 const btnMainSettings = document.getElementById('btn-main-settings-trigger');
@@ -1828,7 +1840,7 @@ function openAddToPlaylistSubmenu() {
   }
 }
 
-// Playlist Context Menu
+// Playlist Context Actions
 const plBtnDownloadAll = document.getElementById('pl-menu-btn-download-all');
 if (plBtnDownloadAll) {
   plBtnDownloadAll.onclick = () => {
@@ -1904,7 +1916,7 @@ function promptGenericKeyAuth(title, desc, acceptedHashes, onSuccess) {
   });
 }
 
-// Edit Playlist Details Modal
+// Edit Playlist Modal
 function openEditPlaylistModal(pl) {
   if (!editPlaylistModal) return;
   if (editPlaylistNameInput) editPlaylistNameInput.value = pl.localName || pl.name;
@@ -2087,7 +2099,7 @@ if (btnPurgeDup) {
   };
 }
 
-// Bulk Download Actions
+// Bulk Actions
 const btnUnivDownload = document.getElementById('btn-universal-download-all');
 if (btnUnivDownload) {
   btnUnivDownload.onclick = async () => {
@@ -2742,8 +2754,6 @@ async function renderExportTrackPermissionMatrix() {
   );
 
   const allTracks = await dbOps.getAllTracks();
-  
-  // Strictly filter down to tracks that belong to the selected playlists
   const scopedTracks = allTracks.filter(t => selectedPlIds.has(t.playlistId) || t.playlistId === 'all');
   const filtered = scopedTracks.filter(t => t.name.toLowerCase().includes(q));
 
@@ -2902,7 +2912,7 @@ if (btnExpBackup) {
   };
 }
 
-// Scoped Export Pipeline with Centered Progress Modal
+// Scoped Export Pipeline
 async function executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds) {
   showProcessingModal('Exporting Sound Library...');
   const allTracks = await dbOps.getAllTracks();
@@ -3001,7 +3011,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   }
 
   const payload = {
-    version: '17.0',
+    version: '18.0',
     exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
@@ -3578,7 +3588,6 @@ async function loadPlaylists() {
   }
 
   const allCategory = { id: 'all', name: 'All', cover: currentAppLogo, author: userProfile };
-  
   const smartRotation = { id: 'smart_rotation', name: '🔥 Heavy Rotation', cover: currentAppLogo, author: userProfile, isSmart: true };
   const smartRecent = { id: 'smart_recent', name: '🕒 Recently Added', cover: currentAppLogo, author: userProfile, isSmart: true };
   const smartUnplayed = { id: 'smart_unplayed', name: '💤 Unplayed', cover: currentAppLogo, author: userProfile, isSmart: true };
@@ -3700,7 +3709,6 @@ function updateActiveTrackClasses(songName, isPlaying) {
 }
 
 function renderFilteredTracks() {
-  // Capture current scroll position
   const savedScrollY = upperContentViewport ? upperContentViewport.scrollTop : 0;
 
   const q = librarySearchInput ? librarySearchInput.value.trim().toLowerCase() : '';
@@ -3862,7 +3870,6 @@ function renderFilteredTracks() {
     songList.appendChild(li);
   });
 
-  // Maintain list scroll without jump
   if (upperContentViewport) {
     requestAnimationFrame(() => {
       upperContentViewport.scrollTop = savedScrollY;
@@ -3897,6 +3904,10 @@ function queueSongPlayNext(trk) {
 function stopPlayingTrackImmediately() {
   audio.pause();
   audio.src = '';
+  if (currentActiveBlobUrl) {
+    URL.revokeObjectURL(currentActiveBlobUrl);
+    currentActiveBlobUrl = null;
+  }
   currentPlayingTrack = null;
   wasPlayingBeforeInterruption = false;
   isManualPause = true;
@@ -4172,7 +4183,7 @@ if (btnConfirmRename) {
   };
 }
 
-// Favorites Toggle: Protected Against Rapid Taps
+// Favorites Toggle
 async function toggleFavorite(trk) {
   triggerHaptic(25);
   const songKey = trk.name;
@@ -4367,7 +4378,7 @@ if (filePicker) {
   };
 }
 
-// Queue Playback Controller
+// Full In-Memory High-Fidelity Preload & Queue Playback Controller
 function playTrackFromBrowsing(idx) {
   if (idx < 0 || idx >= browsingTracks.length) return;
   playingQueue = [...browsingTracks];
@@ -4386,23 +4397,32 @@ async function playTrackDirect(trk) {
     if (audio.paused) {
       audio.play();
       cleanAudioBufferResume();
-      syncButtons(true);
-      syncGlobalEqualizerBars(true);
-      updateActiveTrackClasses(trk.name, true);
     }
     return;
   }
 
+  // Preload complete audio buffer into memory to prevent read underruns
+  try {
+    const arrayBuffer = await trk.blob.arrayBuffer();
+    const memoryBlob = new Blob([arrayBuffer], { type: trk.blob.type || 'audio/mp3' });
+    
+    if (currentActiveBlobUrl) {
+      URL.revokeObjectURL(currentActiveBlobUrl);
+    }
+    currentActiveBlobUrl = URL.createObjectURL(memoryBlob);
+    audio.src = currentActiveBlobUrl;
+  } catch (_) {
+    if (currentActiveBlobUrl) URL.revokeObjectURL(currentActiveBlobUrl);
+    currentActiveBlobUrl = URL.createObjectURL(trk.blob);
+    audio.src = currentActiveBlobUrl;
+  }
+
   currentPlayingTrack = trk;
-  audio.src = URL.createObjectURL(trk.blob);
   audio.playbackRate = speedList[currentSpeedIndex];
 
   cleanAudioBufferResume();
   audio.play().then(() => {
-    syncButtons(true);
-    syncGlobalEqualizerBars(true);
     updateMediaSession();
-    updateActiveTrackClasses(trk.name, true);
   }).catch(() => {});
 
   if (miniTitle) miniTitle.textContent = trk.name;
@@ -4437,10 +4457,6 @@ function syncButtons(isPlaying) {
   if (artDisplayBox) {
     artDisplayBox.classList.toggle('paused', !isPlaying);
   }
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-  }
-  renderCardReorderList();
 }
 
 function togglePlay() {
@@ -4453,16 +4469,10 @@ function togglePlay() {
   if (audio.paused) {
     cleanAudioBufferResume();
     audio.play();
-    syncButtons(true);
-    syncGlobalEqualizerBars(true);
-    if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, true);
   } else {
     isManualPause = true;
     wasPlayingBeforeInterruption = false;
     audio.pause();
-    syncButtons(false);
-    syncGlobalEqualizerBars(false);
-    if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, false);
   }
 }
 
@@ -4533,6 +4543,7 @@ if (modalBtnLike) {
   };
 }
 
+// Lock-Screen MediaSession Controls
 function updateMediaSession() {
   if (!('mediaSession' in navigator) || !currentPlayingTrack) return;
 
@@ -4561,22 +4572,13 @@ function updateMediaSession() {
   navigator.mediaSession.setActionHandler('play', () => {
     ensureAudioPipeline();
     cleanAudioBufferResume();
-    audio.play().then(() => {
-      syncButtons(true);
-      syncGlobalEqualizerBars(true);
-      navigator.mediaSession.playbackState = 'playing';
-      if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, true);
-    }).catch(() => {});
+    audio.play().catch(() => {});
   });
 
   navigator.mediaSession.setActionHandler('pause', () => {
     isManualPause = true;
     wasPlayingBeforeInterruption = false;
     audio.pause();
-    syncButtons(false);
-    syncGlobalEqualizerBars(false);
-    navigator.mediaSession.playbackState = 'paused';
-    if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, false);
   });
 
   navigator.mediaSession.setActionHandler('nexttrack', loopNext);
@@ -4704,8 +4706,6 @@ if (btnSleepTimer) {
           isManualPause = true;
           wasPlayingBeforeInterruption = false;
           audio.pause();
-          syncButtons(false);
-          syncGlobalEqualizerBars(false);
           setVolume(100);
           btnSleepTimer.textContent = '⏱️ Off';
           sleepIndex = 0;
@@ -5009,7 +5009,7 @@ async function renderTrimmedClipsForCurrent() {
   });
 }
 
-// Embedded Drawers Navigation
+// Drawers
 const panels = {
   vol: document.getElementById('card-volume-panel'),
   eq: document.getElementById('card-eq-panel'),
@@ -5152,8 +5152,6 @@ function renderTimestampsDrawerList() {
       if (audio.paused) {
         audio.play();
         cleanAudioBufferResume();
-        syncButtons(true);
-        syncGlobalEqualizerBars(true);
       }
       showNotification(`Jumped to: ${ts.name}`);
       renderTimestampsDrawerList();
@@ -5314,9 +5312,7 @@ if (seekBar) {
   };
 }
 
-// =============================================================
-// IN-CARD QUEUE: TWO-ZONE REORDERING & AUTO-SCROLL
-// =============================================================
+// Queue Management
 function calculateAndRenderQueueDuration() {
   const badge = document.getElementById('card-queue-duration-badge');
   if (!badge) return;
@@ -5405,7 +5401,6 @@ function renderCardReorderList() {
     li.className = `drawer-track-row ${isThisPlaying ? 'now-playing-active' : ''} ${isMissing ? 'missing-storage' : ''}`;
     li.dataset.index = idx;
 
-    // Two-Zone Layout: Zone A (Drag/Swap) vs Zone B (Scroll-Only Buttons)
     li.innerHTML = `
       <div class="drawer-track-info-zone" data-zone="info">
         <span class="song-name" style="cursor:pointer;">
@@ -5442,7 +5437,6 @@ function renderCardReorderList() {
         playTrackDirect(trk);
       };
 
-      // Long-Press Touch Drag Engine: Restricted Exclusively to Info Zone
       let pressTimer = null;
       let isDraggingThis = false;
 
@@ -5485,7 +5479,6 @@ function renderCardReorderList() {
 
           updateDragPreviewPosition(touchY);
 
-          // Boundary Auto-Scroll
           const scrollZone = 44;
           if (touchY < panelRect.top + scrollZone) {
             startBoundaryAutoScroll(-6);
@@ -5604,7 +5597,7 @@ window.removeTrackFromQueue = (idx) => {
   showNotification(`Removed "${(removed && removed.name) || 'Track'}" from playing queue`);
 };
 
-// VLC Equalizer Inputs
+// VLC EQ Handlers
 const sliderBassBoost = document.getElementById('slider-bass-boost');
 if (sliderBassBoost) {
   sliderBassBoost.oninput = (e) => {
@@ -5667,7 +5660,7 @@ if (btnResetEqCard) {
 }
 
 // =============================================================
-// SYSTEM BOOT (SAFE STARTUP SEQUENCE)
+// SYSTEM BOOT (SAFE STARTUP)
 // =============================================================
 initDB().then(async () => {
   try {
