@@ -17,6 +17,19 @@
   <div id="toast-container" class="toast-container"></div>
   <div id="heart-burst-overlay" class="heart-burst-overlay" style="display:none;"></div>
 
+  <!-- Global Dimmed Processing Modal (>1s Operations) -->
+  <div id="global-processing-modal" class="processing-backdrop" style="display:none;">
+    <div class="processing-card">
+      <div class="processing-spinner"></div>
+      <h3 id="processing-title">Processing Audio Data...</h3>
+      <p id="processing-status-msg" class="processing-status-text">Preparing files...</p>
+      <div class="processing-progress-track">
+        <div id="processing-progress-bar" class="processing-progress-fill" style="width: 0%;"></div>
+      </div>
+      <button type="button" id="btn-cancel-processing-task" class="btn-cancel-task">✕ Cancel Task Immediately</button>
+    </div>
+  </div>
+
   <!-- Floating Emotional Banner with Isolated Large Cross-Platform Emoji -->
   <div id="emotional-floating-container" class="emotional-floating-wrapper" style="display:none;">
     <div id="emotional-big-emoji" class="emotional-big-emoji emoji-text">&#129401;</div>
@@ -923,7 +936,6 @@
 
           <!-- VIEW B: Authentic Vivo Studio Equalizer View -->
           <div id="vivo-eq-view-container" style="display:none;">
-            <!-- Save Preset Trigger Header -->
             <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
               <span id="vivo-active-preset-name" style="font-weight:700;color:#e83e8c;font-size:0.85rem;">Preset: Custom</span>
               <button id="btn-save-as-custom-eq" class="btn-action-sm" style="color:var(--accent-light);">➕ Save As Preset</button>
