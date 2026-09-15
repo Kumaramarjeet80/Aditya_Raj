@@ -29,11 +29,70 @@ function getIndianStandardDateOnly(dateObj = new Date()) {
   }).format(dateObj);
 }
 
+// -------------------------------------------------------------
+// 100% OFFLINE WEB CRYPTO (AES-GCM-256 & SHA-256)
+// -------------------------------------------------------------
 async function hashPasskey(passkey) {
   if (!passkey) return '';
   const enc = new TextEncoder().encode(passkey);
   const buf = await crypto.subtle.digest('SHA-256', enc);
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function deriveCryptoKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptPayloadAES(plainText, password) {
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveCryptoKey(password, salt);
+  const encryptedBuf = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: iv },
+    key,
+    enc.encode(plainText)
+  );
+
+  return JSON.stringify({
+    encrypted: true,
+    salt: Array.from(salt),
+    iv: Array.from(iv),
+    cipherData: Array.from(new Uint8Array(encryptedBuf))
+  });
+}
+
+async function decryptPayloadAES(encryptedJsonObj, password) {
+  const salt = new Uint8Array(encryptedJsonObj.salt);
+  const iv = new Uint8Array(encryptedJsonObj.iv);
+  const cipherData = new Uint8Array(encryptedJsonObj.cipherData);
+  const key = await deriveCryptoKey(password, salt);
+
+  const decryptedBuf = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: iv },
+    key,
+    cipherData
+  );
+  return new TextDecoder().decode(decryptedBuf);
 }
 
 // -------------------------------------------------------------
@@ -45,14 +104,14 @@ const bannerInstallBtn = document.getElementById('btn-banner-install');
 const bannerDismissBtn = document.getElementById('btn-banner-dismiss');
 const isRunningStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-if (!isRunningStandalone) {
+if (!isRunningStandalone && persistentInstallBanner) {
   persistentInstallBanner.style.display = 'flex';
 }
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  if (!isRunningStandalone) {
+  if (!isRunningStandalone && persistentInstallBanner) {
     persistentInstallBanner.style.display = 'flex';
   }
 });
@@ -61,12 +120,12 @@ async function triggerPWAInstall() {
   if (deferredPrompt) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
+    if (outcome === 'accepted' && persistentInstallBanner) {
       persistentInstallBanner.style.display = 'none';
     }
     deferredPrompt = null;
   } else {
-    alert('To install the app:\n1. Tap the 3 dots (⋮) in Chrome.\n2. Tap "Install app" (or "Add to Home screen").');
+    alert('To install the app:\n1. Tap the 3 dots (⋮) in your browser.\n2. Tap "Install app" (or "Add to Home screen").');
   }
 }
 
@@ -99,7 +158,7 @@ window.addEventListener('popstate', () => {
     'dev-modal',
     'onboarding-modal',
     'user-profile-modal',
-    'passkey-modal'
+    'key-auth-modal'
   ];
   for (const id of modals) {
     const el = document.getElementById(id);
@@ -118,10 +177,12 @@ function dismissAllMenus() {
   const plMenu = document.getElementById('playlist-context-menu');
   const headerMenu = document.getElementById('header-settings-menu');
   const sortMenu = document.getElementById('sort-by-menu');
+  const subMenu = document.getElementById('add-to-playlist-submenu');
   if (trackMenu) trackMenu.style.display = 'none';
   if (plMenu) plMenu.style.display = 'none';
   if (headerMenu) headerMenu.style.display = 'none';
   if (sortMenu) sortMenu.style.display = 'none';
+  if (subMenu) subMenu.style.display = 'none';
 }
 
 window.addEventListener('touchmove', dismissAllMenus, { passive: true });
@@ -230,10 +291,36 @@ function triggerHeartBurst(isFavorited) {
   }, 1600);
 }
 
+// Emotional Floating Banner with Large Isolated Emoji
+let emotionalTimeout = null;
+function showEmotionalMessage(isLiked) {
+  const container = document.getElementById('emotional-floating-container');
+  const emojiEl = document.getElementById('emotional-big-emoji');
+  const titleEl = document.getElementById('emotional-title');
+  const subEl = document.getElementById('emotional-sub');
+
+  if (emotionalTimeout) clearTimeout(emotionalTimeout);
+
+  if (isLiked) {
+    emojiEl.textContent = '🥹';
+    titleEl.textContent = 'Thank you for loving me 🥹';
+    subEl.textContent = 'From Amarjeet';
+  } else {
+    emojiEl.textContent = '🥲';
+    titleEl.textContent = 'Dil tod diya na mera 🥲';
+    subEl.textContent = 'From Amarjeet';
+  }
+
+  container.style.display = 'flex';
+  emotionalTimeout = setTimeout(() => {
+    container.style.display = 'none';
+  }, 2800);
+}
+
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmmuMusicDB_v200';
+const DB_NAME = 'AmmuMusicDB_v210';
 const DB_VER = 1;
 let db;
 
@@ -550,7 +637,7 @@ const dbOps = {
 };
 
 // ==========================================
-// AUDIO ENGINE & HARDWARE SINK MONITOR
+// AUDIO ENGINE (NO DEVICE DETECTION, 100% DEFAULT, DSP 20%)
 // ==========================================
 const audio = document.getElementById('audio-engine');
 let audioCtx = null;
@@ -564,11 +651,9 @@ const bands = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
 const defaultGains = [18.2, 11.8, 3.7, -1.7, -7.8, 2.1, 9.8, 14.1, -3.6, 11.6];
 const defaultPreamp = 14.1;
 let filters = [];
-let eqEnabled = true;
-let currentVol = 0.20;
+let eqEnabled = false; // Default DSP OFF
+let currentVol = 1.0;   // Default Volume 100%
 let isVisualizerActive = true;
-let currentOutputName = 'System Sound';
-let isBluetoothConnected = false;
 
 let wasPlayingBeforeInterruption = false;
 let isManualPause = false;
@@ -590,7 +675,7 @@ function ensureAudioPipeline() {
     masterGainNode.gain.setValueAtTime(currentVol, audioCtx.currentTime);
 
     preampGain = audioCtx.createGain();
-    preampGain.gain.setValueAtTime(Math.pow(10, defaultPreamp / 20) * 0.35, audioCtx.currentTime);
+    preampGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
 
     bassFilterNode = audioCtx.createBiquadFilter();
     bassFilterNode.type = 'lowshelf';
@@ -603,7 +688,7 @@ function ensureAudioPipeline() {
       f.type = i === 0 ? 'lowshelf' : i === bands.length - 1 ? 'highshelf' : 'peaking';
       if (i !== 0 && i !== bands.length - 1) f.Q.value = 1.0;
       f.frequency.value = freq;
-      f.gain.value = defaultGains[i];
+      f.gain.value = 0; // Flat initial
       prevNode.connect(f);
       prevNode = f;
       filters.push(f);
@@ -621,121 +706,7 @@ function ensureAudioPipeline() {
   }
 }
 
-// Hardware Audio Output Detection & Automatic Profile Switching
-// Hardware Audio Output Detection & Automatic Profile Switching
-// Audio Output Hardware Listener & Profile Engine
-// Smart Audio Output Detection & Profile Automation Engine
-async function detectAudioOutputDevices() {
-  try {
-    let btFound = false;
-    let deviceLabel = 'System Sound';
-
-    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-      const allDevices = await navigator.mediaDevices.enumerateDevices();
-      
-      // Check both audio output sinks and audio input headsets (vital for mobile sandbox)
-      const audioOutputs = allDevices.filter(d => d.kind === 'audiooutput');
-      const audioInputs = allDevices.filter(d => d.kind === 'audioinput');
-
-      // 1. Inspect Audio Outputs
-      for (const dev of audioOutputs) {
-        const lbl = dev.label.toLowerCase();
-        
-        // Skip built-in hardware that combines speaker/headphone labels
-        const isBuiltInSpeaker = lbl.includes('speaker') || 
-                                 lbl.includes('internal') || 
-                                 lbl.includes('built-in') || 
-                                 lbl.includes('realtek') || 
-                                 lbl.includes('integrated');
-
-        // Target true external headphone / Bluetooth markers
-        const isTrueHeadphone = lbl.includes('bluetooth') || 
-                                lbl.includes('wireless') || 
-                                lbl.includes('buds') || 
-                                lbl.includes('airpods') || 
-                                lbl.includes('neckband') || 
-                                lbl.includes('headset') ||
-                                (lbl.includes('headphone') && !lbl.includes('speaker'));
-
-        if (isTrueHeadphone && !isBuiltInSpeaker) {
-          btFound = true;
-          deviceLabel = dev.label.replace(/\(.*\)/, '').trim() || 'Bluetooth Audio';
-          break;
-        }
-      }
-
-      // 2. Mobile Browser Fallback: Inspect Audio Inputs (Microphones / Headsets)
-      if (!btFound) {
-        for (const inDev of audioInputs) {
-          const inLbl = inDev.label.toLowerCase();
-          if (
-            inLbl.includes('headset') || 
-            inLbl.includes('bluetooth') || 
-            inLbl.includes('wireless') || 
-            inLbl.includes('wired') ||
-            inLbl.includes('earphones')
-          ) {
-            btFound = true;
-            deviceLabel = inDev.label.replace(/\(.*\)/, '').trim() || 'Headset / Bluetooth';
-            break;
-          }
-        }
-      }
-    }
-
-    if (btFound) {
-      // HEADPHONES / BLUETOOTH CONNECTED
-      isBluetoothConnected = true;
-      const formattedName = `🎧 ${deviceLabel}`;
-      updateOutputBadges(formattedName);
-
-      // Rule: DSP Active (ON), Volume 20%
-      applyDSPState(true);
-      setVolume(20);
-    } else {
-      // SYSTEM SOUND / BUILT-IN SPEAKERS
-      const wasListeningOnHeadphones = isBluetoothConnected;
-      isBluetoothConnected = false;
-      const formattedName = '🔊 System Sound';
-      updateOutputBadges(formattedName);
-
-      // If headphones were unplugged/disconnected mid-song, pause immediately
-      if (wasListeningOnHeadphones && !audio.paused) {
-        isManualPause = true;
-        wasPlayingBeforeInterruption = false;
-        audio.pause();
-        syncButtons(false);
-        syncGlobalEqualizerBars(false);
-        showNotification('Headphones disconnected: Playback paused');
-      }
-
-      // Rule: DSP Inactive (OFF / Flat), Volume 100%
-      applyDSPState(false);
-      setVolume(100);
-    }
-  } catch (_) {
-    isBluetoothConnected = false;
-    updateOutputBadges('🔊 System Sound');
-    applyDSPState(false);
-    setVolume(100);
-  }
-}
-
-function updateOutputBadges(displayText) {
-  currentOutputName = displayText;
-  const miniBadge = document.getElementById('mini-audio-output-badge');
-  const fullBadge = document.getElementById('fullscreen-audio-output-badge');
-  if (miniBadge) miniBadge.textContent = displayText;
-  if (fullBadge) fullBadge.textContent = displayText;
-}
-
-// Live hardware change listeners with double buffer for Bluetooth handshakes
-if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
-  navigator.mediaDevices.addEventListener('devicechange', () => {
-    detectAudioOutputDevices();
-    setTimeout(detectAudioOutputDevices, 350);
-  });
-}
+// DSP Rule: Turning DSP Active drops Volume to 20%; Turning DSP Off sets Volume to 100%
 function applyDSPState(enabled) {
   eqEnabled = enabled;
   const chk = document.getElementById('card-eq-enable');
@@ -763,34 +734,15 @@ function applyDSPState(enabled) {
     const bVal = bSlider ? parseFloat(bSlider.value) : 0;
     bassFilterNode.gain.value = eqEnabled ? bVal : 0;
   }
-}
 
-audio.addEventListener('play', () => {
-  wasPlayingBeforeInterruption = true;
-  isManualPause = false;
-  syncButtons(true);
-  syncGlobalEqualizerBars(true);
-});
-
-audio.addEventListener('pause', () => {
-  syncButtons(false);
-  syncGlobalEqualizerBars(false);
-});
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-    if (wasPlayingBeforeInterruption && !isManualPause && audio.paused && audio.src) {
-      audio.play().then(() => {
-        syncButtons(true);
-        syncGlobalEqualizerBars(true);
-        updateMediaSession();
-      }).catch(() => {});
-    }
+  if (eqEnabled) {
+    setVolume(20);
+    showNotification('DSP Active: VLC 10-Band EQ ON (Volume 20%)');
+  } else {
+    setVolume(100);
+    showNotification('DSP Bypassed: Flat Response (Volume 100%)');
   }
-});
+}
 
 function setVolume(pct) {
   pct = Math.max(0, Math.min(100, Math.round(pct)));
@@ -815,9 +767,9 @@ document.querySelectorAll('.vol-snap-btn').forEach(btn => {
 });
 
 const visualizerCanvas = document.getElementById('audio-visualizer');
-const vCtx = visualizerCanvas.getContext('2d');
+const vCtx = visualizerCanvas ? visualizerCanvas.getContext('2d') : null;
 function startVisualizerLoop() {
-  if (!analyserNode) return;
+  if (!analyserNode || !vCtx) return;
   const bufferLength = analyserNode.frequencyBinCount;
   const dataArray = new Uint8Array(bufferLength);
 
@@ -858,9 +810,10 @@ function updateAmbientGlow(imgEl) {
 // State
 let activePlaylistId = 'all';
 let currentPlaylist = { id: 'all', name: 'All', cover: '' };
-let tracks = [];
+let browsingTracks = []; // UI Browsing Only
+let playingQueue = [];   // Isolated Now Playing Queue
 let allTracksRaw = [];
-let currentIndex = -1;
+let currentPlayingTrack = null;
 let currentAppLogo = 'my-icon.png';
 let currentAppName = 'Ammu';
 let playMode = 'all';
@@ -884,8 +837,6 @@ let availablePlaylistList = [];
 let activeContextTrack = null;
 let activeContextPlaylist = null;
 let tempEditPlaylistArt = null;
-let pendingUnlockCallback = null;
-let pendingExpectedHash = '';
 
 // UI References
 const playlistTabs = document.getElementById('playlist-tabs');
@@ -923,10 +874,11 @@ const activeMarkerPill = document.getElementById('active-marker-pill');
 const activeMarkerName = document.getElementById('active-marker-name');
 
 const trackContextMenu = document.getElementById('track-context-menu');
+const addToPlaylistSubmenu = document.getElementById('add-to-playlist-submenu');
 const playlistContextMenu = document.getElementById('playlist-context-menu');
 const headerSettingsMenu = document.getElementById('header-settings-menu');
 
-// Top Right Single ⚙️ Settings Trigger Hub
+// Settings Header Menu Trigger
 document.getElementById('btn-main-settings-trigger').onclick = (e) => {
   e.stopPropagation();
   triggerHaptic(20);
@@ -950,7 +902,7 @@ document.getElementById('menu-btn-dev-profile').onclick = () => {
   openDevModal();
 };
 
-// Sort-By Menu Trigger
+// Sort Trigger
 btnSortTrigger.onclick = (e) => {
   e.stopPropagation();
   triggerHaptic(20);
@@ -969,46 +921,25 @@ document.querySelectorAll('.sort-item').forEach(btn => {
     triggerHaptic(20);
     currentSortMode = btn.dataset.sort;
     sortByMenu.style.display = 'none';
-    renderFilteredTracks();
-    showNotification(`Sorted: ${btn.textContent}`);
+    renderFilteredTracks(); // Affects ONLY browsing view, playing queue is safe!
+    showNotification(`Browsing Sorted: ${btn.textContent}`);
   };
 });
 
-// Passkey Verification System
-const passkeyModal = document.getElementById('passkey-modal');
-const passkeyInput = document.getElementById('passkey-input');
-
-function promptCreatorPasskey(expectedHash, onSuccess) {
-  pendingExpectedHash = expectedHash;
-  pendingUnlockCallback = onSuccess;
-  passkeyInput.value = '';
-  passkeyModal.style.display = 'flex';
-}
-
-document.getElementById('btn-cancel-passkey').onclick = () => {
-  passkeyModal.style.display = 'none';
-  pendingUnlockCallback = null;
-  pendingExpectedHash = '';
-};
-
-document.getElementById('btn-confirm-passkey').onclick = async () => {
-  const entered = passkeyInput.value.trim();
-  const enteredHash = await hashPasskey(entered);
-
-  if (enteredHash === pendingExpectedHash) {
+// -------------------------------------------------------------
+// TRACK 3-DOTS CONTEXT MENU ACTIONS
+// -------------------------------------------------------------
+document.getElementById('menu-btn-track-select').onclick = () => {
+  if (activeContextTrack) {
     triggerHaptic(30);
-    passkeyModal.style.display = 'none';
-    showNotification('Creator identity unlocked permanently on this device!');
-    if (pendingUnlockCallback) pendingUnlockCallback();
-    pendingUnlockCallback = null;
-    pendingExpectedHash = '';
-  } else {
-    triggerHaptic(45);
-    showNotification('Incorrect creator passkey. Access denied.');
+    multiSelectMode = true;
+    selectedTrackIds.add(activeContextTrack.id);
+    document.getElementById('batch-action-bar').style.display = 'flex';
+    renderFilteredTracks();
   }
+  trackContextMenu.style.display = 'none';
 };
 
-// Track 3-Dots Menu Listeners
 document.getElementById('menu-btn-play-next').onclick = () => {
   if (activeContextTrack) {
     queueSongPlayNext(activeContextTrack);
@@ -1023,17 +954,70 @@ document.getElementById('menu-btn-rename').onclick = () => {
   trackContextMenu.style.display = 'none';
 };
 
-// Playlist 3-Dots Menu Listeners with Passkey Memory
+document.getElementById('menu-btn-add-to-pl').onclick = (e) => {
+  e.stopPropagation();
+  openAddToPlaylistSubmenu();
+};
+
+document.getElementById('menu-btn-remove-from-pl').onclick = () => {
+  if (activeContextTrack && activePlaylistId !== 'all') {
+    executeRemoveTrackFromCurrentPlaylist(activeContextTrack);
+  }
+  trackContextMenu.style.display = 'none';
+};
+
+// Submenu: Add Song to Other Existing Playlists
+function openAddToPlaylistSubmenu() {
+  const box = document.getElementById('add-to-playlist-options-box');
+  box.innerHTML = '';
+  const available = availablePlaylistList.filter(p => p.id !== 'all');
+
+  available.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'menu-pop-item';
+    btn.textContent = `📁 ${p.localName || p.name}`;
+    btn.onclick = async () => {
+      triggerHaptic(25);
+      await dbOps.saveTrack({
+        playlistId: p.id,
+        name: activeContextTrack.name,
+        blob: activeContextTrack.blob,
+        isMissing: activeContextTrack.isMissing,
+        order: Date.now()
+      });
+      showNotification(`Added "${activeContextTrack.name}" to ${p.localName || p.name}`);
+      dismissAllMenus();
+    };
+    box.appendChild(btn);
+  });
+
+  const rect = trackContextMenu.getBoundingClientRect();
+  addToPlaylistSubmenu.style.top = `${rect.top}px`;
+  addToPlaylistSubmenu.style.left = `${Math.max(10, rect.left - 160)}px`;
+  addToPlaylistSubmenu.style.display = 'flex';
+}
+
+// Playlist 3-Dots Menu Listeners
+document.getElementById('pl-menu-btn-download-all').onclick = () => {
+  playlistContextMenu.style.display = 'none';
+  downloadEntirePlaylist();
+};
+
 document.getElementById('pl-menu-btn-edit').onclick = () => {
   if (!activeContextPlaylist) return;
   playlistContextMenu.style.display = 'none';
 
   if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally) {
-    promptCreatorPasskey(activeContextPlaylist.passkeyHash, () => {
-      activeContextPlaylist.isUnlockedLocally = true;
-      dbOps.savePlaylist(activeContextPlaylist);
-      openEditPlaylistModal(activeContextPlaylist);
-    });
+    promptKeyAuth(
+      '🔒 Creator Passkey Required',
+      'This playlist is locked by its creator. Enter the passkey or Master Key to edit.',
+      [activeContextPlaylist.passkeyHash, activeContextPlaylist.masterKeyHash],
+      () => {
+        activeContextPlaylist.isUnlockedLocally = true;
+        dbOps.savePlaylist(activeContextPlaylist);
+        openEditPlaylistModal(activeContextPlaylist);
+      }
+    );
   } else {
     openEditPlaylistModal(activeContextPlaylist);
   }
@@ -1044,11 +1028,16 @@ document.getElementById('pl-menu-btn-delete').onclick = () => {
   playlistContextMenu.style.display = 'none';
 
   if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally) {
-    promptCreatorPasskey(activeContextPlaylist.passkeyHash, () => {
-      activeContextPlaylist.isUnlockedLocally = true;
-      dbOps.savePlaylist(activeContextPlaylist);
-      executePlaylistDeleteWithUndo(activeContextPlaylist);
-    });
+    promptKeyAuth(
+      '🔒 Creator Passkey Required',
+      'Enter the passkey or Master Key to delete this protected playlist.',
+      [activeContextPlaylist.passkeyHash, activeContextPlaylist.masterKeyHash],
+      () => {
+        activeContextPlaylist.isUnlockedLocally = true;
+        dbOps.savePlaylist(activeContextPlaylist);
+        executePlaylistDeleteWithUndo(activeContextPlaylist);
+      }
+    );
   } else {
     executePlaylistDeleteWithUndo(activeContextPlaylist);
   }
@@ -1060,7 +1049,49 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Edit Playlist Details Modal Logic
+// -------------------------------------------------------------
+// 4-KEY AUTHENTICATION MODAL ENGINE
+// -------------------------------------------------------------
+const keyAuthModal = document.getElementById('key-auth-modal');
+const keyAuthTitle = document.getElementById('key-auth-title');
+const keyAuthDesc = document.getElementById('key-auth-desc');
+const keyAuthInput = document.getElementById('key-auth-input');
+let pendingKeyHashes = [];
+let pendingKeySuccessCallback = null;
+
+function promptKeyAuth(title, desc, acceptedHashes, onSuccess) {
+  keyAuthTitle.textContent = title;
+  keyAuthDesc.textContent = desc;
+  pendingKeyHashes = acceptedHashes.filter(Boolean);
+  pendingKeySuccessCallback = onSuccess;
+  keyAuthInput.value = '';
+  keyAuthModal.style.display = 'flex';
+}
+
+document.getElementById('btn-cancel-key-auth').onclick = () => {
+  keyAuthModal.style.display = 'none';
+  pendingKeyHashes = [];
+  pendingKeySuccessCallback = null;
+};
+
+document.getElementById('btn-confirm-key-auth').onclick = async () => {
+  const entered = keyAuthInput.value.trim();
+  const enteredHash = await hashPasskey(entered);
+
+  if (pendingKeyHashes.includes(enteredHash)) {
+    triggerHaptic(30);
+    keyAuthModal.style.display = 'none';
+    showNotification('Action Authorized!');
+    if (pendingKeySuccessCallback) pendingKeySuccessCallback();
+    pendingKeyHashes = [];
+    pendingKeySuccessCallback = null;
+  } else {
+    triggerHaptic(45);
+    showNotification('Invalid Key. Authorization Denied.');
+  }
+};
+
+// Edit Playlist Details Modal
 const editPlaylistModal = document.getElementById('edit-playlist-modal');
 const editPlaylistNameInput = document.getElementById('edit-playlist-name-input');
 const editPlaylistAuthorInput = document.getElementById('edit-playlist-author-input');
@@ -1125,7 +1156,7 @@ document.getElementById('btn-save-edit-playlist').onclick = async () => {
 
   await dbOps.savePlaylist(activeContextPlaylist);
   editPlaylistModal.style.display = 'none';
-  showNotification('Playlist details updated locally!');
+  showNotification('Playlist details updated!');
   await loadPlaylists();
 };
 
@@ -1153,7 +1184,51 @@ function executePlaylistDeleteWithUndo(pl) {
   loadPlaylists();
 }
 
-// First-Launch Onboarding System
+// -------------------------------------------------------------
+// UNIVERSAL ACTIONS (DOWNLOAD ALL / DELETE ALL PLAYLISTS)
+// -------------------------------------------------------------
+document.getElementById('btn-universal-download-all').onclick = async () => {
+  triggerHaptic(35);
+  const allTracks = await dbOps.getAllTracks();
+  const downloadable = allTracks.filter(t => t.blob && t.blob.size > 0 && !t.downloadRestricted);
+
+  if (!downloadable.length) {
+    return showNotification('No unrestricted audio files eligible for bulk download.');
+  }
+
+  showNotification(`Downloading ${downloadable.length} tracks to storage...`);
+  for (const trk of downloadable) {
+    downloadSingleTrack(trk, false);
+    await new Promise(r => setTimeout(r, 200));
+  }
+  showNotification('Bulk playlist download complete!');
+};
+
+document.getElementById('btn-universal-delete-all').onclick = async () => {
+  triggerHaptic(35);
+  const pls = await dbOps.getPlaylists();
+  const userPlaylists = pls.filter(p => p.id !== 'favorites' && p.id !== 'all');
+
+  if (!userPlaylists.length) {
+    return showNotification('No custom playlists to delete.');
+  }
+
+  showUndoToast(`Deleted ${userPlaylists.length} custom playlists`, async () => {
+    for (const pl of userPlaylists) await dbOps.savePlaylist(pl);
+    await loadPlaylists();
+  }, async () => {
+    for (const pl of userPlaylists) await dbOps.deletePlaylist(pl.id);
+    activePlaylistId = 'all';
+    await loadPlaylists();
+  });
+
+  availablePlaylistList = availablePlaylistList.filter(p => p.id === 'all' || p.id === 'favorites');
+  activePlaylistId = 'all';
+  loadPlaylists();
+  settingsModal.style.display = 'none';
+};
+
+// Onboarding
 async function checkOnboarding() {
   const saved = await dbOps.getUserProfile();
   if (saved) {
@@ -1233,29 +1308,45 @@ document.getElementById('btn-save-user-profile').onclick = async () => {
   updateUserProfileLabels();
   userProfileModal.style.display = 'none';
   settingsModal.style.display = 'flex';
-  showNotification('Listener profile updated successfully!');
+  showNotification('Listener profile updated!');
   await loadPlaylists();
 };
 
 // Direct Download Execution
 async function downloadEntirePlaylist() {
   triggerHaptic(35);
-  const available = tracks.filter(t => t.blob && t.blob.size > 0);
+  const available = browsingTracks.filter(t => t.blob && t.blob.size > 0);
   if (!available.length) {
     return showNotification('No playable audio files to download in this playlist.');
   }
 
-  const authorName = (currentPlaylist.author?.name) || userProfile.name || 'Amarjeet';
-  showNotification(`Downloading ${available.length} tracks to your device...`);
-
-  for (let i = 0; i < available.length; i++) {
-    downloadSingleTrack(available[i], false, authorName);
-    await new Promise(r => setTimeout(r, 220));
+  // Check if entire playlist is restricted
+  if (currentPlaylist.downloadRestricted) {
+    promptKeyAuth(
+      '🔒 Download Key Required',
+      'This entire playlist is download-restricted. Enter the Download Key or Master Key.',
+      [currentPlaylist.downloadKeyHash, currentPlaylist.masterKeyHash],
+      () => executeBulkPlaylistDownload(available)
+    );
+    return;
   }
-  showNotification('Downloads completed!');
+
+  executeBulkPlaylistDownload(available);
 }
 
-document.getElementById('btn-download-entire-playlist').onclick = downloadEntirePlaylist;
+async function executeBulkPlaylistDownload(list) {
+  const authorName = (currentPlaylist.author?.name) || userProfile.name || 'Amarjeet';
+  let successCount = 0;
+
+  for (const trk of list) {
+    if (trk.downloadRestricted) continue;
+    downloadSingleTrack(trk, false, authorName);
+    successCount++;
+    await new Promise(r => setTimeout(r, 220));
+  }
+  showNotification(`Downloaded ${successCount} tracks to your device!`);
+}
+
 document.getElementById('btn-download-playlist-to-storage').onclick = async () => {
   document.getElementById('author-modal').style.display = 'none';
   await downloadEntirePlaylist();
@@ -1265,6 +1356,21 @@ function downloadSingleTrack(trk, notify = true, explicitAuthorName = '') {
   if (!trk.blob || trk.blob.size === 0) {
     return showNotification(`Cannot download: "${trk.name}" is missing from storage.`);
   }
+
+  if (trk.downloadRestricted) {
+    promptKeyAuth(
+      '🔒 Song Download Restricted',
+      `The creator locked downloading for "${trk.name}". Enter the Download Key or Master Key.`,
+      [trk.downloadKeyHash, trk.masterKeyHash],
+      () => executeSingleDownload(trk, notify, explicitAuthorName)
+    );
+    return;
+  }
+
+  executeSingleDownload(trk, notify, explicitAuthorName);
+}
+
+function executeSingleDownload(trk, notify, explicitAuthorName) {
   const url = URL.createObjectURL(trk.blob);
   const a = document.createElement('a');
   a.href = url;
@@ -1288,16 +1394,21 @@ document.getElementById('btn-view-playlist-author').onclick = () => {
   document.getElementById('author-name-display').textContent = author.name;
   document.getElementById('author-avatar-display').src = author.avatar || 'my-icon.png';
   document.getElementById('author-pl-name').textContent = currentPlaylist.localName || currentPlaylist.name;
-  document.getElementById('author-track-count').textContent = tracks.length;
+  document.getElementById('author-track-count').textContent = browsingTracks.length;
   document.getElementById('author-created-date').textContent = currentPlaylist.createdAt || 'Local Storage';
   document.getElementById('author-status-tag').textContent = (currentPlaylist.isImported || currentPlaylist.isAuthorLocked) ? 'Original Curator' : 'Local Playlist Creator';
   document.getElementById('author-modal').style.display = 'flex';
 };
+
+document.getElementById('card-queue-author-btn').onclick = () => {
+  document.getElementById('btn-view-playlist-author').click();
+};
+
 document.getElementById('btn-close-author').onclick = () => {
   document.getElementById('author-modal').style.display = 'none';
 };
 
-// Tap Album Art to Toggle Disc/Vinyl Effect
+// Tap Album Art to Toggle Disc/Vinyl Mode
 const artDisplayBox = document.getElementById('art-display-box');
 let lastTapTime = 0;
 const seekFeedbackOverlay = document.getElementById('art-seek-feedback');
@@ -1318,7 +1429,6 @@ artDisplayBox.addEventListener('click', (e) => {
       showSeekFeedback('⏪ -10s');
     }
   } else {
-    // Single Tap: Toggle Spinning Disc Mode
     triggerHaptic(25);
     isDiscEffectActive = !isDiscEffectActive;
     artDisplayBox.className = `detail-art-container ${isDiscEffectActive ? 'mode-vinyl' : 'mode-standard'}`;
@@ -1333,7 +1443,7 @@ function showSeekFeedback(text) {
   setTimeout(() => { seekFeedbackOverlay.style.opacity = '0'; }, 500);
 }
 
-// Developer Profile System
+// Developer Profile
 const devModal = document.getElementById('dev-modal');
 const devAvatarImg = document.getElementById('dev-avatar-img');
 const devNameDisplay = document.getElementById('dev-name-display');
@@ -1480,9 +1590,9 @@ async function playSongByNameGlobally(songName) {
   triggerHaptic(20);
   document.getElementById('stats-modal').style.display = 'none';
 
-  let sIdx = tracks.findIndex(t => t.name.trim().toLowerCase() === songName.trim().toLowerCase());
+  let sIdx = browsingTracks.findIndex(t => t.name.trim().toLowerCase() === songName.trim().toLowerCase());
   if (sIdx !== -1) {
-    return playTrack(sIdx);
+    return playTrackFromBrowsing(sIdx);
   }
 
   const all = await dbOps.getAllTracks();
@@ -1490,10 +1600,10 @@ async function playSongByNameGlobally(songName) {
   if (found) {
     activePlaylistId = 'all';
     await loadPlaylists();
-    sIdx = tracks.findIndex(t => t.name.trim().toLowerCase() === songName.trim().toLowerCase());
-    if (sIdx !== -1) playTrack(sIdx);
+    sIdx = browsingTracks.findIndex(t => t.name.trim().toLowerCase() === songName.trim().toLowerCase());
+    if (sIdx !== -1) playTrackFromBrowsing(sIdx);
   } else {
-    showNotification(`Track "${songName}" not found in current library.`);
+    showNotification(`Track "${songName}" not found in library.`);
   }
 }
 
@@ -1634,9 +1744,39 @@ async function openSettingsModal() {
     plChecklist.appendChild(label);
   });
 
+  renderExportTrackPermissionMatrix();
   renderAuditLogs();
   settingsModal.style.display = 'flex';
 }
+
+// Granular Export Permissions Matrix with Search
+async function renderExportTrackPermissionMatrix() {
+  const box = document.getElementById('export-tracks-permission-checklist');
+  box.innerHTML = '';
+  const q = document.getElementById('export-track-filter-input').value.trim().toLowerCase();
+  const allTracks = await dbOps.getAllTracks();
+  
+  const filtered = allTracks.filter(t => t.name.toLowerCase().includes(q));
+  filtered.forEach(t => {
+    const row = document.createElement('label');
+    row.className = 'checkbox-label';
+    row.innerHTML = `
+      <input type="checkbox" class="export-dl-allow-cb" data-track-name="${t.name}" checked />
+      <span>Allow Download: <strong>${t.name}</strong></span>
+    `;
+    box.appendChild(row);
+  });
+}
+
+document.getElementById('export-track-filter-input').addEventListener('input', renderExportTrackPermissionMatrix);
+
+document.getElementById('btn-export-allow-all-dl').onclick = () => {
+  document.querySelectorAll('.export-dl-allow-cb').forEach(cb => cb.checked = true);
+};
+
+document.getElementById('btn-export-restrict-all-dl').onclick = () => {
+  document.querySelectorAll('.export-dl-allow-cb').forEach(cb => cb.checked = false);
+};
 
 async function renderAuditLogs() {
   const listEl = document.getElementById('audit-history-list');
@@ -1735,22 +1875,40 @@ document.getElementById('btn-export-backup').onclick = async () => {
   await executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds);
 };
 
-// Direct Download JSON Export (Preserves Original Creator Attributes Always)
+// -------------------------------------------------------------
+// 4-KEY HIERARCHICAL EXPORT ENGINE (AES-256 GCM)
+// -------------------------------------------------------------
 async function executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds) {
   const allTracks = await dbOps.getAllTracks();
   const allPlaylists = await dbOps.getPlaylists();
   const devProfile = await dbOps.getDevProfile();
 
+  // 4 Keys
+  const masterKey = document.getElementById('export-master-key-input').value.trim();
+  const encryptionKey = document.getElementById('export-encryption-key-input').value.trim();
   const plainPasskey = document.getElementById('export-passkey-input').value.trim();
+  const downloadKey = document.getElementById('export-download-key-input').value.trim();
+
+  const masterKeyHash = masterKey ? await hashPasskey(masterKey) : '';
   const passkeyHash = plainPasskey ? await hashPasskey(plainPasskey) : '';
+  const downloadKeyHash = downloadKey ? await hashPasskey(downloadKey) : '';
+
+  // Download Allow Set from Matrix
+  const allowedDownloadNames = new Set(
+    Array.from(document.querySelectorAll('.export-dl-allow-cb:checked'))
+      .map(cb => cb.dataset.trackName)
+  );
 
   const exportedPlaylists = allPlaylists.filter(p => !selectedPlIds || selectedPlIds.has(p.id)).map(p => ({
     id: p.id,
     name: p.originalName || p.name,
     cover: includeImages ? (p.originalCover || p.cover || 'my-icon.png') : 'my-icon.png',
     author: p.originalAuthor || p.author || userProfile,
-    isAuthorLocked: true,
+    isAuthorLocked: Boolean(plainPasskey || masterKey),
     passkeyHash: p.passkeyHash || passkeyHash,
+    masterKeyHash: masterKeyHash,
+    downloadRestricted: Boolean(downloadKey || masterKey),
+    downloadKeyHash: downloadKeyHash,
     createdAt: p.createdAt || getIndianStandardDateOnly()
   }));
 
@@ -1766,6 +1924,8 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     const isFav = await dbOps.isFavorite(t.name);
     const playCount = await dbOps.getPlayCount(t.name);
 
+    const isDownloadRestricted = !allowedDownloadNames.has(t.name);
+
     exportedTracks.push({
       id: t.id,
       name: t.name,
@@ -1775,7 +1935,10 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
       lyrics: trkLyrics,
       markers: trkMarkers,
       isFavorite: isFav,
-      playCount: playCount
+      playCount: playCount,
+      downloadRestricted: isDownloadRestricted,
+      downloadKeyHash: isDownloadRestricted ? downloadKeyHash : '',
+      masterKeyHash: masterKeyHash
     });
   }
 
@@ -1798,12 +1961,14 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   }
 
   const payload = {
-    version: '10.0',
+    version: '11.0',
     exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
-    isAuthorLocked: true,
+    isAuthorLocked: Boolean(plainPasskey || masterKey),
     passkeyHash: passkeyHash,
+    masterKeyHash: masterKeyHash,
+    downloadKeyHash: downloadKeyHash,
     hasMedia: includeAudio,
     branding: {
       appName: currentAppName,
@@ -1815,11 +1980,17 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     trimmedClips: exportedClips
   };
 
-  const jsonString = JSON.stringify(payload, null, 2);
+  let rawDataToEmit = JSON.stringify(payload, null, 2);
+
+  // Apply AES-GCM-256 Encryption if Encryption Key is specified
+  if (encryptionKey) {
+    rawDataToEmit = await encryptPayloadAES(rawDataToEmit, encryptionKey);
+  }
+
   const authorName = userProfile.name || 'Amarjeet';
   const finalBackupFileName = `Ammu_${includeAudio ? 'FULL' : 'META'}_${authorName}'s music taste backup.json`;
 
-  const blob = new Blob([jsonString], { type: 'application/json' });
+  const blob = new Blob([rawDataToEmit], { type: 'application/json' });
   const downloadUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = downloadUrl;
@@ -1831,13 +2002,16 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
 
   await dbOps.addAuditLog({
     type: 'EXPORT',
-    desc: `Downloaded backup: "${finalBackupFileName}"`,
-    key: plainPasskey || 'None'
+    desc: `Exported: "${finalBackupFileName}"`,
+    key: masterKey ? 'Master-Locked' : (encryptionKey ? 'Encrypted' : 'Standard')
   });
   renderAuditLogs();
   showNotification(`Downloaded backup: ${finalBackupFileName}`);
 }
 
+// -------------------------------------------------------------
+// IMPORT ENGINE (WITH DECRYPTION KEY PROMPT)
+// -------------------------------------------------------------
 let pendingImportPayload = null;
 let auditMatchMap = new Map();
 
@@ -1850,80 +2024,108 @@ async function handleDirectImport(file, bypassOnboarding) {
   const reader = new FileReader();
   reader.onload = async (ev) => {
     try {
-      const data = JSON.parse(ev.target.result);
-      if (!data.playlists || !data.tracks) throw new Error('Invalid format');
+      let content = ev.target.result;
+      let parsed = JSON.parse(content);
 
-      if (bypassOnboarding && data.author) {
-        userProfile = data.author;
-        await dbOps.setUserProfile(userProfile);
-        updateUserProfileLabels();
-        document.getElementById('onboarding-modal').style.display = 'none';
+      // Check if file is AES-GCM-256 Encrypted
+      if (parsed.encrypted && parsed.cipherData) {
+        promptKeyAuth(
+          '🔐 Decryption Key Required',
+          'This backup file is encrypted with AES-256. Enter the encryption key to decrypt.',
+          ['ANY'],
+          async () => {
+            const enteredKey = keyAuthInput.value.trim();
+            try {
+              const decryptedStr = await decryptPayloadAES(parsed, enteredKey);
+              const decPayload = JSON.parse(decryptedStr);
+              proceedWithParsedImport(decPayload, bypassOnboarding);
+            } catch (err) {
+              alert('Import Failed: Incorrect decryption key or corrupted payload.');
+            }
+          }
+        );
+        return;
       }
 
-      pendingImportPayload = data;
-
-      const author = data.author || { name: 'Unknown Author', avatar: 'my-icon.png' };
-      document.getElementById('pre-import-author-name').textContent = `Created by: ${author.name} (Protected)`;
-      document.getElementById('pre-import-avatar').src = author.avatar || 'my-icon.png';
-      document.getElementById('pre-import-file-meta').textContent = `Tracks: ${data.tracks.length} • Playlists: ${data.playlists.length}`;
-
-      const passkeyBox = document.getElementById('pre-import-passkey-container');
-      const passkeyIn = document.getElementById('pre-import-passkey-input');
-      passkeyIn.value = '';
-      if (data.passkeyHash) {
-        passkeyBox.style.display = 'block';
-      } else {
-        passkeyBox.style.display = 'none';
-      }
-
-      const localAll = await dbOps.getAllTracks();
-      const localNamesSet = new Set(localAll.filter(t => t.blob && t.blob.size > 0).map(t => t.name.trim().toLowerCase()));
-
-      let availableCount = 0;
-      let missingCount = 0;
-      auditMatchMap.clear();
-
-      const auditBox = document.getElementById('pre-import-audit-checklist');
-      auditBox.innerHTML = '';
-
-      data.tracks.forEach(trk => {
-        const cleanName = trk.name.trim().toLowerCase();
-        const hasPayloadAudio = Boolean(trk.audioBase64);
-        const existsInLocal = localNamesSet.has(cleanName);
-        const isAvailable = hasPayloadAudio || existsInLocal;
-
-        auditMatchMap.set(trk.id || trk.name, isAvailable);
-
-        if (isAvailable) availableCount++;
-        else missingCount++;
-
-        const row = document.createElement('div');
-        row.style.padding = '4px 6px';
-        row.style.fontSize = '0.75rem';
-        row.style.borderBottom = '1px solid #1f2937';
-        row.style.color = isAvailable ? 'var(--accent-light)' : '#f85149';
-        row.innerHTML = `${isAvailable ? '✓ [Available]' : '✕ [Missing from Storage]'} <strong>${trk.name}</strong>`;
-        auditBox.appendChild(row);
-      });
-
-      document.getElementById('audit-badge-available').textContent = `✓ ${availableCount} Available`;
-      document.getElementById('audit-badge-missing').textContent = `✕ ${missingCount} Not in Storage`;
-
-      const plBox = document.getElementById('pre-import-playlist-list');
-      plBox.innerHTML = '';
-      data.playlists.forEach(p => {
-        const label = document.createElement('label');
-        label.className = 'checkbox-label';
-        label.innerHTML = `<input type="checkbox" data-import-pl="${p.id}" checked /> ${p.name}`;
-        plBox.appendChild(label);
-      });
-
-      document.getElementById('pre-import-modal').style.display = 'flex';
+      proceedWithParsedImport(parsed, bypassOnboarding);
     } catch (_) {
-      showNotification('Corrupted or invalid JSON backup file.');
+      showNotification('Import Failed: Corrupted or invalid JSON backup file.');
     }
   };
   reader.readAsText(file);
+}
+
+function proceedWithParsedImport(data, bypassOnboarding) {
+  if (!data.playlists || !data.tracks) {
+    return alert('Import Failed: Invalid Ammu backup structure.');
+  }
+
+  if (bypassOnboarding && data.author) {
+    userProfile = data.author;
+    dbOps.setUserProfile(userProfile);
+    updateUserProfileLabels();
+    document.getElementById('onboarding-modal').style.display = 'none';
+  }
+
+  pendingImportPayload = data;
+
+  const author = data.author || { name: 'Unknown Author', avatar: 'my-icon.png' };
+  document.getElementById('pre-import-author-name').textContent = `Created by: ${author.name} (Protected)`;
+  document.getElementById('pre-import-avatar').src = author.avatar || 'my-icon.png';
+  document.getElementById('pre-import-file-meta').textContent = `Tracks: ${data.tracks.length} • Playlists: ${data.playlists.length}`;
+
+  const keyBox = document.getElementById('pre-import-keys-container');
+  const keyIn = document.getElementById('pre-import-key-input');
+  keyIn.value = '';
+  if (data.passkeyHash || data.masterKeyHash) {
+    keyBox.style.display = 'block';
+  } else {
+    keyBox.style.display = 'none';
+  }
+
+  dbOps.getAllTracks().then(localAll => {
+    const localNamesSet = new Set(localAll.filter(t => t.blob && t.blob.size > 0).map(t => t.name.trim().toLowerCase()));
+    let availableCount = 0;
+    let missingCount = 0;
+    auditMatchMap.clear();
+
+    const auditBox = document.getElementById('pre-import-audit-checklist');
+    auditBox.innerHTML = '';
+
+    data.tracks.forEach(trk => {
+      const cleanName = trk.name.trim().toLowerCase();
+      const hasPayloadAudio = Boolean(trk.audioBase64);
+      const existsInLocal = localNamesSet.has(cleanName);
+      const isAvailable = hasPayloadAudio || existsInLocal;
+
+      auditMatchMap.set(trk.id || trk.name, isAvailable);
+
+      if (isAvailable) availableCount++;
+      else missingCount++;
+
+      const row = document.createElement('div');
+      row.style.padding = '4px 6px';
+      row.style.fontSize = '0.75rem';
+      row.style.borderBottom = '1px solid #1f2937';
+      row.style.color = isAvailable ? 'var(--accent-light)' : '#f85149';
+      row.innerHTML = `${isAvailable ? '✓ [Available]' : '✕ [Missing from Storage]'} <strong>${trk.name}</strong>`;
+      auditBox.appendChild(row);
+    });
+
+    document.getElementById('audit-badge-available').textContent = `✓ ${availableCount} Available`;
+    document.getElementById('audit-badge-missing').textContent = `✕ ${missingCount} Not in Storage`;
+
+    const plBox = document.getElementById('pre-import-playlist-list');
+    plBox.innerHTML = '';
+    data.playlists.forEach(p => {
+      const label = document.createElement('label');
+      label.className = 'checkbox-label';
+      label.innerHTML = `<input type="checkbox" data-import-pl="${p.id}" checked /> ${p.name}`;
+      plBox.appendChild(label);
+    });
+
+    document.getElementById('pre-import-modal').style.display = 'flex';
+  });
 }
 
 document.getElementById('btn-cancel-pre-import').onclick = () => {
@@ -1945,13 +2147,14 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
   const importClips = document.getElementById('chk-import-clips').checked;
   const author = pendingImportPayload.author || { name: 'External Creator', avatar: 'my-icon.png' };
 
-  const enteredPasskey = document.getElementById('pre-import-passkey-input').value.trim();
+  // Evaluate Entered Key (Unlocks creator restrictions if passkey or master key matches)
+  const enteredKey = document.getElementById('pre-import-key-input').value.trim();
   let isUnlocked = false;
-  if (pendingImportPayload.passkeyHash) {
-    const enteredHash = await hashPasskey(enteredPasskey);
-    isUnlocked = (enteredHash === pendingImportPayload.passkeyHash);
-    if (!isUnlocked && enteredPasskey) {
-      showNotification('Wrong passkey entered. Details remain protected.');
+  if (pendingImportPayload.passkeyHash || pendingImportPayload.masterKeyHash) {
+    const enteredHash = await hashPasskey(enteredKey);
+    isUnlocked = (enteredHash === pendingImportPayload.passkeyHash || enteredHash === pendingImportPayload.masterKeyHash);
+    if (!isUnlocked && enteredKey) {
+      showNotification('Key did not match creator records. Details remain protected.');
     }
   }
 
@@ -1966,7 +2169,10 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
         isImported: true,
         isAuthorLocked: !isUnlocked,
         isUnlockedLocally: isUnlocked,
-        passkeyHash: pendingImportPayload.passkeyHash || ''
+        passkeyHash: pendingImportPayload.passkeyHash || '',
+        masterKeyHash: pendingImportPayload.masterKeyHash || '',
+        downloadKeyHash: pendingImportPayload.downloadKeyHash || '',
+        downloadRestricted: p.downloadRestricted && !isUnlocked
       });
     }
   }
@@ -2003,7 +2209,10 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
       name: trk.name,
       blob: blob || new Blob([], { type: 'audio/mp3' }),
       isMissing: !hasAudio,
-      order: trk.order || Date.now()
+      order: trk.order || Date.now(),
+      downloadRestricted: trk.downloadRestricted && !isUnlocked,
+      downloadKeyHash: trk.downloadKeyHash || '',
+      masterKeyHash: trk.masterKeyHash || ''
     });
 
     if (importLyrics && trk.lyrics) await dbOps.setLyrics(trk.name, trk.lyrics);
@@ -2054,7 +2263,9 @@ document.getElementById('btn-close-success-summary').onclick = () => {
   document.getElementById('import-success-modal').style.display = 'none';
 };
 
-// Playlists & Track Listing ("➕ New" First & "All" Default)
+// -------------------------------------------------------------
+// PLAYLISTS & BROWSING LISTING
+// -------------------------------------------------------------
 async function loadPlaylists() {
   let list = await dbOps.getPlaylists();
   if (!list.length) {
@@ -2103,7 +2314,6 @@ async function loadPlaylists() {
       if (e.target.closest('.chip-dots-btn')) return;
       triggerHaptic(20);
       activePlaylistId = p.id;
-      playNextQueue = [];
       loadPlaylists();
     };
 
@@ -2125,8 +2335,6 @@ async function loadPlaylists() {
 
   currentPlaylist = combined.find((p) => p.id === activePlaylistId) || allCategory;
   viewPlaylistName.textContent = currentPlaylist.localName || currentPlaylist.name;
-  miniCover.src = currentPlaylist.localCover || currentPlaylist.cover || currentAppLogo;
-  boxCover.src = currentPlaylist.localCover || currentPlaylist.cover || currentAppLogo;
   loadTracks();
 }
 
@@ -2136,7 +2344,7 @@ async function loadTracks() {
   renderFilteredTracks();
 }
 
-// Render Tracklist with Long-Press Multi-Select Support
+// Render Browsing Tracklist (Search/Sort changes affect ONLY this view, playing queue is decoupled!)
 function renderFilteredTracks() {
   const currentScrollTop = upperContentViewport.scrollTop;
 
@@ -2155,27 +2363,27 @@ function renderFilteredTracks() {
     filtered.sort((a, b) => (b.blob?.size || 0) - (a.blob?.size || 0));
   }
 
-  tracks = filtered;
+  browsingTracks = filtered;
 
-  let totalSecs = tracks.length * 210;
+  let totalSecs = browsingTracks.length * 210;
   let hrs = Math.floor(totalSecs / 3600);
   let mins = Math.floor((totalSecs % 3600) / 60);
   let durStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-  trackCountLabel.textContent = `${tracks.length} song${tracks.length === 1 ? '' : 's'} • ~${durStr}`;
+  trackCountLabel.textContent = `${browsingTracks.length} song${browsingTracks.length === 1 ? '' : 's'} • ~${durStr}`;
 
   songList.innerHTML = '';
-  if (!tracks.length) {
+  if (!browsingTracks.length) {
     songList.innerHTML = '<li style="color:var(--text-muted);text-align:center;padding:24px 0;">No songs found.</li>';
     return;
   }
 
   const isAudioPlaying = !audio.paused && audio.currentTime > 0;
 
-  tracks.forEach(async (trk, idx) => {
+  browsingTracks.forEach(async (trk, idx) => {
     const isFav = await dbOps.isFavorite(trk.name);
     const playCount = await dbOps.getPlayCount(trk.name);
     const isMissing = trk.isMissing || (!trk.blob || trk.blob.size === 0);
-    const isCurrentlyPlaying = (currentIndex !== -1 && tracks[currentIndex] && tracks[currentIndex].name === trk.name);
+    const isCurrentlyPlaying = (currentPlayingTrack && currentPlayingTrack.name === trk.name);
 
     const li = document.createElement('li');
     li.className = `song-row ${isCurrentlyPlaying ? 'active' : ''} ${isMissing ? 'missing-storage' : 'available-storage'}`;
@@ -2193,6 +2401,7 @@ function renderFilteredTracks() {
       <span class="song-name">
         <strong>${idx + 1}.</strong> ${trk.name}
         ${isMissing ? '<span class="missing-tag-badge">⚠️ Not in storage</span>' : ''}
+        ${trk.downloadRestricted ? '<span class="missing-tag-badge" style="background:#f0883e;">🔒 Restricted</span>' : ''}
         ${isCurrentlyPlaying ? `
           <span class="now-playing-badge-group">
             <span class="mini-equalizer-bars ${isAudioPlaying ? 'animating' : 'paused'}">
@@ -2208,7 +2417,7 @@ function renderFilteredTracks() {
       <span class="song-sub-info">${isMissing ? 'Audio file missing from device' : `Plays: ${playCount} • ${(trk.blob?.size / (1024*1024) || 0).toFixed(1)}MB`}</span>
     `;
 
-    // Long-Press Gesture Detection for Multi-Select Mode
+    // Long-Press Gesture Detection for Multi-Select
     let pressTimer = null;
     info.addEventListener('touchstart', () => {
       pressTimer = setTimeout(() => {
@@ -2220,13 +2429,8 @@ function renderFilteredTracks() {
       }, 500);
     }, { passive: true });
 
-    info.addEventListener('touchend', () => {
-      if (pressTimer) clearTimeout(pressTimer);
-    }, { passive: true });
-
-    info.addEventListener('touchmove', () => {
-      if (pressTimer) clearTimeout(pressTimer);
-    }, { passive: true });
+    info.addEventListener('touchend', () => { if (pressTimer) clearTimeout(pressTimer); }, { passive: true });
+    info.addEventListener('touchmove', () => { if (pressTimer) clearTimeout(pressTimer); }, { passive: true });
 
     info.onclick = () => {
       if (multiSelectMode) {
@@ -2234,10 +2438,10 @@ function renderFilteredTracks() {
       } else {
         if (isMissing) {
           triggerHaptic(15);
-          showNotification(`"${trk.name}" is not available in device storage.`);
+          showNotification(`"${trk.name}" is not available in storage.`);
           return;
         }
-        playTrack(idx);
+        playTrackFromBrowsing(idx);
       }
     };
 
@@ -2246,13 +2450,12 @@ function renderFilteredTracks() {
 
     const btnDownload = document.createElement('button');
     btnDownload.className = 'btn-icon-sm';
-    btnDownload.innerHTML = '📥';
-    btnDownload.title = 'Download to device';
+    btnDownload.innerHTML = trk.downloadRestricted ? '🔒' : '📥';
+    btnDownload.title = trk.downloadRestricted ? 'Download Restricted' : 'Download to device';
     btnDownload.onclick = (e) => {
       e.stopPropagation();
       triggerHaptic(20);
-      const authorName = (currentPlaylist.author?.name) || userProfile.name || 'Amarjeet';
-      downloadSingleTrack(trk, true, authorName);
+      downloadSingleTrack(trk, true);
     };
 
     const btnLike = document.createElement('button');
@@ -2282,9 +2485,16 @@ function renderFilteredTracks() {
       e.stopPropagation();
       triggerHaptic(20);
       activeContextTrack = trk;
+      
+      // Conditionally show/hide "Remove from Playlist" if in "all" view
+      const removeBtn = document.getElementById('menu-btn-remove-from-pl');
+      if (removeBtn) {
+        removeBtn.style.display = (activePlaylistId === 'all') ? 'none' : 'block';
+      }
+
       const rect = btnMore.getBoundingClientRect();
       trackContextMenu.style.top = `${rect.bottom + window.scrollY - 10}px`;
-      trackContextMenu.style.left = `${Math.max(10, rect.left - 130)}px`;
+      trackContextMenu.style.left = `${Math.max(10, rect.left - 150)}px`;
       trackContextMenu.style.display = 'flex';
     };
 
@@ -2297,8 +2507,8 @@ function renderFilteredTracks() {
 
   upperContentViewport.scrollTop = currentScrollTop;
 
-  if (currentIndex !== -1 && tracks[currentIndex]) {
-    dbOps.isFavorite(tracks[currentIndex].name).then(updateLikeButtonsUI);
+  if (currentPlayingTrack) {
+    dbOps.isFavorite(currentPlayingTrack.name).then(updateLikeButtonsUI);
   }
 }
 
@@ -2318,18 +2528,19 @@ function queueSongPlayNext(trk) {
   triggerHaptic(25);
   playNextQueue.unshift(trk);
   renderCardReorderList();
+  calculateAndRenderQueueDuration();
   showNotification(`"${trk.name}" queued to play next!`);
 }
 
 function stopPlayingTrackImmediately() {
   audio.pause();
   audio.src = '';
-  currentIndex = -1;
+  currentPlayingTrack = null;
   wasPlayingBeforeInterruption = false;
   isManualPause = true;
 
   miniTitle.textContent = 'No track playing';
-  miniSub.textContent = 'Tap or swipe up to expand';
+  miniSub.textContent = 'Playlist: All';
   boxTitle.textContent = 'Song Title';
   boxPlaylist.textContent = 'Playlist: All';
   syncButtons(false);
@@ -2339,7 +2550,7 @@ function stopPlayingTrackImmediately() {
 
 function executeTrackDeleteWithUndo(trk) {
   triggerHaptic(30);
-  const isPlayingThisTrack = (currentIndex !== -1 && tracks[currentIndex] && tracks[currentIndex].id === trk.id);
+  const isPlayingThisTrack = (currentPlayingTrack && currentPlayingTrack.id === trk.id);
   let savedCurrentTime = 0;
 
   if (isPlayingThisTrack) {
@@ -2354,15 +2565,19 @@ function executeTrackDeleteWithUndo(trk) {
     allTracksRaw.push(trk);
     renderFilteredTracks();
     if (isPlayingThisTrack) {
-      const restoredIdx = tracks.findIndex(t => t.id === trk.id);
-      if (restoredIdx !== -1) {
-        await playTrack(restoredIdx);
-        audio.currentTime = savedCurrentTime;
-      }
+      playTrackDirect(trk);
+      audio.currentTime = savedCurrentTime;
     }
   }, async () => {
     await dbOps.deleteTrack(trk.id);
   });
+}
+
+async function executeRemoveTrackFromCurrentPlaylist(trk) {
+  triggerHaptic(25);
+  await dbOps.deleteTrack(trk.id);
+  showNotification(`Removed "${trk.name}" from ${currentPlaylist.localName || currentPlaylist.name}`);
+  loadTracks();
 }
 
 function bindSongRowSwipeGestures(rowEl, trk) {
@@ -2407,14 +2622,14 @@ function bindSongRowSwipeGestures(rowEl, trk) {
   }, { passive: true });
 }
 
-// Multi-Select Engine
+// Multi-Select Batch Actions
 document.getElementById('btn-batch-select-all').onclick = () => {
   triggerHaptic(20);
-  if (selectedTrackIds.size === tracks.length) {
+  if (selectedTrackIds.size === browsingTracks.length) {
     selectedTrackIds.clear();
     document.getElementById('btn-batch-select-all').textContent = 'Select All';
   } else {
-    selectedTrackIds = new Set(tracks.map(t => t.id));
+    selectedTrackIds = new Set(browsingTracks.map(t => t.id));
     document.getElementById('btn-batch-select-all').textContent = 'Deselect All';
   }
   document.getElementById('batch-count-label').textContent = `${selectedTrackIds.size} Selected`;
@@ -2431,7 +2646,7 @@ function toggleSelectTrack(id) {
   else selectedTrackIds.add(id);
   
   document.getElementById('batch-count-label').textContent = `${selectedTrackIds.size} Selected`;
-  document.getElementById('btn-batch-select-all').textContent = (selectedTrackIds.size === tracks.length) ? 'Deselect All' : 'Select All';
+  document.getElementById('btn-batch-select-all').textContent = (selectedTrackIds.size === browsingTracks.length) ? 'Deselect All' : 'Select All';
 
   const cb = document.querySelector(`.multi-chk[data-trk-id="${id}"]`);
   if (cb) cb.checked = selectedTrackIds.has(id);
@@ -2450,7 +2665,7 @@ document.getElementById('btn-batch-delete').onclick = () => {
   const deletedTracks = allTracksRaw.filter(t => idsToDelete.has(t.id));
   const count = idsToDelete.size;
 
-  const isPlayingDeleted = (currentIndex !== -1 && tracks[currentIndex] && idsToDelete.has(tracks[currentIndex].id));
+  const isPlayingDeleted = (currentPlayingTrack && idsToDelete.has(currentPlayingTrack.id));
   if (isPlayingDeleted) {
     stopPlayingTrackImmediately();
   }
@@ -2469,6 +2684,45 @@ document.getElementById('btn-batch-delete').onclick = () => {
       await dbOps.deleteTrack(id);
     }
   });
+};
+
+// Batch Add to Playlist
+document.getElementById('btn-batch-add-playlist').onclick = () => {
+  if (!selectedTrackIds.size) return;
+  const available = availablePlaylistList.filter(p => p.id !== 'all');
+  const box = document.getElementById('add-to-playlist-options-box');
+  box.innerHTML = '';
+
+  available.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'menu-pop-item';
+    btn.textContent = `📁 ${p.localName || p.name}`;
+    btn.onclick = async () => {
+      triggerHaptic(30);
+      const selectedTracks = allTracksRaw.filter(t => selectedTrackIds.has(t.id));
+      for (const t of selectedTracks) {
+        await dbOps.saveTrack({
+          playlistId: p.id,
+          name: t.name,
+          blob: t.blob,
+          isMissing: t.isMissing,
+          order: Date.now()
+        });
+      }
+      showNotification(`Added ${selectedTracks.length} tracks to ${p.localName || p.name}!`);
+      multiSelectMode = false;
+      selectedTrackIds.clear();
+      document.getElementById('batch-action-bar').style.display = 'none';
+      dismissAllMenus();
+      renderFilteredTracks();
+    };
+    box.appendChild(btn);
+  });
+
+  const rect = document.getElementById('btn-batch-add-playlist').getBoundingClientRect();
+  addToPlaylistSubmenu.style.top = `${rect.bottom + window.scrollY + 4}px`;
+  addToPlaylistSubmenu.style.left = `${Math.max(10, rect.left - 50)}px`;
+  addToPlaylistSubmenu.style.display = 'flex';
 };
 
 librarySearchInput.addEventListener('input', renderFilteredTracks);
@@ -2516,7 +2770,7 @@ document.getElementById('btn-confirm-rename').onclick = async () => {
     renameModal.style.display = 'none';
     showNotification('Track renamed successfully');
     loadTracks();
-    if (currentIndex !== -1 && tracks[currentIndex] && tracks[currentIndex].id === trackToRename.id) {
+    if (currentPlayingTrack && currentPlayingTrack.id === trackToRename.id) {
       miniTitle.textContent = newTitle;
       boxTitle.textContent = newTitle;
       updateMediaSession();
@@ -2524,6 +2778,7 @@ document.getElementById('btn-confirm-rename').onclick = async () => {
   }
 };
 
+// Toggle Favorite with Emotional Floating Banner
 async function toggleFavorite(trk) {
   triggerHaptic(25);
   const songKey = trk.name;
@@ -2538,7 +2793,7 @@ async function toggleFavorite(trk) {
     const existing = favTracks.find((t) => t.name.trim().toLowerCase() === trk.name.trim().toLowerCase());
     if (existing) await dbOps.deleteTrack(existing.id);
     triggerHeartBurst(false);
-    showNotification(`Removed "${trk.name}" from Favorites 💛`);
+    showEmotionalMessage(false); // Dil tod diya na mera 🥲
     syncHeartsEverywhere(songKey, false);
   } else {
     await dbOps.setFavorite(songKey, true);
@@ -2550,7 +2805,7 @@ async function toggleFavorite(trk) {
       order: Date.now()
     });
     triggerHeartBurst(true);
-    showNotification(`"${trk.name}" added to Favorites ❤️!`);
+    showEmotionalMessage(true); // Thank you for loving me 🥹
     syncHeartsEverywhere(songKey, true);
   }
   loadTracks();
@@ -2560,7 +2815,7 @@ function syncHeartsEverywhere(songName, isLiked) {
   const heart = isLiked ? '❤️' : '💛';
   const rows = document.querySelectorAll(`[data-song-name="${CSS.escape(songName)}"] .song-heart-btn`);
   rows.forEach((btn) => { btn.innerHTML = heart; });
-  if (currentIndex !== -1 && tracks[currentIndex] && tracks[currentIndex].name === songName) {
+  if (currentPlayingTrack && currentPlayingTrack.name === songName) {
     updateLikeButtonsUI(isLiked);
   }
 }
@@ -2687,7 +2942,7 @@ document.getElementById('file-picker').onchange = async (e) => {
       name: file.name,
       blob: file,
       isMissing: false,
-      order: tracks.length + i
+      order: browsingTracks.length + i
     });
     addedCount++;
   }
@@ -2696,19 +2951,26 @@ document.getElementById('file-picker').onchange = async (e) => {
   loadTracks();
 };
 
-// Playback Engine
-async function playTrack(idx) {
-  if (idx < 0 || idx >= tracks.length) return;
+// ==========================================
+// INDEPENDENT NOW PLAYING QUEUE LOGIC
+// ==========================================
+function playTrackFromBrowsing(idx) {
+  if (idx < 0 || idx >= browsingTracks.length) return;
 
-  const trk = tracks[idx];
-  if (trk.isMissing || (!trk.blob || trk.blob.size === 0)) {
-    showNotification(`Cannot play: "${trk.name}" is missing from storage.`);
+  // Clone current browsing list into dedicated playing queue
+  playingQueue = [...browsingTracks];
+  playTrackDirect(browsingTracks[idx]);
+}
+
+async function playTrackDirect(trk) {
+  if (!trk || trk.isMissing || (!trk.blob || trk.blob.size === 0)) {
+    showNotification(`Cannot play: "${trk?.name || 'Track'}" is missing from storage.`);
     return;
   }
 
   ensureAudioPipeline();
 
-  if (currentIndex === idx && audio.src) {
+  if (currentPlayingTrack && currentPlayingTrack.name === trk.name && audio.src) {
     if (audio.paused) {
       audio.play();
       syncButtons(true);
@@ -2717,7 +2979,7 @@ async function playTrack(idx) {
     return;
   }
 
-  currentIndex = idx;
+  currentPlayingTrack = trk;
   audio.src = URL.createObjectURL(trk.blob);
   audio.playbackRate = speedList[currentSpeedIndex];
 
@@ -2731,6 +2993,8 @@ async function playTrack(idx) {
   miniSub.textContent = `Playlist: ${currentPlaylist.localName || currentPlaylist.name}`;
   boxTitle.textContent = trk.name;
   boxPlaylist.textContent = `Playlist: ${currentPlaylist.localName || currentPlaylist.name}`;
+  miniCover.src = currentPlaylist.localCover || currentPlaylist.cover || currentAppLogo;
+  boxCover.src = currentPlaylist.localCover || currentPlaylist.cover || currentAppLogo;
 
   const isFav = await dbOps.isFavorite(trk.name);
   updateLikeButtonsUI(isFav);
@@ -2747,8 +3011,8 @@ async function playTrack(idx) {
   startListeningTimeTracking();
   saveCurrentSessionState();
   renderCardReorderList();
+  calculateAndRenderQueueDuration();
   renderTrimmedClipsForCurrent();
-  detectAudioOutputDevices();
 }
 
 function syncButtons(isPlaying) {
@@ -2766,9 +3030,9 @@ function syncButtons(isPlaying) {
 function togglePlay() {
   triggerHaptic(25);
   ensureAudioPipeline();
-  if (!audio.src && tracks.length) {
-    const firstPlayable = tracks.findIndex(t => t.blob && t.blob.size > 0);
-    return playTrack(firstPlayable !== -1 ? firstPlayable : 0);
+  if (!audio.src && browsingTracks.length) {
+    const firstPlayable = browsingTracks.findIndex(t => t.blob && t.blob.size > 0);
+    return playTrackFromBrowsing(firstPlayable !== -1 ? firstPlayable : 0);
   }
   if (audio.paused) {
     audio.play();
@@ -2784,29 +3048,34 @@ function togglePlay() {
 }
 
 function loopNext() {
-  if (!tracks.length) return;
+  if (!playingQueue.length) return;
   
+  // Up Next Queue Priority
   if (playNextQueue.length > 0) {
     const nextTrk = playNextQueue.shift();
     renderCardReorderList();
-    const idx = tracks.findIndex(t => t.name === nextTrk.name && (!t.isMissing && t.blob && t.blob.size > 0));
-    if (idx !== -1) return playTrack(idx);
+    calculateAndRenderQueueDuration();
+    return playTrackDirect(nextTrk);
   }
 
-  if (playMode === 'one') return playTrack(currentIndex);
+  if (playMode === 'one' && currentPlayingTrack) {
+    return playTrackDirect(currentPlayingTrack);
+  }
 
-  let next = currentIndex;
+  let curIdx = playingQueue.findIndex(t => t.name === currentPlayingTrack?.name);
+  let nextIdx = curIdx;
   let attempts = 0;
-  do {
-    next = (playMode === 'shuffle') 
-      ? Math.floor(Math.random() * tracks.length) 
-      : next + 1;
-    if (next >= tracks.length) next = 0;
-    attempts++;
-  } while (tracks[next] && (tracks[next].isMissing || !tracks[next].blob || tracks[next].blob.size === 0) && attempts < tracks.length);
 
-  if (tracks[next] && (!tracks[next].isMissing && tracks[next].blob && tracks[next].blob.size > 0)) {
-    playTrack(next);
+  do {
+    nextIdx = (playMode === 'shuffle') 
+      ? Math.floor(Math.random() * playingQueue.length) 
+      : nextIdx + 1;
+    if (nextIdx >= playingQueue.length) nextIdx = 0;
+    attempts++;
+  } while (playingQueue[nextIdx] && (playingQueue[nextIdx].isMissing || !playingQueue[nextIdx].blob || playingQueue[nextIdx].blob.size === 0) && attempts < playingQueue.length);
+
+  if (playingQueue[nextIdx]) {
+    playTrackDirect(playingQueue[nextIdx]);
   }
 }
 
@@ -2814,33 +3083,33 @@ barBtnPlay.onclick = (e) => { e.stopPropagation(); togglePlay(); };
 boxBtnPlay.onclick = togglePlay;
 boxBtnPrev.onclick = () => {
   triggerHaptic(20);
-  let prev = currentIndex;
+  if (!playingQueue.length) return;
+  let curIdx = playingQueue.findIndex(t => t.name === currentPlayingTrack?.name);
+  let prev = curIdx;
   let attempts = 0;
   do {
-    prev = prev > 0 ? prev - 1 : tracks.length - 1;
+    prev = prev > 0 ? prev - 1 : playingQueue.length - 1;
     attempts++;
-  } while (tracks[prev] && (tracks[prev].isMissing || !tracks[prev].blob || tracks[prev].blob.size === 0) && attempts < tracks.length);
+  } while (playingQueue[prev] && (playingQueue[prev].isMissing || !playingQueue[prev].blob || playingQueue[prev].blob.size === 0) && attempts < playingQueue.length);
 
-  playTrack(prev);
+  playTrackDirect(playingQueue[prev]);
 };
 boxBtnNext.onclick = () => { triggerHaptic(20); loopNext(); };
 audio.onended = loopNext;
 
 barBtnLike.onclick = (e) => {
   e.stopPropagation();
-  if (currentIndex !== -1 && tracks[currentIndex]) toggleFavorite(tracks[currentIndex]);
+  if (currentPlayingTrack) toggleFavorite(currentPlayingTrack);
 };
 modalBtnLike.onclick = () => {
-  if (currentIndex !== -1 && tracks[currentIndex]) toggleFavorite(tracks[currentIndex]);
+  if (currentPlayingTrack) toggleFavorite(currentPlayingTrack);
 };
 
 function updateMediaSession() {
-  if (!('mediaSession' in navigator) || currentIndex === -1) return;
-  const trk = tracks[currentIndex];
-  if (!trk) return;
+  if (!('mediaSession' in navigator) || !currentPlayingTrack) return;
 
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: trk.name,
+    title: currentPlayingTrack.name,
     artist: `Playlist: ${currentPlaylist.localName || currentPlaylist.name} • Made by & for Amarjeet kumar`,
     album: currentAppName,
     artwork: [
@@ -2871,13 +3140,7 @@ function updateMediaSession() {
 
   navigator.mediaSession.setActionHandler('nexttrack', loopNext);
   navigator.mediaSession.setActionHandler('previoustrack', () => {
-    let prev = currentIndex;
-    let attempts = 0;
-    do {
-      prev = prev > 0 ? prev - 1 : tracks.length - 1;
-      attempts++;
-    } while (tracks[prev] && (tracks[prev].isMissing || !tracks[prev].blob || tracks[prev].blob.size === 0) && attempts < tracks.length);
-    playTrack(prev);
+    boxBtnPrev.click();
   });
 }
 
@@ -2885,21 +3148,10 @@ document.getElementById('open-box-trigger').onclick = () => {
   playerBoxModal.style.display = 'flex'; 
   renderSeekTicks();
   renderCardReorderList();
+  calculateAndRenderQueueDuration();
   updateAmbientGlow(boxCover);
 };
 document.getElementById('btn-close-box').onclick = () => { playerBoxModal.style.display = 'none'; };
-
-let pullStartY = 0;
-const dragDismissArea = document.getElementById('card-drag-dismiss-area');
-dragDismissArea.addEventListener('touchstart', (e) => {
-  if (dragDismissArea.scrollTop === 0) pullStartY = e.touches[0].clientY;
-}, { passive: true });
-dragDismissArea.addEventListener('touchmove', (e) => {
-  if (pullStartY && e.touches[0].clientY - pullStartY > 120) {
-    playerBoxModal.style.display = 'none';
-    pullStartY = 0;
-  }
-}, { passive: true });
 
 document.getElementById('btn-skip-backward').onclick = () => { triggerHaptic(20); audio.currentTime = Math.max(0, audio.currentTime - 10); };
 document.getElementById('btn-skip-forward').onclick = () => { triggerHaptic(20); audio.currentTime = Math.min(audio.duration, audio.currentTime + 10); };
@@ -2970,7 +3222,7 @@ btnSleepTimer.onclick = () => {
         audio.pause();
         syncButtons(false);
         syncGlobalEqualizerBars(false);
-        setVolume(20);
+        setVolume(100);
         btnSleepTimer.textContent = '⏱️ Off';
         sleepIndex = 0;
         showNotification('Sleep timer ended. Goodnight!');
@@ -2979,7 +3231,7 @@ btnSleepTimer.onclick = () => {
   }
 };
 
-// Swipes
+// Touch Gestures on Mini Player & Card
 let miniStartX = 0;
 let miniStartY = 0;
 miniPlayerBar.addEventListener('touchstart', (e) => {
@@ -2996,6 +3248,7 @@ miniPlayerBar.addEventListener('touchend', (e) => {
     playerBoxModal.style.display = 'flex';
     renderSeekTicks();
     renderCardReorderList();
+    calculateAndRenderQueueDuration();
     updateAmbientGlow(boxCover);
     return;
   }
@@ -3006,62 +3259,7 @@ miniPlayerBar.addEventListener('touchend', (e) => {
       loopNext();
     } else {
       triggerHaptic(20);
-      let prev = currentIndex;
-      let attempts = 0;
-      do {
-        prev = prev > 0 ? prev - 1 : tracks.length - 1;
-        attempts++;
-      } while (tracks[prev] && (tracks[prev].isMissing || !tracks[prev].blob || tracks[prev].blob.size === 0) && attempts < tracks.length);
-      playTrack(prev);
-    }
-  }
-}, { passive: true });
-
-let coverTouchX = 0;
-let coverTouchY = 0;
-let coverVolStart = 20;
-
-artDisplayBox.addEventListener('touchstart', (e) => {
-  coverTouchX = e.touches[0].clientX;
-  coverTouchY = e.touches[0].clientY;
-  coverVolStart = currentVol * 100;
-}, { passive: true });
-
-artDisplayBox.addEventListener('touchmove', (e) => {
-  const diffY = coverTouchY - e.touches[0].clientY;
-  const diffX = Math.abs(e.touches[0].clientX - coverTouchX);
-
-  if (Math.abs(diffY) > 15 && diffX < 40) {
-    const delta = (diffY / 120) * 40;
-    const newVol = Math.max(0, Math.min(100, Math.round(coverVolStart + delta)));
-    setVolume(newVol);
-    showSeekFeedback(`🔊 ${newVol}%`);
-  }
-}, { passive: true });
-
-artDisplayBox.addEventListener('touchend', (e) => {
-  const diffX = e.changedTouches[0].clientX - coverTouchX;
-  const diffY = e.changedTouches[0].clientY - coverTouchY;
-
-  if (diffY > 70 && Math.abs(diffX) < 50) {
-    triggerHaptic(20);
-    playerBoxModal.style.display = 'none';
-    return;
-  }
-
-  if (Math.abs(diffX) > 60 && Math.abs(diffY) < 40) {
-    if (diffX > 0) {
-      triggerHaptic(25);
-      let prev = currentIndex;
-      let attempts = 0;
-      do {
-        prev = prev > 0 ? prev - 1 : tracks.length - 1;
-        attempts++;
-      } while (tracks[prev] && (tracks[prev].isMissing || !tracks[prev].blob || tracks[prev].blob.size === 0) && attempts < tracks.length);
-      playTrack(prev);
-    } else {
-      triggerHaptic(25);
-      loopNext();
+      boxBtnPrev.click();
     }
   }
 }, { passive: true });
@@ -3093,12 +3291,11 @@ mainViewport.addEventListener('touchend', (e) => {
 
     triggerHaptic(30);
     activePlaylistId = availablePlaylistList[plIdx].id;
-    playNextQueue = [];
     loadPlaylists();
   }
 }, { passive: true });
 
-// Fixed A-B Looper
+// A-B Looper
 const btnSetA = document.getElementById('btn-set-point-a');
 const btnSetB = document.getElementById('btn-set-point-b');
 const labelPointA = document.getElementById('label-point-a');
@@ -3128,7 +3325,7 @@ function formatSecs(s) {
   return `${m}:${sec < 10 ? '0' : ''}${sec}`;
 }
 
-// Compact Pure Offline MP3 Compressor
+// Audio Trimmer (.mp3)
 const trimmerModal = document.getElementById('trimmer-modal');
 const trimStartRange = document.getElementById('trim-start-range');
 const trimEndRange = document.getElementById('trim-end-range');
@@ -3136,9 +3333,8 @@ const lblTrimStart = document.getElementById('lbl-trim-start');
 const lblTrimEnd = document.getElementById('lbl-trim-end');
 
 document.getElementById('btn-open-trim-dialog').onclick = () => {
-  if (currentIndex === -1 || !tracks[currentIndex]) return showNotification('Play a song to trim!');
-  const trk = tracks[currentIndex];
-  document.getElementById('trimmer-track-name').textContent = trk.name;
+  if (!currentPlayingTrack) return showNotification('Play a song to trim!');
+  document.getElementById('trimmer-track-name').textContent = currentPlayingTrack.name;
   const dur = audio.duration || 100;
   trimStartRange.max = dur;
   trimEndRange.max = dur;
@@ -3172,9 +3368,9 @@ trimEndRange.oninput = (e) => {
 };
 
 document.getElementById('btn-save-ringtone').onclick = async () => {
-  if (currentIndex === -1 || !tracks[currentIndex]) return;
+  if (!currentPlayingTrack) return;
   triggerHaptic(35);
-  const trk = tracks[currentIndex];
+  const trk = currentPlayingTrack;
   const startSec = parseFloat(trimStartRange.value);
   const endSec = parseFloat(trimEndRange.value);
 
@@ -3257,12 +3453,12 @@ async function renderTrimmedClipsForCurrent() {
   const list = document.getElementById('trimmed-clips-list');
   list.innerHTML = '';
 
-  if (currentIndex === -1 || !tracks[currentIndex]) {
+  if (!currentPlayingTrack) {
     list.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">Play a song to view its clips.</li>';
     return;
   }
 
-  const clips = await dbOps.getTrimmedClipsForSong(tracks[currentIndex].name);
+  const clips = await dbOps.getTrimmedClipsForSong(currentPlayingTrack.name);
   if (!clips.length) {
     list.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">No clips saved for this track yet.</li>';
     return;
@@ -3322,7 +3518,7 @@ async function renderTrimmedClipsForCurrent() {
   });
 }
 
-// Embedded Drawers (Fixed Looper Button-to-Panel ID Collision)
+// Embedded Drawers
 const panels = {
   vol: document.getElementById('card-volume-panel'),
   eq: document.getElementById('card-eq-panel'),
@@ -3355,9 +3551,14 @@ function togglePanel(key) {
     target.style.display = 'block';
     btns[key].classList.add('active');
 
-    if (key === 'playlist') renderCardReorderList();
-    else if (key === 'timestamps') renderTimestampsDrawerList();
-    else if (key === 'trimmer') renderTrimmedClipsForCurrent();
+    if (key === 'playlist') {
+      renderCardReorderList();
+      calculateAndRenderQueueDuration();
+    } else if (key === 'timestamps') {
+      renderTimestampsDrawerList();
+    } else if (key === 'trimmer') {
+      renderTrimmedClipsForCurrent();
+    }
   }
 }
 
@@ -3376,14 +3577,14 @@ document.getElementById('card-vol-slider').addEventListener('input', (e) => {
 
 const lyricsTextarea = document.getElementById('lyrics-textarea');
 async function loadLyricsForCurrent() {
-  if (currentIndex === -1 || !tracks[currentIndex]) return;
-  const text = await dbOps.getLyrics(tracks[currentIndex].name);
+  if (!currentPlayingTrack) return;
+  const text = await dbOps.getLyrics(currentPlayingTrack.name);
   lyricsTextarea.value = text;
 }
 document.getElementById('btn-save-lyrics').onclick = async () => {
   triggerHaptic(25);
-  if (currentIndex === -1 || !tracks[currentIndex]) return;
-  await dbOps.setLyrics(tracks[currentIndex].name, lyricsTextarea.value);
+  if (!currentPlayingTrack) return;
+  await dbOps.setLyrics(currentPlayingTrack.name, lyricsTextarea.value);
   showNotification('Lyrics saved offline!');
 };
 
@@ -3394,11 +3595,11 @@ const timestampTimePreview = document.getElementById('timestamp-time-preview');
 const timestampMarkersList = document.getElementById('timestamp-markers-list');
 
 async function loadTimestampsForCurrent() {
-  if (currentIndex === -1 || !tracks[currentIndex]) {
+  if (!currentPlayingTrack) {
     currentSongTimestamps = [];
     return;
   }
-  currentSongTimestamps = await dbOps.getTimestamps(tracks[currentIndex].name);
+  currentSongTimestamps = await dbOps.getTimestamps(currentPlayingTrack.name);
   currentSongTimestamps.sort((a, b) => a.time - b.time);
   renderTimestampsDrawerList();
 }
@@ -3473,7 +3674,7 @@ function renderTimestampsDrawerList() {
         renderTimestampsDrawerList();
         renderSeekTicks();
       }, async () => {
-        await dbOps.saveTimestamps(tracks[currentIndex].name, currentSongTimestamps);
+        await dbOps.saveTimestamps(currentPlayingTrack.name, currentSongTimestamps);
       });
     };
 
@@ -3483,7 +3684,7 @@ function renderTimestampsDrawerList() {
 
 document.getElementById('btn-add-timestamp').onclick = () => {
   triggerHaptic(20);
-  if (currentIndex === -1 || !tracks[currentIndex]) {
+  if (!currentPlayingTrack) {
     return showNotification('Play a song to bookmark a timestamp!');
   }
   pendingTimestampTime = audio.currentTime;
@@ -3500,7 +3701,7 @@ document.getElementById('btn-confirm-timestamp').onclick = async () => {
   const name = timestampNameInput.value.trim() || `Marker at ${formatSecs(pendingTimestampTime)}`;
   currentSongTimestamps.push({ id: 'ts_' + Date.now(), time: pendingTimestampTime, name });
   currentSongTimestamps.sort((a, b) => a.time - b.time);
-  await dbOps.saveTimestamps(tracks[currentIndex].name, currentSongTimestamps);
+  await dbOps.saveTimestamps(currentPlayingTrack.name, currentSongTimestamps);
   timestampModal.style.display = 'none';
   showNotification(`Marker "${name}" saved!`);
   renderTimestampsDrawerList();
@@ -3528,8 +3729,8 @@ function updateActiveTimestampBadge() {
 }
 
 function saveCurrentSessionState() {
-  if (currentIndex !== -1 && tracks[currentIndex]) {
-    localStorage.setItem('ammu_last_song', tracks[currentIndex].name);
+  if (currentPlayingTrack) {
+    localStorage.setItem('ammu_last_song', currentPlayingTrack.name);
     localStorage.setItem('ammu_last_time', audio.currentTime.toString());
     localStorage.setItem('ammu_last_pl', activePlaylistId);
   }
@@ -3547,9 +3748,10 @@ function checkResumeSession() {
       chip.style.display = 'none';
       const plId = localStorage.getItem('ammu_last_pl') || 'all';
       const songListTarget = await dbOps.getTracks(plId);
-      const sIdx = songListTarget.findIndex(t => t.name === lastSong);
-      if (sIdx !== -1 && (!songListTarget[sIdx].isMissing && songListTarget[sIdx].blob && songListTarget[sIdx].blob.size > 0)) {
-        await playTrack(sIdx);
+      const targetTrk = songListTarget.find(t => t.name === lastSong);
+      if (targetTrk && (!targetTrk.isMissing && targetTrk.blob && targetTrk.blob.size > 0)) {
+        playingQueue = [...songListTarget];
+        await playTrackDirect(targetTrk);
         audio.currentTime = lastTime;
       }
     };
@@ -3577,25 +3779,79 @@ seekBar.oninput = () => {
   if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
 };
 
-// In-Card Drawer Playlist Renderer
+// -------------------------------------------------------------
+// IN-CARD QUEUE DRAWER & DYNAMIC DURATION CALCULATION
+// -------------------------------------------------------------
+function calculateAndRenderQueueDuration() {
+  const badge = document.getElementById('card-queue-duration-badge');
+  if (!badge) return;
+
+  const totalCount = playingQueue.length + playNextQueue.length;
+  // Estimate ~3.5 minutes per track for offline files, or real duration if cached
+  const totalSeconds = totalCount * 210;
+
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = Math.floor(totalSeconds % 60);
+
+  const formatted = hrs > 0 
+    ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`
+    : `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+  badge.textContent = `${totalCount} song${totalCount === 1 ? '' : 's'} • ~${formatted}`;
+}
+
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
-  if (!tracks.length && !playNextQueue.length) {
-    cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">No songs in this playlist.</li>';
+  if (!playingQueue.length && !playNextQueue.length) {
+    cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">Playing queue is empty.</li>';
     return;
   }
 
   const isAudioPlaying = !audio.paused && audio.currentTime > 0;
 
-  tracks.forEach((trk, idx) => {
-    const isThisPlaying = (currentIndex !== -1 && tracks[currentIndex] && (tracks[currentIndex].name === trk.name));
+  // Render Up Next Queue First
+  if (playNextQueue.length > 0) {
+    playNextQueue.forEach((queuedTrk, qIdx) => {
+      const qLi = document.createElement('li');
+      qLi.className = 'drawer-track-row';
+      qLi.style.border = '1.5px dashed var(--accent-light)';
+      qLi.style.background = '#0d2117';
+      qLi.innerHTML = `
+        <span class="song-name" style="max-width:70%;cursor:pointer;">
+          <span style="color:var(--accent-light);font-size:0.75rem;font-weight:bold;">[Up Next]</span> ${queuedTrk.name}
+        </span>
+        <button class="btn-del" title="Remove from queue">✕</button>
+      `;
+
+      qLi.querySelector('.song-name').onclick = () => {
+        triggerHaptic(25);
+        playNextQueue.splice(qIdx, 1);
+        playTrackDirect(queuedTrk);
+      };
+
+      qLi.querySelector('.btn-del').onclick = (e) => {
+        e.stopPropagation();
+        triggerHaptic(20);
+        playNextQueue.splice(qIdx, 1);
+        renderCardReorderList();
+        calculateAndRenderQueueDuration();
+      };
+
+      cardReorderList.appendChild(qLi);
+    });
+  }
+
+  // Render Active Queue Items
+  playingQueue.forEach((trk, idx) => {
+    const isThisPlaying = (currentPlayingTrack && currentPlayingTrack.name === trk.name);
     const isMissing = trk.isMissing || (!trk.blob || trk.blob.size === 0);
 
     const li = document.createElement('li');
     li.className = `drawer-track-row ${isThisPlaying ? 'now-playing-active' : ''} ${isMissing ? 'missing-storage' : ''}`;
     
     li.innerHTML = `
-      <span class="song-name" style="max-width:68%;cursor:pointer;">
+      <span class="song-name" style="max-width:65%;cursor:pointer;">
         <strong>${idx + 1}.</strong> ${trk.name}
         ${isMissing ? '<span class="missing-tag-badge">Missing</span>' : ''}
         ${isThisPlaying ? `
@@ -3606,13 +3862,14 @@ function renderCardReorderList() {
               <span class="eq-bar bar-3"></span>
               <span class="eq-bar bar-4"></span>
             </span>
-            <span class="now-playing-tag">Now Playing</span>
+            <span class="now-playing-tag">Playing</span>
           </span>
         ` : ''}
       </span>
       <div class="drawer-reorder-btns">
-        <button class="drawer-shift-btn" onclick="shiftTrack(${idx}, -1)">▲</button>
-        <button class="drawer-shift-btn" onclick="shiftTrack(${idx}, 1)">▼</button>
+        <button class="drawer-shift-btn" onclick="shiftQueueTrack(${idx}, -1)">▲</button>
+        <button class="drawer-shift-btn" onclick="shiftQueueTrack(${idx}, 1)">▼</button>
+        <button class="drawer-shift-btn" style="color:#f85149;" onclick="removeTrackFromQueue(${idx})" title="Remove from queue">✕</button>
       </div>
     `;
 
@@ -3621,65 +3878,32 @@ function renderCardReorderList() {
         showNotification(`"${trk.name}" is not in device storage.`);
         return;
       }
-      playTrack(idx);
+      playTrackDirect(trk);
     };
     cardReorderList.appendChild(li);
-
-    if (isThisPlaying && playNextQueue.length > 0) {
-      playNextQueue.forEach((queuedTrk, qIdx) => {
-        const qLi = document.createElement('li');
-        qLi.className = 'drawer-track-row';
-        qLi.style.border = '1px dashed var(--accent-light)';
-        qLi.style.background = '#091510';
-        qLi.innerHTML = `
-          <span class="song-name" style="max-width:75%;cursor:pointer;">
-            <span style="color:var(--accent-light);font-size:0.75rem;font-weight:bold;">[Up Next]</span> ${queuedTrk.name}
-          </span>
-          <button class="btn-del" title="Remove from queue">✕</button>
-        `;
-
-        qLi.querySelector('.song-name').onclick = () => {
-          triggerHaptic(25);
-          playNextQueue.splice(qIdx, 1);
-          renderCardReorderList();
-          const targetIndex = tracks.findIndex(t => t.name === queuedTrk.name);
-          if (targetIndex !== -1) {
-            playTrack(targetIndex);
-          }
-        };
-
-        qLi.querySelector('.btn-del').onclick = (e) => {
-          e.stopPropagation();
-          triggerHaptic(20);
-          playNextQueue.splice(qIdx, 1);
-          renderCardReorderList();
-        };
-
-        cardReorderList.appendChild(qLi);
-      });
-    }
   });
 }
 
-window.shiftTrack = async (from, delta) => {
+window.shiftQueueTrack = (from, delta) => {
   triggerHaptic(20);
   const to = from + delta;
-  if (to < 0 || to >= tracks.length) return;
-  const temp = tracks[from];
-  tracks[from] = tracks[to];
-  tracks[to] = temp;
-  for (let i = 0; i < tracks.length; i++) {
-    tracks[i].order = i;
-    await dbOps.updateTrack(tracks[i]);
-  }
-  if (currentIndex === from) currentIndex = to;
-  else if (currentIndex === to) currentIndex = from;
+  if (to < 0 || to >= playingQueue.length) return;
+  const temp = playingQueue[from];
+  playingQueue[from] = playingQueue[to];
+  playingQueue[to] = temp;
   renderCardReorderList();
-  loadTracks();
-  showNotification('Playlist order updated');
+  showNotification('Queue order updated');
 };
 
-// Bass Boost & Equalizer
+window.removeTrackFromQueue = (idx) => {
+  triggerHaptic(25);
+  const removed = playingQueue.splice(idx, 1)[0];
+  renderCardReorderList();
+  calculateAndRenderQueueDuration();
+  showNotification(`Removed "${removed?.name}" from playing queue`);
+};
+
+// Bass Boost & Equalizer Controls
 document.getElementById('slider-bass-boost').oninput = (e) => {
   triggerHaptic(10);
   const val = parseFloat(e.target.value);
@@ -3706,7 +3930,6 @@ document.getElementById('eq-preamp').oninput = (e) => {
 document.getElementById('card-eq-enable').onchange = (e) => {
   triggerHaptic(20);
   applyDSPState(e.target.checked);
-  showNotification(eqEnabled ? 'Equalizer active' : 'DSP bypass');
 };
 
 document.getElementById('btn-reset-eq-card').onclick = () => {
@@ -3723,13 +3946,17 @@ document.getElementById('btn-reset-eq-card').onclick = () => {
   showNotification('Equalizer reset to default');
 };
 
-// Initial Boot
+// ==========================================
+// SYSTEM BOOT (100% VOLUME & FLAT DSP OFF)
+// ==========================================
 initDB().then(async () => {
   await checkOnboarding();
   await loadAppBranding();
   await loadDevProfile();
   await loadPlaylists();
   checkResumeSession();
-  setVolume(20);
-  detectAudioOutputDevices();
+  
+  // Default Boot State: 100% Volume & DSP Flat (Off)
+  applyDSPState(false);
+  setVolume(100);
 });
