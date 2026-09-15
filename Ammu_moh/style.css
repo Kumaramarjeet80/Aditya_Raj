@@ -144,6 +144,99 @@ body {
 }
 
 /* ==========================================================================
+   GLOBAL 50% DIMMED PROCESSING MODAL (>1s OPERATIONS)
+   ========================================================================== */
+.processing-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100003;
+  padding: 20px;
+}
+
+.processing-card {
+  background: rgba(21, 27, 38, 0.98);
+  border: 1.5px solid var(--accent);
+  border-radius: 18px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  opacity: 1 !important;
+}
+
+.processing-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3.5px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--accent-light);
+  border-radius: 50%;
+  animation: spinProcessing 0.8s linear infinite;
+  margin-bottom: 14px;
+}
+
+@keyframes spinProcessing {
+  to { transform: rotate(360deg); }
+}
+
+.processing-card h3 {
+  font-size: 1.05rem;
+  color: #fff;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.processing-status-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  min-height: 18px;
+}
+
+.processing-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #090d15;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.processing-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-light);
+  transition: width 0.15s ease-out;
+}
+
+.btn-cancel-task {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+  border: 1px solid #f85149;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-cancel-task:active {
+  background: #f85149;
+  color: #fff;
+}
+
+/* ==========================================================================
    FLOATING EMOTIONAL POPUP (CROSS-PLATFORM DISPLAY)
    ========================================================================== */
 .emotional-floating-wrapper {
@@ -1527,7 +1620,7 @@ body {
 .eq-val { font-size: 0.65rem; color: var(--accent-light); }
 .eq-freq { font-size: 0.65rem; color: var(--text-muted); }
 
-/* Vivo Studio Style Equalizer (Images Replica) */
+/* Vivo Studio Style Equalizer */
 .vivo-sliders-row {
   display: flex;
   justify-content: space-between;
