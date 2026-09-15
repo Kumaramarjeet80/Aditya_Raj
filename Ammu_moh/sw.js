@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ammu-player-v240';
+const CACHE_NAME = 'ammu-player-v250';
 const ASSETS = [
   './',
   './index.html',
