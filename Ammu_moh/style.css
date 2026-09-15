@@ -49,6 +49,69 @@ body {
   touch-action: pan-y;
 }
 
+/* ==========================================================================
+   FLOATING EMOTIONAL POPUP & ISOLATED LARGE EMOJI (UNIVERSAL FONT FALLBACK)
+   ========================================================================== */
+.emotional-floating-wrapper {
+  position: fixed;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 100002;
+  pointer-events: none;
+  animation: emotionalPop 2.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.emotional-big-emoji {
+  font-size: 5rem;
+  line-height: 1;
+  margin-bottom: -15px;
+  z-index: 2;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.7));
+  animation: floatEmojiBounce 1.4s ease-in-out infinite alternate;
+}
+
+.emotional-card {
+  background: rgba(21, 27, 38, 0.95);
+  border: 1.5px solid var(--accent);
+  padding: 16px 24px;
+  border-radius: 20px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  text-align: center;
+  min-width: 260px;
+}
+
+.emotional-card h3 {
+  font-size: 1.05rem;
+  color: #fff;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.emotional-card p {
+  font-size: 0.8rem;
+  color: var(--accent-light);
+  font-weight: 600;
+}
+
+@keyframes emotionalPop {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  25% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.85); }
+}
+
+@keyframes floatEmojiBounce {
+  0% { transform: translateY(0px) scale(1); }
+  100% { transform: translateY(-8px) scale(1.08); }
+}
+
 /* Install Banner */
 .install-banner-bar {
   position: fixed;
@@ -134,7 +197,7 @@ body {
   font-size: 0.8rem;
 }
 
-/* Fullscreen Floating Heart Animation Overlay */
+/* Heart Particles */
 .heart-burst-overlay {
   position: fixed;
   inset: 0;
@@ -240,23 +303,6 @@ body {
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
-}
-
-/* Audio Output Badges */
-.device-output-badge {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(46, 160, 67, 0.15);
-  border: 1px solid var(--accent);
-  color: var(--accent-light);
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  white-space: nowrap;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Playlist Chips Bar */
@@ -365,7 +411,7 @@ body {
   font-weight: 600;
 }
 
-/* Upper Content (Preserves Scroll Position on Selection) */
+/* Upper Content Viewport */
 .upper-content {
   flex: 1;
   overflow-y: auto;
@@ -390,9 +436,9 @@ body {
   gap: 8px;
 }
 
-/* Active In-Card Playlist Drawer (Exact 440px Height) */
+/* In-Card Queue Drawer */
 .card-compact-list {
-  max-height: 440px;
+  max-height: 380px;
   overflow-y: auto;
   padding-right: 4px;
   display: flex;
@@ -419,6 +465,7 @@ body {
 
 .drawer-reorder-btns {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
@@ -451,7 +498,7 @@ body {
   color: var(--accent-light);
 }
 
-/* Standard Main List Song Row */
+/* Song Row Item */
 .song-row {
   display: flex;
   align-items: center;
@@ -519,7 +566,7 @@ body {
   border: 1px solid #f85149;
 }
 
-/* Universal Equalizer Animation */
+/* Equalizer Bars Animation */
 .now-playing-badge-group {
   display: inline-flex;
   align-items: center;
@@ -586,7 +633,6 @@ body {
   color: var(--text-muted);
 }
 
-/* 4-Icon Row Actions */
 .row-actions-four {
   display: flex;
   align-items: center;
@@ -611,7 +657,7 @@ body {
   line-height: 1;
 }
 
-/* Context Menu Popups */
+/* Popups & Menus */
 .context-menu-pop {
   position: fixed;
   background: #1c2635;
@@ -679,10 +725,11 @@ body {
 }
 
 .mini-meta {
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: center;
+  gap: 1px;
+  overflow: hidden;
 }
 
 .mini-title {
@@ -695,8 +742,17 @@ body {
 }
 
 .mini-sub {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
+}
+
+.mini-output-line {
+  font-size: 0.68rem;
+  color: var(--accent-light);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .player-bar-actions {
@@ -747,7 +803,9 @@ body {
   pointer-events: auto;
 }
 
-/* Fullscreen Player Card */
+/* ==========================================================================
+   FULLSCREEN PLAYER CARD & STICKY CONTROLS SCAFFOLD
+   ========================================================================== */
 .fullscreen-player-card {
   position: fixed;
   inset: 0;
@@ -788,7 +846,7 @@ body {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   position: relative;
-  z-index: 2;
+  z-index: 20;
   touch-action: none;
 }
 
@@ -809,18 +867,25 @@ body {
   cursor: pointer;
 }
 
-/* Pinned Player Controls */
-.player-pinned-controls {
-  flex-shrink: 0;
+/* Viewport that handles upward scrolling until controls stick */
+.card-scroll-viewport {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+}
+
+.player-collapsible-hero {
   padding: 8px 16px 4px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   background: var(--bg-main);
-  border-bottom: 1px solid rgba(48, 54, 61, 0.5);
-  position: relative;
-  z-index: 1;
+  flex-shrink: 0;
 }
 
 .visualizer-canvas {
@@ -866,7 +931,6 @@ body {
   padding: 4px;
 }
 
-/* Vinyl Mode */
 .detail-art-container.mode-vinyl {
   border-radius: 50% !important;
   border: 4px solid #111;
@@ -1025,6 +1089,20 @@ body {
   background: var(--accent);
 }
 
+/* STICKY PLAYBACK CONTROLS HEADER */
+.sticky-controls-anchor {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: var(--bg-main);
+  padding: 8px 16px 6px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
 .box-player-controls {
   display: flex;
   align-items: center;
@@ -1085,16 +1163,11 @@ body {
   border-color: var(--accent-light);
 }
 
-.card-scrollable-drawers {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 16px 20px 16px;
+.card-drawers-container {
+  padding: 12px 16px 24px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  -webkit-overflow-scrolling: touch;
-  position: relative;
-  z-index: 1;
 }
 
 .embedded-card-panel {
@@ -1462,7 +1535,7 @@ body {
   border: 1px solid var(--border);
 }
 
-/* Toast Notifications */
+/* Toasts */
 .toast-container {
   position: absolute;
   bottom: calc(var(--bar-height) + 22px);
@@ -1549,8 +1622,8 @@ body {
   padding: 16px;
 }
 
-/* Elevate Edit Profile and Passkey over settings modal */
-#user-profile-modal, #passkey-modal {
+#user-profile-modal,
+#key-auth-modal {
   z-index: 10001;
 }
 
@@ -1640,33 +1713,4 @@ body {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 14px;
-}
-/* 3-line layout for bottom mini-player */
-.mini-meta {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  overflow: hidden;
-}
-
-.mini-output-line {
-  font-size: 0.68rem;
-  color: var(--accent-light);
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Fullscreen card output device badge placement */
-.fullscreen-output-row {
-  margin-top: 5px;
-  display: flex;
-  justify-content: center;
-}
-
-.fullscreen-output-row .device-output-badge {
-  font-size: 0.72rem;
-  padding: 3px 10px;
 }
