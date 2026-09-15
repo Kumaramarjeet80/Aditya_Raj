@@ -13,6 +13,7 @@
   <link id="app-favicon" rel="icon" type="image/png" href="my-icon.png" />
 </head>
 <body>
+  <!-- Topmost Alert & Toast Container -->
   <div id="toast-container" class="toast-container"></div>
   <div id="heart-burst-overlay" class="heart-burst-overlay" style="display:none;"></div>
 
@@ -32,13 +33,21 @@
     <button id="menu-btn-dev-profile" class="menu-pop-item">👨‍💻 Developer Profile</button>
   </div>
 
-  <!-- Sort By Popover -->
+  <!-- Hierarchical Two-Tier Sort By Popovers -->
   <div id="sort-by-menu" class="context-menu-pop" style="display:none;">
-    <button class="menu-pop-item sort-item" data-sort="default">↕️ Sort: Manual</button>
-    <button class="menu-pop-item sort-item" data-sort="az">🔤 Name: A to Z</button>
-    <button class="menu-pop-item sort-item" data-sort="za">🔤 Name: Z to A</button>
-    <button class="menu-pop-item sort-item" data-sort="size-asc">📦 Size: Small to Large</button>
-    <button class="menu-pop-item sort-item" data-sort="size-desc">📦 Size: Large to Small</button>
+    <button id="sort-cat-name" class="menu-pop-item">🔤 By Name ▸</button>
+    <button id="sort-cat-size" class="menu-pop-item">📦 By Size ▸</button>
+    <button class="menu-pop-item sort-item" data-sort="default">↕️ Default / Manual</button>
+  </div>
+
+  <div id="sort-sub-name" class="context-menu-pop" style="display:none;">
+    <button class="menu-pop-item sort-item" data-sort="az">🔤 A to Z (Ascending)</button>
+    <button class="menu-pop-item sort-item" data-sort="za">🔤 Z to A (Descending)</button>
+  </div>
+
+  <div id="sort-sub-size" class="context-menu-pop" style="display:none;">
+    <button class="menu-pop-item sort-item" data-sort="size-desc">📦 Large to Small</button>
+    <button class="menu-pop-item sort-item" data-sort="size-asc">📦 Small to Large</button>
   </div>
 
   <!-- Track 3-Dots Context Menu -->
@@ -370,16 +379,25 @@
         </label>
       </div>
 
-      <!-- Account-Level Admin Super-Key Configuration -->
+      <!-- Account-Level Admin Super-Key Suite (View, Update, Remove) -->
       <div class="backup-management-box" id="admin-key-config-box" style="border-color:#e3b341;">
         <h4>🛡️ Admin Super-Key &amp; Recovery</h4>
-        <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 6px 0;">Set your personal master key to bypass any forgotten password and unlock permanent credential editing.</p>
-        <div class="form-group" style="margin:4px 0;">
-          <label style="font-size:0.72rem;">Set Account Admin Key</label>
-          <div style="display:flex;gap:6px;">
-            <input type="password" id="settings-admin-key-input" class="input-text" placeholder="Set or change Admin Key" style="flex:1;" />
-            <button id="btn-save-admin-key" class="btn-primary-sm" style="background:#e3b341;color:#000;">Save Key</button>
+        <p id="admin-key-status-lbl" style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 6px 0;">Status: No Admin Key Created (Super-Access Disabled)</p>
+        
+        <div id="admin-key-created-controls" style="display:none;margin-bottom:8px;">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+            <input type="password" id="display-admin-key-val" class="input-text" readonly style="flex:1;background:#05080e;" value="••••••••" />
+            <button id="btn-toggle-view-admin-key" class="btn-action-sm">👁️ View</button>
           </div>
+          <div style="display:flex;gap:6px;">
+            <button id="btn-open-update-admin-key" class="btn-action-sm" style="flex:1;color:var(--accent-light);">✏️ Change Key</button>
+            <button id="btn-remove-admin-key" class="btn-action-sm" style="flex:1;color:#f85149;">🗑️ Remove Key</button>
+          </div>
+        </div>
+
+        <div id="admin-key-setup-controls" style="display:flex;gap:6px;">
+          <input type="password" id="settings-admin-key-input" class="input-text" placeholder="Set secret Admin Key" style="flex:1;" />
+          <button id="btn-save-admin-key" class="btn-primary-sm" style="background:#e3b341;color:#000;">Set Key</button>
         </div>
       </div>
 
@@ -746,7 +764,7 @@
         </div>
       </div>
 
-      <!-- Docked Sticky Playback Controls Header -->
+      <!-- Docked Sticky Controls Anchor -->
       <div class="sticky-controls-anchor">
         <div class="box-player-controls">
           <button id="box-btn-prev" class="icon-btn-large">⏮</button>
@@ -846,8 +864,8 @@
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
 
-        <!-- 6. In-Card Queue Drawer with Live Duration, Author, and Drag-Target Indicator -->
-        <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;position:relative;">
+        <!-- 6. In-Card Queue Drawer with Enclosed Drop Indicator & Drag Preview -->
+        <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;position:relative;overflow:hidden;">
           <div class="panel-header-row" style="border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;">
             <div>
               <span style="font-weight:bold;">Active Queue</span>
@@ -855,8 +873,12 @@
             </div>
             <button id="card-queue-author-btn" class="btn-author-pill">👤 Author</button>
           </div>
-          <!-- Red insertion line target -->
+
+          <!-- Red insertion line drop target strictly bound to this drawer -->
           <div id="queue-drop-indicator" class="queue-drop-indicator-line" style="display:none;"></div>
+          <!-- Floating clone preview following finger -->
+          <div id="queue-drag-preview" class="queue-drag-floating-preview" style="display:none;"></div>
+
           <ul id="card-reorder-list" class="song-list card-compact-list" style="margin-top:6px;"></ul>
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
