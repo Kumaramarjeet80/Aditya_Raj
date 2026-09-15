@@ -103,6 +103,48 @@ const timestampTimePreview = document.getElementById('timestamp-time-preview');
 const timestampMarkersList = document.getElementById('timestamp-markers-list');
 const lyricsTextarea = document.getElementById('lyrics-textarea');
 
+// Processing Modal Elements
+const globalProcessingModal = document.getElementById('global-processing-modal');
+const processingStatusMsg = document.getElementById('processing-status-msg');
+const processingProgressBar = document.getElementById('processing-progress-bar');
+const btnCancelProcessingTask = document.getElementById('btn-cancel-processing-task');
+let isOperationCancelled = false;
+let processingTimer = null;
+
+function showProcessingModal(title = 'Processing Audio Data...') {
+  const titleEl = document.getElementById('processing-title');
+  if (titleEl) titleEl.textContent = title;
+  if (processingProgressBar) processingProgressBar.style.width = '0%';
+  if (processingStatusMsg) processingStatusMsg.textContent = 'Please wait...';
+  isOperationCancelled = false;
+
+  // Only render if operation exceeds 1 second
+  if (processingTimer) clearTimeout(processingTimer);
+  processingTimer = setTimeout(() => {
+    if (globalProcessingModal) globalProcessingModal.style.display = 'flex';
+  }, 1000);
+}
+
+function updateProcessingProgress(pct, statusText) {
+  if (processingProgressBar) processingProgressBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+  if (processingStatusMsg && statusText) processingStatusMsg.textContent = statusText;
+}
+
+function hideProcessingModal() {
+  if (processingTimer) clearTimeout(processingTimer);
+  if (globalProcessingModal) globalProcessingModal.style.display = 'none';
+  isOperationCancelled = false;
+}
+
+if (btnCancelProcessingTask) {
+  btnCancelProcessingTask.onclick = () => {
+    triggerHaptic(30);
+    isOperationCancelled = true;
+    hideProcessingModal();
+    showNotification('Task cancelled by user.');
+  };
+}
+
 // =============================================================
 // INDIAN STANDARD TIME (IST) FORMATTERS
 // =============================================================
@@ -272,7 +314,8 @@ window.addEventListener('popstate', () => {
     'secondary-keys-modal',
     'admin-auth-modal',
     'storage-auditor-modal',
-    'custom-eq-modal'
+    'custom-eq-modal',
+    'global-processing-modal'
   ];
   for (const id of modals) {
     const el = document.getElementById(id);
@@ -306,7 +349,7 @@ window.addEventListener('touchmove', dismissAllMenus, { passive: true });
 window.addEventListener('wheel', dismissAllMenus, { passive: true });
 
 // =============================================================
-// TOASTS, UNDO & STABLE FLOATING EMOTIONAL BANNER
+// TOASTS, UNDO & REACTION NOTIFICATIONS
 // =============================================================
 let activeUndoAction = null;
 
@@ -410,7 +453,6 @@ function triggerHeartBurst(isFavorited) {
   }, 1600);
 }
 
-// Stable Rapid-Toggle Emotional Banner Manager
 let emotionalTimeout = null;
 function showEmotionalMessage(isLiked) {
   const container = document.getElementById('emotional-floating-container');
@@ -424,9 +466,8 @@ function showEmotionalMessage(isLiked) {
     emotionalTimeout = null;
   }
 
-  // Force reflow to restart CSS animation cleanly on rapid clicks
   container.style.display = 'none';
-  void container.offsetWidth;
+  void container.offsetWidth; // Trigger reflow
 
   if (isLiked) {
     emojiEl.innerHTML = '&#129401;';
@@ -446,9 +487,9 @@ function showEmotionalMessage(isLiked) {
 }
 
 // =============================================================
-// INDEXEDDB ENGINE
+// INDEXEDDB DATABASE ENGINE
 // =============================================================
-const DB_NAME = 'AmmuMusicDB_v270';
+const DB_NAME = 'AmmuMusicDB_v280';
 const DB_VER = 1;
 let db;
 
@@ -802,7 +843,7 @@ const dbOps = {
 };
 
 // =============================================================
-// DUAL AUDIO DSP ENGINE WITH ANTI-NOISE FILTER FLUSH
+// DUAL DSP HARDWARE ENGINE (TRUE MUTUAL EXCLUSIVITY)
 // =============================================================
 const audio = document.getElementById('audio-engine');
 let audioCtx = null;
@@ -822,7 +863,7 @@ let vlcFilters = [];
 // Vivo EQ Frequencies
 const vivoBands = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 let vivoFilters = [];
-let activeEqEngine = 'vlc'; // 'vlc' OR 'vivo' (Strictly Mutually Exclusive)
+let activeEqEngine = 'vlc'; // 'vlc' OR 'vivo' (Exclusive)
 let eqEnabled = false;
 let currentVol = 1.0;
 let currentCrossfadeDuration = 2;
@@ -908,7 +949,7 @@ function ensureAudioPipeline() {
     crossfadeGainNode.connect(masterGainNode);
     masterGainNode.connect(audioCtx.destination);
 
-    // Persistent Background Keep-Alive Node (Prevents notification dismissal on pause)
+    // Persistent Background Oscillator: keeps audio stream alive on lock screen
     try {
       const silentOsc = audioCtx.createOscillator();
       const silentGain = audioCtx.createGain();
@@ -925,12 +966,12 @@ function ensureAudioPipeline() {
   }
 }
 
-// Anti-Noise Buffer Flush: Prevents 10-15 sec distortion after unpausing
+// Anti-Noise Buffer Flush: Eliminates static/noise burst when resuming
 function cleanAudioBufferResume() {
   if (!audioCtx || !masterGainNode) return;
   const now = audioCtx.currentTime;
-  masterGainNode.gain.setValueAtTime(0.001, now);
-  masterGainNode.gain.linearRampToValueAtTime(currentVol, now + 0.04);
+  masterGainNode.gain.setValueAtTime(0.0001, now);
+  masterGainNode.gain.linearRampToValueAtTime(currentVol, now + 0.035);
 }
 
 // Mutually Exclusive DSP Switcher
@@ -940,7 +981,7 @@ function applyDSPState(enabled) {
   if (chk) chk.checked = enabled;
 
   if (activeEqEngine === 'vlc') {
-    // Engage VLC, completely flatten Vivo
+    // Engage VLC, completely bypass Vivo
     if (vlcFilters && vlcFilters.length) {
       vlcFilters.forEach((f, i) => {
         const slider = document.querySelector(`[data-vlc-band="${i}"]`);
@@ -952,7 +993,7 @@ function applyDSPState(enabled) {
       vivoFilters.forEach(f => { if (f) f.gain.value = 0; });
     }
   } else {
-    // Engage Vivo, completely flatten VLC
+    // Engage Vivo, completely bypass VLC
     if (vlcFilters && vlcFilters.length) {
       vlcFilters.forEach(f => { if (f) f.gain.value = 0; });
     }
@@ -1011,7 +1052,7 @@ document.querySelectorAll('.vol-snap-btn').forEach(btn => {
   };
 });
 
-// Mutually Exclusive Switchers (Turning one on disables the other)
+// Mutually Exclusive Switchers: Clicking one switches mode and deactivates the other
 const btnTabVlc = document.getElementById('btn-tab-vlc-eq');
 const btnTabVivo = document.getElementById('btn-tab-vivo-eq');
 
@@ -1071,7 +1112,7 @@ function applyQuickPreset(type) {
   showNotification(`Preset Applied: ${type.toUpperCase()}`);
 }
 
-// Vivo Preset Application
+// Vivo Studio Preset Map
 function applyVivoPreset(presetKey, customGains = null) {
   activeVivoPresetKey = presetKey;
   currentVivoGains = customGains ? [...customGains] : [...(vivoOfficialPresets[presetKey] || vivoOfficialPresets.custom)];
@@ -1280,7 +1321,7 @@ if (importEqFile) {
   };
 }
 
-// Crossfade Transition Logic
+// Crossfade Staging
 const selectCrossfade = document.getElementById('select-crossfade-sec');
 if (selectCrossfade) {
   selectCrossfade.onchange = (e) => {
@@ -1344,9 +1385,7 @@ async function renderWaveformForTrack(blob) {
   }
 }
 
-// =============================================================
-// TOUCH ERGONOMICS: MINI-PLAYER SWIPE & DRAG DISMISS
-// =============================================================
+// Mini-Player Swipe Gestures
 let miniTouchStartX = 0;
 let miniTouchStartY = 0;
 
@@ -1461,7 +1500,7 @@ function updateAmbientGlow(imgEl) {
   } catch (_) {}
 }
 
-// Audio System Interruptions Listener (Protects against incoming notification drops)
+// Android Audio Interruption & Notification Listeners
 audio.addEventListener('pause', () => {
   if (!isManualPause && currentPlayingTrack) {
     wasPlayingBeforeInterruption = true;
@@ -1474,7 +1513,6 @@ audio.addEventListener('play', () => {
   cleanAudioBufferResume();
 });
 
-// Auto-resume when device notification finishes sound focus interruption
 window.addEventListener('focus', () => {
   if (wasPlayingBeforeInterruption && audio.paused && currentPlayingTrack) {
     audio.play().catch(() => {});
@@ -1482,7 +1520,7 @@ window.addEventListener('focus', () => {
   }
 });
 
-// State Variables
+// State
 let activePlaylistId = 'all';
 let currentPlaylist = { id: 'all', name: 'All', cover: '' };
 let browsingTracks = [];
@@ -1514,7 +1552,7 @@ let activeContextPlaylist = null;
 let tempEditPlaylistArt = null;
 let isCurrentAdminKeyRevealed = false;
 
-// Header Triggers
+// Header Settings Trigger
 const btnMainSettings = document.getElementById('btn-main-settings-trigger');
 if (btnMainSettings) {
   btnMainSettings.onclick = (e) => {
@@ -1614,7 +1652,7 @@ document.querySelectorAll('.sort-item').forEach(btn => {
   };
 });
 
-// Admin Super-Key UI
+// Admin Super-Key Suite
 async function refreshAdminKeyUI() {
   const plainKey = await dbOps.getConfig('account_admin_key_plain');
   const statusLbl = document.getElementById('admin-key-status-lbl');
@@ -1703,7 +1741,7 @@ if (btnRemoveAdminKey) {
   };
 }
 
-// Track Context Menu Actions
+// Track 3-Dots Menu
 const menuBtnTrackSelect = document.getElementById('menu-btn-track-select');
 if (menuBtnTrackSelect) {
   menuBtnTrackSelect.onclick = () => {
@@ -1790,7 +1828,7 @@ function openAddToPlaylistSubmenu() {
   }
 }
 
-// Playlist 3-Dots Menu Listeners
+// Playlist Context Menu
 const plBtnDownloadAll = document.getElementById('pl-menu-btn-download-all');
 if (plBtnDownloadAll) {
   plBtnDownloadAll.onclick = () => {
@@ -2158,7 +2196,7 @@ if (plModalImportFile) {
   };
 }
 
-// User Profile Modal Actions
+// User Profile Actions
 const btnOpenEditUserProfile = document.getElementById('btn-open-edit-user-profile');
 if (btnOpenEditUserProfile) {
   btnOpenEditUserProfile.onclick = () => {
@@ -2681,7 +2719,6 @@ async function openSettingsModal() {
       plChecklist.appendChild(label);
     });
 
-    // Dynamically limit download matrix to songs from selected playlists only
     document.querySelectorAll('.export-pl-checkbox').forEach(cb => {
       cb.addEventListener('change', renderExportTrackPermissionMatrix);
     });
@@ -2699,7 +2736,6 @@ async function renderExportTrackPermissionMatrix() {
   const filterInput = document.getElementById('export-track-filter-input');
   const q = filterInput ? filterInput.value.trim().toLowerCase() : '';
 
-  // Get only the currently selected playlist IDs
   const selectedPlIds = new Set(
     Array.from(document.querySelectorAll('.export-pl-checkbox:checked'))
       .map(cb => cb.dataset.plId)
@@ -2707,7 +2743,7 @@ async function renderExportTrackPermissionMatrix() {
 
   const allTracks = await dbOps.getAllTracks();
   
-  // Strictly scope matrix songs to the selected playlists
+  // Strictly filter down to tracks that belong to the selected playlists
   const scopedTracks = allTracks.filter(t => selectedPlIds.has(t.playlistId) || t.playlistId === 'all');
   const filtered = scopedTracks.filter(t => t.name.toLowerCase().includes(q));
 
@@ -2831,7 +2867,6 @@ const btnExpFull = document.getElementById('btn-export-full-profile');
 if (btnExpFull) {
   btnExpFull.onclick = async () => {
     triggerHaptic(35);
-    showNotification('Packaging full profile & media backup...');
     await executeUniversalExport(true, true, true, true, null);
   };
 }
@@ -2840,7 +2875,6 @@ const btnExpMeta = document.getElementById('btn-export-meta-profile');
 if (btnExpMeta) {
   btnExpMeta.onclick = async () => {
     triggerHaptic(35);
-    showNotification('Packaging lightweight metadata backup...');
     await executeUniversalExport(false, true, true, false, null);
   };
 }
@@ -2864,13 +2898,13 @@ if (btnExpBackup) {
         .map(cb => cb.dataset.plId)
     );
 
-    showNotification('Packaging backup data...');
     await executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds);
   };
 }
 
-// Export Pipeline: Strictly Scoped to Selected Playlists
+// Scoped Export Pipeline with Centered Progress Modal
 async function executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds) {
+  showProcessingModal('Exporting Sound Library...');
   const allTracks = await dbOps.getAllTracks();
   const allPlaylists = await dbOps.getPlaylists();
   const devProfile = await dbOps.getDevProfile();
@@ -2907,10 +2941,17 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     createdAt: p.createdAt || getIndianStandardDateOnly()
   }));
 
-  // Strictly exports only tracks belonging to the selected playlists
   const exportedTracks = [];
-  for (const t of allTracks) {
-    if (selectedPlIds && !selectedPlIds.has(t.playlistId) && t.playlistId !== 'all') continue;
+  const tracksToProcess = allTracks.filter(t => !selectedPlIds || selectedPlIds.has(t.playlistId) || t.playlistId === 'all');
+  
+  for (let i = 0; i < tracksToProcess.length; i++) {
+    if (isOperationCancelled) {
+      hideProcessingModal();
+      return;
+    }
+    const t = tracksToProcess[i];
+    updateProcessingProgress((i / tracksToProcess.length) * 80, `Packing: ${t.name} (${i + 1}/${tracksToProcess.length})`);
+
     let audioData = null;
     if (includeAudio && t.blob && t.blob.size > 0) {
       try { audioData = await blobToBase64(t.blob); } catch (_) {}
@@ -2919,7 +2960,6 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     const trkMarkers = includeMarkers ? await dbOps.getTimestamps(t.name) : [];
     const isFav = await dbOps.isFavorite(t.name);
     const playCount = await dbOps.getPlayCount(t.name);
-
     const isDownloadRestricted = !allowedDownloadNames.has(t.name);
 
     exportedTracks.push({
@@ -2942,6 +2982,10 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   if (includeClips) {
     const allClips = await dbOps.getAllTrimmedClips();
     for (const c of allClips) {
+      if (isOperationCancelled) {
+        hideProcessingModal();
+        return;
+      }
       let b64 = null;
       if (c.blob) {
         try { b64 = await blobToBase64(c.blob); } catch (_) {}
@@ -2957,7 +3001,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   }
 
   const payload = {
-    version: '16.0',
+    version: '17.0',
     exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
@@ -2976,6 +3020,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     trimmedClips: exportedClips
   };
 
+  updateProcessingProgress(90, 'Applying encryption rules...');
   let rawDataToEmit = JSON.stringify(payload, null, 2);
 
   if (encryptionKey) {
@@ -3003,6 +3048,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     keysDetail: keysDetailStr
   });
   renderAuditLogs();
+  hideProcessingModal();
   showNotification(`Downloaded backup: ${finalBackupFileName}`);
 }
 
@@ -3021,11 +3067,13 @@ if (importBackupFile) {
 async function handleDirectImport(file, bypassOnboarding) {
   if (!file) return;
   currentImportBypassOnboarding = bypassOnboarding;
+  showProcessingModal('Reading Backup Archive...');
   const reader = new FileReader();
   reader.onload = async (ev) => {
     try {
       const content = ev.target.result;
       const parsed = JSON.parse(content);
+      hideProcessingModal();
 
       if (parsed.encrypted && parsed.cipherData) {
         rawEncryptedDataToDecrypt = parsed;
@@ -3038,6 +3086,7 @@ async function handleDirectImport(file, bypassOnboarding) {
 
       evaluateSecondaryKeysPhase(parsed);
     } catch (_) {
+      hideProcessingModal();
       showNotification('Import Failed: Corrupted or invalid JSON backup file.');
     }
   };
@@ -3060,21 +3109,24 @@ if (btnConfirmDec) {
     const enteredKey = keyInput ? keyInput.value.trim() : '';
     if (!enteredKey) return showNotification('Please enter the decryption key.');
 
+    showProcessingModal('Decrypting AES-256 Payload...');
     try {
       const decryptedStr = await decryptPayloadAES(rawEncryptedDataToDecrypt, enteredKey);
       const decryptedPayload = JSON.parse(decryptedStr);
+      hideProcessingModal();
       const decModal = document.getElementById('decryption-auth-modal');
       if (decModal) decModal.style.display = 'none';
       rawEncryptedDataToDecrypt = null;
       showNotification('File decrypted successfully!');
       evaluateSecondaryKeysPhase(decryptedPayload);
     } catch (err) {
+      hideProcessingModal();
       alert('Decryption Failed: Incorrect key or corrupted payload.');
     }
   };
 }
 
-// "Forgot Key?" Guard
+// "Forgot Key?" Fallback Guard
 const btnForgotDecKey = document.getElementById('btn-forgot-decryption-key');
 if (btnForgotDecKey) {
   btnForgotDecKey.onclick = () => {
@@ -3368,6 +3420,7 @@ if (btnConfirmFinalImport) {
   btnConfirmFinalImport.onclick = async () => {
     if (!parsedDecryptedPayload) return;
     triggerHaptic(40);
+    showProcessingModal('Importing Selected Playlists...');
 
     const selectedPlIds = new Set(
       Array.from(document.querySelectorAll('#pre-import-playlist-list input:checked'))
@@ -3415,9 +3468,15 @@ if (btnConfirmFinalImport) {
     let importedSongs = [];
     let availableSongsCount = 0;
     let missingSongsCount = 0;
+    const tracksToImport = parsedDecryptedPayload.tracks.filter(t => selectedPlIds.has(t.playlistId) || t.playlistId === 'all');
 
-    for (const trk of parsedDecryptedPayload.tracks) {
-      if (!selectedPlIds.has(trk.playlistId) && trk.playlistId !== 'all') continue;
+    for (let i = 0; i < tracksToImport.length; i++) {
+      if (isOperationCancelled) {
+        hideProcessingModal();
+        return;
+      }
+      const trk = tracksToImport[i];
+      updateProcessingProgress((i / tracksToImport.length) * 85, `Writing: ${trk.name} (${i + 1}/${tracksToImport.length})`);
       
       let blob = null;
       if (trk.audioBase64) {
@@ -3453,6 +3512,10 @@ if (btnConfirmFinalImport) {
 
     if (importClips && parsedDecryptedPayload.trimmedClips) {
       for (const c of parsedDecryptedPayload.trimmedClips) {
+        if (isOperationCancelled) {
+          hideProcessingModal();
+          return;
+        }
         if (c.clipBase64) {
           const clipBlob = base64ToBlob(c.clipBase64);
           await dbOps.saveTrimmedClip({
@@ -3492,6 +3555,7 @@ if (btnConfirmFinalImport) {
       `).join('');
     }
 
+    hideProcessingModal();
     if (succModal) succModal.style.display = 'flex';
   };
 }
@@ -3598,8 +3662,46 @@ async function loadTracks() {
   renderFilteredTracks();
 }
 
+// In-place Visual Synchronization to Prevent Scroll Jump
+function updateActiveTrackClasses(songName, isPlaying) {
+  document.querySelectorAll('.song-row').forEach(row => {
+    const isTarget = row.getAttribute('data-song-name') === songName;
+    row.classList.toggle('active', isTarget);
+
+    const eqGroup = row.querySelector('.now-playing-badge-group');
+    if (isTarget) {
+      if (!eqGroup) {
+        const nameEl = row.querySelector('.song-name');
+        if (nameEl) {
+          const span = document.createElement('span');
+          span.className = 'now-playing-badge-group';
+          span.innerHTML = `
+            <span class="mini-equalizer-bars ${isPlaying ? 'animating' : 'paused'}">
+              <span class="eq-bar bar-1"></span>
+              <span class="eq-bar bar-2"></span>
+              <span class="eq-bar bar-3"></span>
+              <span class="eq-bar bar-4"></span>
+            </span>
+            <span class="now-playing-tag">Playing</span>
+          `;
+          nameEl.appendChild(span);
+        }
+      } else {
+        const eqBars = eqGroup.querySelector('.mini-equalizer-bars');
+        if (eqBars) {
+          eqBars.classList.toggle('animating', isPlaying);
+          eqBars.classList.toggle('paused', !isPlaying);
+        }
+      }
+    } else if (eqGroup) {
+      eqGroup.remove();
+    }
+  });
+}
+
 function renderFilteredTracks() {
-  const currentScrollTop = upperContentViewport ? upperContentViewport.scrollTop : 0;
+  // Capture current scroll position
+  const savedScrollY = upperContentViewport ? upperContentViewport.scrollTop : 0;
 
   const q = librarySearchInput ? librarySearchInput.value.trim().toLowerCase() : '';
   if (btnClearSearch) btnClearSearch.style.display = q ? 'block' : 'none';
@@ -3760,7 +3862,12 @@ function renderFilteredTracks() {
     songList.appendChild(li);
   });
 
-  if (upperContentViewport) upperContentViewport.scrollTop = currentScrollTop;
+  // Maintain list scroll without jump
+  if (upperContentViewport) {
+    requestAnimationFrame(() => {
+      upperContentViewport.scrollTop = savedScrollY;
+    });
+  }
 
   if (currentPlayingTrack) {
     dbOps.isFavorite(currentPlayingTrack.name).then(updateLikeButtonsUI);
@@ -4065,7 +4172,7 @@ if (btnConfirmRename) {
   };
 }
 
-// Favorites Toggle: Protected Against Infinite Clicks
+// Favorites Toggle: Protected Against Rapid Taps
 async function toggleFavorite(trk) {
   triggerHaptic(25);
   const songKey = trk.name;
@@ -4095,7 +4202,6 @@ async function toggleFavorite(trk) {
     showEmotionalMessage(true);
     syncHeartsEverywhere(songKey, true);
   }
-  loadTracks();
 }
 
 function syncHeartsEverywhere(songName, isLiked) {
@@ -4214,6 +4320,7 @@ if (filePicker) {
   filePicker.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+    showProcessingModal('Adding songs to library...');
     const targetId = (activePlaylistId === 'all' || activePlaylistId.startsWith('smart_')) ? 'favorites' : activePlaylistId;
     const existingTracks = await dbOps.getTracks(targetId);
     const existingNames = new Set(existingTracks.map(t => t.name.trim().toLowerCase()));
@@ -4222,7 +4329,12 @@ if (filePicker) {
     let skippedCount = 0;
 
     for (let i = 0; i < files.length; i++) {
+      if (isOperationCancelled) {
+        hideProcessingModal();
+        return;
+      }
       const file = files[i];
+      updateProcessingProgress((i / files.length) * 100, `Storing: ${file.name}`);
       const cleanName = file.name.trim().toLowerCase();
 
       const matchedGhost = existingTracks.find(t => t.name.trim().toLowerCase() === cleanName && (!t.blob || t.blob.size === 0));
@@ -4249,6 +4361,7 @@ if (filePicker) {
       addedCount++;
     }
 
+    hideProcessingModal();
     showNotification(`Added ${addedCount} song(s)${skippedCount ? ` (${skippedCount} duplicates skipped)` : ''}!`);
     loadTracks();
   };
@@ -4275,6 +4388,7 @@ async function playTrackDirect(trk) {
       cleanAudioBufferResume();
       syncButtons(true);
       syncGlobalEqualizerBars(true);
+      updateActiveTrackClasses(trk.name, true);
     }
     return;
   }
@@ -4288,6 +4402,7 @@ async function playTrackDirect(trk) {
     syncButtons(true);
     syncGlobalEqualizerBars(true);
     updateMediaSession();
+    updateActiveTrackClasses(trk.name, true);
   }).catch(() => {});
 
   if (miniTitle) miniTitle.textContent = trk.name;
@@ -4308,7 +4423,6 @@ async function playTrackDirect(trk) {
   renderWaveformForTrack(trk.blob);
   updateMediaSession();
   updateAmbientGlow(boxCover);
-  loadTracks();
 
   startListeningTimeTracking();
   saveCurrentSessionState();
@@ -4341,12 +4455,14 @@ function togglePlay() {
     audio.play();
     syncButtons(true);
     syncGlobalEqualizerBars(true);
+    if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, true);
   } else {
     isManualPause = true;
     wasPlayingBeforeInterruption = false;
     audio.pause();
     syncButtons(false);
     syncGlobalEqualizerBars(false);
+    if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, false);
   }
 }
 
@@ -4449,6 +4565,7 @@ function updateMediaSession() {
       syncButtons(true);
       syncGlobalEqualizerBars(true);
       navigator.mediaSession.playbackState = 'playing';
+      if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, true);
     }).catch(() => {});
   });
 
@@ -4459,6 +4576,7 @@ function updateMediaSession() {
     syncButtons(false);
     syncGlobalEqualizerBars(false);
     navigator.mediaSession.playbackState = 'paused';
+    if (currentPlayingTrack) updateActiveTrackClasses(currentPlayingTrack.name, false);
   });
 
   navigator.mediaSession.setActionHandler('nexttrack', loopNext);
@@ -4470,6 +4588,14 @@ function updateMediaSession() {
     if (details.seekTime && audio.duration) {
       audio.currentTime = details.seekTime;
     }
+  });
+
+  navigator.mediaSession.setActionHandler('seekforward', () => {
+    audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
+  });
+
+  navigator.mediaSession.setActionHandler('seekbackward', () => {
+    audio.currentTime = Math.max(0, audio.currentTime - 10);
   });
 }
 
@@ -4590,7 +4716,7 @@ if (btnSleepTimer) {
   };
 }
 
-// Main Viewport Swipe
+// Viewport Swipe Handling
 let mainTouchStartX = 0;
 let mainTouchStartY = 0;
 
@@ -4727,7 +4853,7 @@ if (btnSaveRingtone) {
     const startSec = trimStartRange ? parseFloat(trimStartRange.value) : 0;
     const endSec = trimEndRange ? parseFloat(trimEndRange.value) : 30;
 
-    showNotification('Encoding compressed offline MP3 clip...');
+    showProcessingModal('Slicing Audio Clip...');
 
     try {
       const arrayBuf = await trk.blob.arrayBuffer();
@@ -4761,10 +4887,12 @@ if (btnSaveRingtone) {
         createdAt: getIndianStandardTime()
       });
 
+      hideProcessingModal();
       if (trimmerModal) trimmerModal.style.display = 'none';
       showNotification(`MP3 Clip "${clipName}" created!`);
       renderTrimmedClipsForCurrent();
     } catch (err) {
+      hideProcessingModal();
       console.error(err);
       showNotification('Error slicing audio file.');
     }
@@ -5277,7 +5405,7 @@ function renderCardReorderList() {
     li.className = `drawer-track-row ${isThisPlaying ? 'now-playing-active' : ''} ${isMissing ? 'missing-storage' : ''}`;
     li.dataset.index = idx;
 
-    // Strict Two-Zone Layout: Zone A (Drag/Swap) vs Zone B (Scroll-Only Buttons)
+    // Two-Zone Layout: Zone A (Drag/Swap) vs Zone B (Scroll-Only Buttons)
     li.innerHTML = `
       <div class="drawer-track-info-zone" data-zone="info">
         <span class="song-name" style="cursor:pointer;">
@@ -5305,7 +5433,6 @@ function renderCardReorderList() {
 
     const infoZone = li.querySelector('.drawer-track-info-zone');
 
-    // Single Tap to Play
     if (infoZone) {
       infoZone.onclick = () => {
         if (isMissing) {
@@ -5315,7 +5442,7 @@ function renderCardReorderList() {
         playTrackDirect(trk);
       };
 
-      // Long-Press Touch Drag Engine (Confined Exclusively to Info Zone)
+      // Long-Press Touch Drag Engine: Restricted Exclusively to Info Zone
       let pressTimer = null;
       let isDraggingThis = false;
 
@@ -5368,7 +5495,6 @@ function renderCardReorderList() {
             stopBoundaryAutoScroll();
           }
 
-          // Exact Midpoint Snapping for the Red Guide Line
           const rows = Array.from(cardReorderList.querySelectorAll('.drawer-track-row:not(.dragging)'));
           let calculatedLineY = null;
           let chosenTargetIndex = rows.length;
