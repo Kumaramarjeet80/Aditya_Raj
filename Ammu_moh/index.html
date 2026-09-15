@@ -13,11 +13,11 @@
   <link id="app-favicon" rel="icon" type="image/png" href="my-icon.png" />
 </head>
 <body>
-  <!-- Topmost Alert & Toast Container -->
+  <!-- Topmost Alert & Toast Container (Always on Top) -->
   <div id="toast-container" class="toast-container"></div>
   <div id="heart-burst-overlay" class="heart-burst-overlay" style="display:none;"></div>
 
-  <!-- Big Floating Emotional Banner with Isolated Large Emoji -->
+  <!-- Floating Emotional Banner with Isolated Large Emoji -->
   <div id="emotional-floating-container" class="emotional-floating-wrapper" style="display:none;">
     <div id="emotional-big-emoji" class="emotional-big-emoji">🥹</div>
     <div class="emotional-card">
@@ -29,6 +29,7 @@
   <!-- Header Settings Hub Menu -->
   <div id="header-settings-menu" class="context-menu-pop" style="display:none; right:16px; top:54px;">
     <button id="menu-btn-my-account" class="menu-pop-item">👤 My Account &amp; Data Center</button>
+    <button id="menu-btn-storage-auditor" class="menu-pop-item">🔍 Storage &amp; Duplicate Cleaner</button>
     <button id="menu-btn-install-pwa" class="menu-pop-item">📥 Install Ammu</button>
     <button id="menu-btn-dev-profile" class="menu-pop-item">👨‍💻 Developer Profile</button>
   </div>
@@ -100,7 +101,6 @@
       <p class="modal-desc">This backup contains protected features. Check the keys you wish to provide:</p>
       
       <div class="form-group text-left" style="background:#090d15;padding:10px;border-radius:8px;border:1px solid var(--border);">
-        <!-- Master Key (Exclusive) -->
         <label class="checkbox-label" style="font-weight:bold;color:var(--accent-light);">
           <input type="checkbox" id="chk-enter-master-key" /> 👑 Enter Master Key (Unlocks All Features)
         </label>
@@ -109,7 +109,6 @@
           <small style="color:var(--text-muted);font-size:0.72rem;display:block;margin-top:2px;">Grants downloads and local playlist editing. Original creator attribution remains protected.</small>
         </div>
 
-        <!-- Download & Author Keys -->
         <div id="secondary-individual-keys-group" style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;">
           <label class="checkbox-label">
             <input type="checkbox" id="chk-enter-download-key" /> 🎵 Enter Download Key (Unlocks Song Downloads)
@@ -153,6 +152,30 @@
         <button type="button" id="btn-cancel-admin-auth" class="btn-action">Cancel</button>
         <button type="button" id="btn-confirm-admin-auth" class="btn-primary-large" style="width:auto;padding:10px 20px;">Authorize Super-Access</button>
       </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- STORAGE AUDITOR & DUPLICATE CLEANER MODAL -->
+  <div id="storage-auditor-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box modal-box-large">
+      <div class="panel-header-row">
+        <h3>🔍 Storage Auditor &amp; Duplicate Cleaner</h3>
+        <button id="btn-close-storage-auditor" class="btn-dim-sm">✕</button>
+      </div>
+      <p class="modal-desc">100% Offline storage scanner. Detects identical audio files across playlists to reclaim space.</p>
+      <div class="stats-time-grid" style="margin-bottom:10px;">
+        <div class="stat-card"><span class="stat-num" id="auditor-total-size">0 MB</span><span class="stat-lbl">Total Audio Used</span></div>
+        <div class="stat-card"><span class="stat-num" id="auditor-duplicate-count" style="color:#f85149;">0</span><span class="stat-lbl">Duplicate Tracks</span></div>
+      </div>
+      <button id="btn-run-duplicate-scan" class="btn-primary-large" style="margin-bottom:8px;">⚡ Scan Device Storage</button>
+      <div class="form-group">
+        <label>Detected Duplicates:</label>
+        <ul id="duplicate-tracks-list" class="history-list-box" style="max-height:160px;">
+          <li style="padding:4px;">Run scan to analyze local audio blobs.</li>
+        </ul>
+      </div>
+      <button id="btn-purge-duplicates" class="btn-action" style="width:100%;color:#f85149;margin-top:6px;" disabled>🗑 Remove Selected Duplicates</button>
       <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
     </div>
   </div>
@@ -379,10 +402,25 @@
         </label>
       </div>
 
-      <!-- Account-Level Admin Super-Key Suite (View, Update, Remove) -->
-      <div class="backup-management-box" id="admin-key-config-box" style="border-color:#e3b341;">
+      <!-- Seamless Audio Crossfade Settings -->
+      <div class="backup-management-box" style="margin-top:10px;">
+        <h4>🔀 Seamless Audio Crossfade</h4>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+          <span style="font-size:0.8rem;">Crossfade Transition:</span>
+          <select id="select-crossfade-sec" class="input-text" style="width:auto;padding:4px 8px;">
+            <option value="0">Off (0s)</option>
+            <option value="1">1 Second</option>
+            <option value="2" selected>2 Seconds</option>
+            <option value="3">3 Seconds</option>
+            <option value="4">4 Seconds</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Account-Level Admin Super-Key Suite -->
+      <div class="backup-management-box" id="admin-key-config-box" style="border-color:#e3b341;margin-top:10px;">
         <h4>🛡️ Admin Super-Key &amp; Recovery</h4>
-        <p id="admin-key-status-lbl" style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 6px 0;">Status: No Admin Key Created (Super-Access Disabled)</p>
+        <p id="admin-key-status-lbl" style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 6px 0;">Status: No Admin Key Created</p>
         
         <div id="admin-key-created-controls" style="display:none;margin-bottom:8px;">
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
@@ -419,7 +457,7 @@
         <p id="settings-current-user-lbl" style="font-size:0.75rem;color:var(--text-muted);">Active listener: Amarjeet Kumar</p>
       </div>
 
-      <!-- 4-Key Export Security Suite (All Optional) -->
+      <!-- 4-Key Export Security Suite -->
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>🔒 4-Key Export Security Suite (All Optional)</h4>
         <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 6px 0;">Protect your intellectual property and sound library.</p>
@@ -571,6 +609,25 @@
     </div>
   </div>
 
+  <!-- Custom EQ Profile Save Modal -->
+  <div id="custom-eq-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+      <h3>💾 Save Custom Equalizer Preset</h3>
+      <p class="modal-desc">Save your current slider curve into the permanent preset carousel.</p>
+      <div class="form-group">
+        <label for="input-custom-eq-name">Preset Name</label>
+        <input type="text" id="input-custom-eq-name" class="input-text" placeholder="e.g. My Bass Punch" autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-custom-eq" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-save-custom-eq" class="btn-primary-large" style="width:auto;padding:10px 20px;">Save Preset</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <input type="file" id="import-eq-file" accept=".json" style="display:none;" />
+
   <!-- Rename Modal -->
   <div id="rename-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box">
@@ -647,7 +704,7 @@
       <button id="btn-main-settings-trigger" class="btn-action" title="Settings &amp; Hub">⚙️</button>
     </header>
 
-    <!-- Playlist Chips Bar -->
+    <!-- Playlist & Smart Playlist Chips Bar -->
     <div class="playlist-chips" id="playlist-tabs"></div>
 
     <!-- Search & Sort Bar -->
@@ -656,7 +713,7 @@
         <input type="text" id="library-search-input" class="search-field" placeholder="🔍 Search songs in current list..." />
         <button id="btn-clear-search" class="btn-clear-input" style="display:none;">✕</button>
       </div>
-      <button id="btn-sort-trigger" class="btn-action-sm" title="Sort Options">↕️</button>
+      <button id="btn-sort-trigger" class="btn-action-sm" title="Sort Options">↕️ Sort</button>
       <button id="btn-clean-names" class="btn-action-sm" title="Clean clutter tags">✨ Clean</button>
     </div>
 
@@ -694,14 +751,14 @@
       Made by &amp; for <strong>Amarjeet kumar</strong> • <span>View Profile 👨‍💻</span>
     </footer>
 
-    <!-- Mini Player Bar -->
+    <!-- Mini Player Bar with Horizontal Swipe Support -->
     <div class="bottom-player-bar" id="mini-player">
       <div class="player-left-group" id="open-box-trigger">
         <img id="mini-cover" class="mini-art" src="my-icon.png" alt="Art" />
         <div class="mini-meta">
           <span class="mini-title" id="mini-title">No track playing</span>
           <span class="mini-sub" id="mini-sub">Playlist: All</span>
-          <span class="mini-output-line" id="mini-audio-output-badge">🔊 High-Fidelity Audio</span>
+          <span class="mini-output-line" id="mini-audio-output-badge">🔊 Studio DSP (Swipe ↔ Next/Prev)</span>
         </div>
       </div>
 
@@ -712,9 +769,14 @@
     </div>
   </div>
 
-  <!-- Fullscreen Player Card Modal -->
+  <!-- Fullscreen Player Card Modal with Fluid Pull-Down Dismiss -->
   <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
     <div id="ambient-glow-layer" class="ambient-glow"></div>
+
+    <!-- Fluid Drag Handle Area -->
+    <div class="card-drag-dismiss-handle" id="card-drag-handle-bar">
+      <div class="drag-pill-indicator"></div>
+    </div>
 
     <div class="card-top-nav">
       <button id="btn-close-box" class="btn-action">▼ Minimize</button>
@@ -747,13 +809,17 @@
           <span id="active-marker-pill" class="active-marker-pill" style="display:none;">📍 <span id="active-marker-name">Verse</span></span>
         </div>
 
-        <div class="progress-bar-box">
-          <span id="curr-time">0:00</span>
-          <div class="seek-track-wrapper">
-            <input type="range" id="seek-bar" min="0" max="100" value="0" />
-            <div id="seek-ticks-layer" class="seek-ticks-layer"></div>
+        <!-- Waveform Canvas & Scrubber Box -->
+        <div class="waveform-seek-container">
+          <canvas id="waveform-canvas" class="waveform-canvas"></canvas>
+          <div class="progress-bar-box">
+            <span id="curr-time">0:00</span>
+            <div class="seek-track-wrapper">
+              <input type="range" id="seek-bar" min="0" max="100" value="0" />
+              <div id="seek-ticks-layer" class="seek-ticks-layer"></div>
+            </div>
+            <span id="dur-time">0:00</span>
           </div>
-          <span id="dur-time">0:00</span>
         </div>
 
         <div class="quick-jump-row">
@@ -805,28 +871,97 @@
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
 
-        <!-- 2. Equalizer & Bass Boost Drawer -->
+        <!-- 2. Dual Equalizer Drawer (VLC EQ & Vivo EQ Architecture) -->
         <div id="card-eq-panel" class="embedded-card-panel" style="display:none;">
-          <div class="panel-header-row">
-            <label><input type="checkbox" id="card-eq-enable" /> DSP Active (Auto Vol 20%)</label>
-            <button id="btn-reset-eq-card" class="btn-action">Reset Defaults</button>
+          <!-- Dual Engine Mode Selector -->
+          <div class="eq-engine-switch-row">
+            <button id="btn-tab-vlc-eq" class="eq-tab-btn active">🎛️ VLC EQ</button>
+            <button id="btn-tab-vivo-eq" class="eq-tab-btn">📱 Vivo EQ</button>
           </div>
-          <div class="bass-boost-strip">
-            <span>🔊 Bass Boost (<span id="val-bass-boost">0dB</span>)</span>
-            <input type="range" id="slider-bass-boost" min="0" max="15" step="0.5" value="0" />
+
+          <!-- Master EQ Activation Toggle -->
+          <div class="panel-header-row" style="margin-top:6px;">
+            <label class="checkbox-label" style="font-weight:bold;color:var(--accent-light);">
+              <input type="checkbox" id="card-eq-enable" /> EQ Active (Auto Vol 20%)
+            </label>
+            <div style="display:flex;gap:4px;">
+              <button id="btn-export-current-eq" class="btn-action-sm" title="Export EQ Profile">💾 Export</button>
+              <label class="btn-action-sm" for="import-eq-file" style="cursor:pointer;" title="Import EQ Profile">📂 Import</label>
+              <button id="btn-reset-eq-card" class="btn-action-sm">Reset</button>
+            </div>
           </div>
-          <div class="eq-container">
-            <div class="eq-col"><span class="eq-val" id="val-preamp">14.1dB</span><input type="range" class="vertical-slider" id="eq-preamp" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">Pre</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-60">18.2dB</span><input type="range" class="vertical-slider" data-band="0" min="-20" max="20" step="0.1" value="18.2" /><span class="eq-freq">60</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-170">11.8dB</span><input type="range" class="vertical-slider" data-band="1" min="-20" max="20" step="0.1" value="11.8" /><span class="eq-freq">170</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-310">3.7dB</span><input type="range" class="vertical-slider" data-band="2" min="-20" max="20" step="0.1" value="3.7" /><span class="eq-freq">310</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-600">-1.7dB</span><input type="range" class="vertical-slider" data-band="3" min="-20" max="20" step="0.1" value="-1.7" /><span class="eq-freq">600</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-1000">-7.8dB</span><input type="range" class="vertical-slider" data-band="4" min="-20" max="20" step="0.1" value="-7.8" /><span class="eq-freq">1k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-3000">2.1dB</span><input type="range" class="vertical-slider" data-band="5" min="-20" max="20" step="0.1" value="2.1" /><span class="eq-freq">3k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-6000">9.8dB</span><input type="range" class="vertical-slider" data-band="6" min="-20" max="20" step="0.1" value="9.8" /><span class="eq-freq">6k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-12000">14.1dB</span><input type="range" class="vertical-slider" data-band="7" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">12k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-14000">-3.6dB</span><input type="range" class="vertical-slider" data-band="8" min="-20" max="20" step="0.1" value="-3.6" /><span class="eq-freq">14k</span></div>
-            <div class="eq-col"><span class="eq-val" id="val-16000">11.6dB</span><input type="range" class="vertical-slider" data-band="9" min="-20" max="20" step="0.1" value="11.6" /><span class="eq-freq">16k</span></div>
+
+          <!-- Quick EQ Presets Strip -->
+          <div class="quick-eq-presets-strip" id="quick-eq-presets-strip">
+            <button class="quick-preset-chip" data-preset="flat">Flat</button>
+            <button class="quick-preset-chip" data-preset="vocal">Vocal Clarity</button>
+            <button class="quick-preset-chip" data-preset="bass">Bass Heavy</button>
+            <button class="quick-preset-chip" data-preset="treble">Treble Boost</button>
+            <button class="quick-preset-chip" data-preset="acoustic">Acoustic</button>
+          </div>
+
+          <!-- VIEW A: VLC 10-Band EQ View -->
+          <div id="vlc-eq-view-container">
+            <div class="bass-boost-strip" style="margin-top:6px;">
+              <span>🔊 Bass Boost (<span id="val-bass-boost">0dB</span>)</span>
+              <input type="range" id="slider-bass-boost" min="0" max="15" step="0.5" value="0" />
+            </div>
+            <div class="eq-container">
+              <div class="eq-col"><span class="eq-val" id="val-preamp">14.1dB</span><input type="range" class="vertical-slider" id="eq-preamp" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">Pre</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-60">18.2dB</span><input type="range" class="vertical-slider" data-vlc-band="0" min="-20" max="20" step="0.1" value="18.2" /><span class="eq-freq">60</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-170">11.8dB</span><input type="range" class="vertical-slider" data-vlc-band="1" min="-20" max="20" step="0.1" value="11.8" /><span class="eq-freq">170</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-310">3.7dB</span><input type="range" class="vertical-slider" data-vlc-band="2" min="-20" max="20" step="0.1" value="3.7" /><span class="eq-freq">310</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-600">-1.7dB</span><input type="range" class="vertical-slider" data-vlc-band="3" min="-20" max="20" step="0.1" value="-1.7" /><span class="eq-freq">600</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-1000">-7.8dB</span><input type="range" class="vertical-slider" data-vlc-band="4" min="-20" max="20" step="0.1" value="-7.8" /><span class="eq-freq">1k</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-3000">2.1dB</span><input type="range" class="vertical-slider" data-vlc-band="5" min="-20" max="20" step="0.1" value="2.1" /><span class="eq-freq">3k</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-6000">9.8dB</span><input type="range" class="vertical-slider" data-vlc-band="6" min="-20" max="20" step="0.1" value="9.8" /><span class="eq-freq">6k</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-12000">14.1dB</span><input type="range" class="vertical-slider" data-vlc-band="7" min="-20" max="20" step="0.1" value="14.1" /><span class="eq-freq">12k</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-14000">-3.6dB</span><input type="range" class="vertical-slider" data-vlc-band="8" min="-20" max="20" step="0.1" value="-3.6" /><span class="eq-freq">14k</span></div>
+              <div class="eq-col"><span class="eq-val" id="val-16000">11.6dB</span><input type="range" class="vertical-slider" data-vlc-band="9" min="-20" max="20" step="0.1" value="11.6" /><span class="eq-freq">16k</span></div>
+            </div>
+          </div>
+
+          <!-- VIEW B: Authentic Vivo Studio Equalizer View -->
+          <div id="vivo-eq-view-container" style="display:none;">
+            <!-- Save Preset Trigger Header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+              <span id="vivo-active-preset-name" style="font-weight:700;color:#e83e8c;font-size:0.85rem;">Preset: Custom</span>
+              <button id="btn-save-as-custom-eq" class="btn-action-sm" style="color:var(--accent-light);">➕ Save As Preset</button>
+            </div>
+
+            <!-- 10 Vivo Sliders (31Hz - 16kHz) -->
+            <div class="vivo-sliders-row">
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="0" min="-12" max="12" step="0.5" value="12" /><span class="vivo-freq">31</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="1" min="-12" max="12" step="0.5" value="8" /><span class="vivo-freq">62</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="2" min="-12" max="12" step="0.5" value="5" /><span class="vivo-freq">125</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="3" min="-12" max="12" step="0.5" value="2" /><span class="vivo-freq">250</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="4" min="-12" max="12" step="0.5" value="-2" /><span class="vivo-freq">500</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="5" min="-12" max="12" step="0.5" value="-6" /><span class="vivo-freq">1k</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="6" min="-12" max="12" step="0.5" value="-8" /><span class="vivo-freq">2k</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="7" min="-12" max="12" step="0.5" value="-11" /><span class="vivo-freq">4k</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="8" min="-12" max="12" step="0.5" value="-3" /><span class="vivo-freq">8k</span></div>
+              <div class="vivo-col"><input type="range" class="vivo-vertical-slider" data-vivo-band="9" min="-12" max="12" step="0.5" value="7" /><span class="vivo-freq">16k</span></div>
+            </div>
+
+            <!-- Dynamic Bezier Spline Curve Canvas -->
+            <div class="vivo-curve-box">
+              <canvas id="vivo-curve-canvas" class="vivo-curve-canvas" width="400" height="70"></canvas>
+            </div>
+
+            <!-- Horizontal Preset Carousel Strip -->
+            <div class="vivo-presets-carousel" id="vivo-presets-carousel">
+              <button class="vivo-preset-btn" data-vpreset="close">Close</button>
+              <button class="vivo-preset-btn active" data-vpreset="custom">Custom</button>
+              <button class="vivo-preset-btn" data-vpreset="pop">Pop</button>
+              <button class="vivo-preset-btn" data-vpreset="dance">Dance</button>
+              <button class="vivo-preset-btn" data-vpreset="blues">Blues</button>
+              <button class="vivo-preset-btn" data-vpreset="classical">Classical</button>
+              <button class="vivo-preset-btn" data-vpreset="jazz">Jazz</button>
+              <button class="vivo-preset-btn" data-vpreset="slow">Slow songs</button>
+              <button class="vivo-preset-btn" data-vpreset="electro">Electro</button>
+              <button class="vivo-preset-btn" data-vpreset="rock">Rock</button>
+              <button class="vivo-preset-btn" data-vpreset="country">Country</button>
+            </div>
           </div>
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
