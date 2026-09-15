@@ -451,7 +451,9 @@ body {
   gap: 8px;
 }
 
-/* In-Card Queue Drawer with Drag-and-Drop Touch States */
+/* ==========================================================================
+   IN-CARD ACTIVE QUEUE: SCROLL-FREEZE & RED DROP INDICATOR
+   ========================================================================== */
 .card-compact-list {
   max-height: 380px;
   overflow-y: auto;
@@ -459,6 +461,52 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Freeze native scrolling during long-press drag */
+.card-compact-list.scroll-frozen {
+  overflow-y: hidden !important;
+  touch-action: none !important;
+}
+
+/* Red Insertion Line Drop Target */
+.queue-drop-indicator-line {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  background: #f85149;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(248, 81, 73, 0.95), 0 0 4px #ff7b72;
+  z-index: 25;
+  pointer-events: none;
+  transition: top 0.08s ease-out;
+}
+
+.queue-drop-indicator-line::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 9px;
+  height: 9px;
+  background: #f85149;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #f85149;
+}
+
+.queue-drop-indicator-line::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: -3px;
+  width: 9px;
+  height: 9px;
+  background: #f85149;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #f85149;
 }
 
 .drawer-track-row {
@@ -480,18 +528,14 @@ body {
   box-shadow: 0 0 10px rgba(46, 160, 67, 0.4);
 }
 
-/* Long-press dragging dynamic elevation */
+/* Dragging active state */
 .drawer-track-row.dragging {
-  opacity: 0.88;
-  transform: scale(1.03);
-  background: #172436 !important;
+  opacity: 0.9;
+  transform: scale(1.025);
+  background: #1b2638 !important;
   border-color: var(--accent-light) !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.9);
-  z-index: 10;
-}
-
-.drawer-track-row.drag-over {
-  border-top: 2px solid var(--accent-light) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.95);
+  z-index: 30;
 }
 
 .drawer-reorder-btns {
@@ -597,7 +641,7 @@ body {
   border: 1px solid #f85149;
 }
 
-/* Equalizer Animation */
+/* Mini Equalizer Animation */
 .now-playing-badge-group {
   display: inline-flex;
   align-items: center;
@@ -688,7 +732,7 @@ body {
   line-height: 1;
 }
 
-/* Context Menu Popups */
+/* Context Menus */
 .context-menu-pop {
   position: fixed;
   background: #1c2635;
@@ -898,7 +942,6 @@ body {
   cursor: pointer;
 }
 
-/* Card Scrollable Viewport */
 .card-scroll-viewport {
   flex: 1;
   overflow-y: auto;
@@ -1120,7 +1163,7 @@ body {
   background: var(--accent);
 }
 
-/* STICKY PLAYBACK CONTROLS HEADER */
+/* STICKY CONTROLS ANCHOR */
 .sticky-controls-anchor {
   position: sticky;
   top: 0;
@@ -1655,7 +1698,8 @@ body {
 
 #user-profile-modal,
 #decryption-auth-modal,
-#secondary-keys-modal {
+#secondary-keys-modal,
+#admin-auth-modal {
   z-index: 10001;
 }
 
