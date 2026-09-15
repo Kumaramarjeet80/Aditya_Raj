@@ -5,7 +5,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // =============================================================
-// DOM REFERENCES (DECLARED AT TOP TO PREVENT TEMPORAL DEAD ZONE)
+// DOM REFERENCES (TOP-LEVEL INITIALIZATION)
 // =============================================================
 const playlistTabs = document.getElementById('playlist-tabs');
 const songList = document.getElementById('song-list');
@@ -306,7 +306,7 @@ window.addEventListener('touchmove', dismissAllMenus, { passive: true });
 window.addEventListener('wheel', dismissAllMenus, { passive: true });
 
 // =============================================================
-// TOASTS, UNDO & FLOATING EMOTIONAL BANNER
+// TOASTS, UNDO & STABLE FLOATING EMOTIONAL BANNER
 // =============================================================
 let activeUndoAction = null;
 
@@ -392,10 +392,10 @@ function triggerHeartBurst(isFavorited) {
   overlay.innerHTML = '';
   overlay.style.display = 'block';
 
-  const heartChar = isFavorited ? '❤️' : '💛';
+  const heartChar = isFavorited ? '\u2764\uFE0F' : '\uD83D\uDC9B';
   for (let i = 0; i < 18; i++) {
     const p = document.createElement('div');
-    p.className = 'burst-particle';
+    p.className = 'burst-particle emoji-text';
     p.textContent = heartChar;
     p.style.left = `${Math.random() * 85 + 5}%`;
     p.style.top = `${Math.random() * 50 + 40}%`;
@@ -410,6 +410,7 @@ function triggerHeartBurst(isFavorited) {
   }, 1600);
 }
 
+// Stable Rapid-Toggle Emotional Banner Manager
 let emotionalTimeout = null;
 function showEmotionalMessage(isLiked) {
   const container = document.getElementById('emotional-floating-container');
@@ -418,28 +419,36 @@ function showEmotionalMessage(isLiked) {
   const subEl = document.getElementById('emotional-sub');
   if (!container || !emojiEl || !titleEl || !subEl) return;
 
-  if (emotionalTimeout) clearTimeout(emotionalTimeout);
+  if (emotionalTimeout) {
+    clearTimeout(emotionalTimeout);
+    emotionalTimeout = null;
+  }
+
+  // Force reflow to restart CSS animation cleanly on rapid clicks
+  container.style.display = 'none';
+  void container.offsetWidth;
 
   if (isLiked) {
-    emojiEl.textContent = '🥹';
-    titleEl.textContent = 'Thank you for loving me 🥹';
+    emojiEl.innerHTML = '&#129401;';
+    titleEl.innerHTML = 'Thank you for loving me &#129401;';
     subEl.textContent = 'From Amarjeet';
   } else {
-    emojiEl.textContent = '🥲';
-    titleEl.textContent = 'Dil tod diya na mera 🥲';
+    emojiEl.innerHTML = '&#129402;';
+    titleEl.innerHTML = 'Dil tod diya na mera &#129402;';
     subEl.textContent = 'From Amarjeet';
   }
 
   container.style.display = 'flex';
   emotionalTimeout = setTimeout(() => {
     container.style.display = 'none';
+    emotionalTimeout = null;
   }, 2800);
 }
 
 // =============================================================
 // INDEXEDDB ENGINE
 // =============================================================
-const DB_NAME = 'AmmuMusicDB_v260';
+const DB_NAME = 'AmmuMusicDB_v270';
 const DB_VER = 1;
 let db;
 
@@ -793,7 +802,7 @@ const dbOps = {
 };
 
 // =============================================================
-// DUAL AUDIO DSP ENGINE (VLC 10-BAND & VIVO STUDIO 10-BAND)
+// DUAL AUDIO DSP ENGINE WITH ANTI-NOISE FILTER FLUSH
 // =============================================================
 const audio = document.getElementById('audio-engine');
 let audioCtx = null;
@@ -803,6 +812,7 @@ let crossfadeGainNode = null;
 let preampGain = null;
 let bassFilterNode = null;
 let analyserNode = null;
+let keepAliveSilentOsc = null;
 
 // VLC EQ Frequencies
 const vlcBands = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
@@ -812,10 +822,14 @@ let vlcFilters = [];
 // Vivo EQ Frequencies
 const vivoBands = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 let vivoFilters = [];
-let activeEqEngine = 'vlc';
+let activeEqEngine = 'vlc'; // 'vlc' OR 'vivo' (Strictly Mutually Exclusive)
 let eqEnabled = false;
 let currentVol = 1.0;
 let currentCrossfadeDuration = 2;
+
+// Interruption & Notification Handling
+let wasPlayingBeforeInterruption = false;
+let isManualPause = false;
 
 const vivoOfficialPresets = {
   custom: [12, 8, 5, 2, -2, -6, -8, -11, -3, 7],
@@ -861,7 +875,7 @@ function ensureAudioPipeline() {
     bassFilterNode.frequency.value = 80;
     bassFilterNode.gain.value = 0;
 
-    // Chain 1: VLC Filters
+    // VLC filter chain
     vlcFilters = [];
     let prevNode = preampGain;
     vlcBands.forEach((freq, i) => {
@@ -875,14 +889,13 @@ function ensureAudioPipeline() {
       vlcFilters.push(f);
     });
 
-    // Chain 2: Vivo Filters
+    // Vivo filter chain
     vivoFilters = [];
     vivoBands.forEach((freq, i) => {
       const f = audioCtx.createBiquadFilter();
       f.type = i === 0 ? 'lowshelf' : i === vivoBands.length - 1 ? 'highshelf' : 'peaking';
       if (i !== 0 && i !== vivoBands.length - 1) f.Q.value = 1.2;
-      f.frequency.value = freq;
-      f.gain.value = 0;
+      f.frequency.value = 0;
       prevNode.connect(f);
       prevNode = f;
       vivoFilters.push(f);
@@ -895,19 +908,39 @@ function ensureAudioPipeline() {
     crossfadeGainNode.connect(masterGainNode);
     masterGainNode.connect(audioCtx.destination);
 
+    // Persistent Background Keep-Alive Node (Prevents notification dismissal on pause)
+    try {
+      const silentOsc = audioCtx.createOscillator();
+      const silentGain = audioCtx.createGain();
+      silentGain.gain.value = 0.00001; // Silent
+      silentOsc.connect(silentGain);
+      silentGain.connect(audioCtx.destination);
+      silentOsc.start();
+      keepAliveSilentOsc = silentOsc;
+    } catch (_) {}
+
     startVisualizerLoop();
   } catch (e) {
     console.warn('Web Audio DSP pipeline fallback:', e);
   }
 }
 
-// DSP Rule: Turning DSP Active drops Volume to 20%; Turning DSP Off sets Volume to 100%
+// Anti-Noise Buffer Flush: Prevents 10-15 sec distortion after unpausing
+function cleanAudioBufferResume() {
+  if (!audioCtx || !masterGainNode) return;
+  const now = audioCtx.currentTime;
+  masterGainNode.gain.setValueAtTime(0.001, now);
+  masterGainNode.gain.linearRampToValueAtTime(currentVol, now + 0.04);
+}
+
+// Mutually Exclusive DSP Switcher
 function applyDSPState(enabled) {
   eqEnabled = enabled;
   const chk = document.getElementById('card-eq-enable');
   if (chk) chk.checked = enabled;
 
   if (activeEqEngine === 'vlc') {
+    // Engage VLC, completely flatten Vivo
     if (vlcFilters && vlcFilters.length) {
       vlcFilters.forEach((f, i) => {
         const slider = document.querySelector(`[data-vlc-band="${i}"]`);
@@ -919,6 +952,7 @@ function applyDSPState(enabled) {
       vivoFilters.forEach(f => { if (f) f.gain.value = 0; });
     }
   } else {
+    // Engage Vivo, completely flatten VLC
     if (vlcFilters && vlcFilters.length) {
       vlcFilters.forEach(f => { if (f) f.gain.value = 0; });
     }
@@ -933,7 +967,7 @@ function applyDSPState(enabled) {
     const pSlider = document.getElementById('eq-preamp');
     const pVal = pSlider ? parseFloat(pSlider.value) : 14.1;
     preampGain.gain.setValueAtTime(
-      eqEnabled ? Math.pow(10, pVal / 20) * 0.35 : 1,
+      (eqEnabled && activeEqEngine === 'vlc') ? Math.pow(10, pVal / 20) * 0.35 : 1,
       audioCtx.currentTime
     );
   }
@@ -941,15 +975,15 @@ function applyDSPState(enabled) {
   if (bassFilterNode) {
     const bSlider = document.getElementById('slider-bass-boost');
     const bVal = bSlider ? parseFloat(bSlider.value) : 0;
-    bassFilterNode.gain.value = eqEnabled ? bVal : 0;
+    bassFilterNode.gain.value = (eqEnabled && activeEqEngine === 'vlc') ? bVal : 0;
   }
 
   if (eqEnabled) {
     setVolume(20);
-    showNotification('DSP Active: Studio EQ Engaged (Volume 20%)');
+    showNotification(`DSP Active: ${activeEqEngine === 'vlc' ? 'VLC EQ' : 'Vivo Studio EQ'} Engaged (20% Vol)`);
   } else {
     setVolume(100);
-    showNotification('DSP Bypassed: Flat Response (Volume 100%)');
+    showNotification('DSP Bypassed: Flat Response (100% Vol)');
   }
 
   drawVivoSplineCurve();
@@ -977,7 +1011,7 @@ document.querySelectorAll('.vol-snap-btn').forEach(btn => {
   };
 });
 
-// Dual EQ Tab Switching (VLC vs Vivo)
+// Mutually Exclusive Switchers (Turning one on disables the other)
 const btnTabVlc = document.getElementById('btn-tab-vlc-eq');
 const btnTabVivo = document.getElementById('btn-tab-vivo-eq');
 
@@ -1037,9 +1071,7 @@ function applyQuickPreset(type) {
   showNotification(`Preset Applied: ${type.toUpperCase()}`);
 }
 
-// =============================================================
-// VIVO STUDIO EQUALIZER LOGIC & CURVE CANVAS
-// =============================================================
+// Vivo Preset Application
 function applyVivoPreset(presetKey, customGains = null) {
   activeVivoPresetKey = presetKey;
   currentVivoGains = customGains ? [...customGains] : [...(vivoOfficialPresets[presetKey] || vivoOfficialPresets.custom)];
@@ -1091,7 +1123,6 @@ function drawVivoSplineCurve() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Center guideline
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -1129,7 +1160,7 @@ function drawVivoSplineCurve() {
   ctx.stroke();
 }
 
-// Custom EQ Modal Handlers
+// Custom EQ Modal
 const btnSaveAsCustomEq = document.getElementById('btn-save-as-custom-eq');
 if (btnSaveAsCustomEq) {
   btnSaveAsCustomEq.onclick = () => {
@@ -1249,7 +1280,7 @@ if (importEqFile) {
   };
 }
 
-// Crossfade Transition
+// Crossfade Transition Logic
 const selectCrossfade = document.getElementById('select-crossfade-sec');
 if (selectCrossfade) {
   selectCrossfade.onchange = (e) => {
@@ -1353,7 +1384,7 @@ if (miniPlayerBar) {
   }, { passive: true });
 }
 
-// Fluid Drag-to-Dismiss
+// Fluid Pull-Down Dismiss on Fullscreen Card
 let dragStartY = 0;
 let isDraggingCard = false;
 
@@ -1430,7 +1461,28 @@ function updateAmbientGlow(imgEl) {
   } catch (_) {}
 }
 
-// State
+// Audio System Interruptions Listener (Protects against incoming notification drops)
+audio.addEventListener('pause', () => {
+  if (!isManualPause && currentPlayingTrack) {
+    wasPlayingBeforeInterruption = true;
+  }
+});
+
+audio.addEventListener('play', () => {
+  isManualPause = false;
+  wasPlayingBeforeInterruption = false;
+  cleanAudioBufferResume();
+});
+
+// Auto-resume when device notification finishes sound focus interruption
+window.addEventListener('focus', () => {
+  if (wasPlayingBeforeInterruption && audio.paused && currentPlayingTrack) {
+    audio.play().catch(() => {});
+    wasPlayingBeforeInterruption = false;
+  }
+});
+
+// State Variables
 let activePlaylistId = 'all';
 let currentPlaylist = { id: 'all', name: 'All', cover: '' };
 let browsingTracks = [];
@@ -1562,7 +1614,7 @@ document.querySelectorAll('.sort-item').forEach(btn => {
   };
 });
 
-// Admin Super-Key Suite
+// Admin Super-Key UI
 async function refreshAdminKeyUI() {
   const plainKey = await dbOps.getConfig('account_admin_key_plain');
   const statusLbl = document.getElementById('admin-key-status-lbl');
@@ -1651,7 +1703,7 @@ if (btnRemoveAdminKey) {
   };
 }
 
-// Track 3-Dots Menu
+// Track Context Menu Actions
 const menuBtnTrackSelect = document.getElementById('menu-btn-track-select');
 if (menuBtnTrackSelect) {
   menuBtnTrackSelect.onclick = () => {
@@ -1738,7 +1790,7 @@ function openAddToPlaylistSubmenu() {
   }
 }
 
-// Playlist Context Menu
+// Playlist 3-Dots Menu Listeners
 const plBtnDownloadAll = document.getElementById('pl-menu-btn-download-all');
 if (plBtnDownloadAll) {
   plBtnDownloadAll.onclick = () => {
@@ -1997,7 +2049,7 @@ if (btnPurgeDup) {
   };
 }
 
-// Universal Bulk Handlers
+// Bulk Download Actions
 const btnUnivDownload = document.getElementById('btn-universal-download-all');
 if (btnUnivDownload) {
   btnUnivDownload.onclick = async () => {
@@ -2106,7 +2158,7 @@ if (plModalImportFile) {
   };
 }
 
-// User Profile Edit
+// User Profile Modal Actions
 const btnOpenEditUserProfile = document.getElementById('btn-open-edit-user-profile');
 if (btnOpenEditUserProfile) {
   btnOpenEditUserProfile.onclick = () => {
@@ -2609,6 +2661,7 @@ function applyBrandingUI() {
   if (settingsLogoPreview) settingsLogoPreview.src = currentAppLogo;
 }
 
+// Scoped Selective Export Permissions Matrix
 async function openSettingsModal() {
   triggerHaptic(20);
   if (customAppNameInput) customAppNameInput.value = currentAppName;
@@ -2624,8 +2677,13 @@ async function openSettingsModal() {
     pls.forEach(p => {
       const label = document.createElement('label');
       label.className = 'checkbox-label';
-      label.innerHTML = `<input type="checkbox" data-pl-id="${p.id}" checked /> ${p.localName || p.name}`;
+      label.innerHTML = `<input type="checkbox" class="export-pl-checkbox" data-pl-id="${p.id}" checked /> ${p.localName || p.name}`;
       plChecklist.appendChild(label);
+    });
+
+    // Dynamically limit download matrix to songs from selected playlists only
+    document.querySelectorAll('.export-pl-checkbox').forEach(cb => {
+      cb.addEventListener('change', renderExportTrackPermissionMatrix);
     });
   }
 
@@ -2640,9 +2698,24 @@ async function renderExportTrackPermissionMatrix() {
   box.innerHTML = '';
   const filterInput = document.getElementById('export-track-filter-input');
   const q = filterInput ? filterInput.value.trim().toLowerCase() : '';
+
+  // Get only the currently selected playlist IDs
+  const selectedPlIds = new Set(
+    Array.from(document.querySelectorAll('.export-pl-checkbox:checked'))
+      .map(cb => cb.dataset.plId)
+  );
+
   const allTracks = await dbOps.getAllTracks();
   
-  const filtered = allTracks.filter(t => t.name.toLowerCase().includes(q));
+  // Strictly scope matrix songs to the selected playlists
+  const scopedTracks = allTracks.filter(t => selectedPlIds.has(t.playlistId) || t.playlistId === 'all');
+  const filtered = scopedTracks.filter(t => t.name.toLowerCase().includes(q));
+
+  if (!filtered.length) {
+    box.innerHTML = '<div style="font-size:0.75rem;color:var(--text-muted);padding:4px;">No tracks in selected playlist(s).</div>';
+    return;
+  }
+
   filtered.forEach(t => {
     const row = document.createElement('label');
     row.className = 'checkbox-label';
@@ -2796,7 +2869,7 @@ if (btnExpBackup) {
   };
 }
 
-// Export Pipeline
+// Export Pipeline: Strictly Scoped to Selected Playlists
 async function executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds) {
   const allTracks = await dbOps.getAllTracks();
   const allPlaylists = await dbOps.getPlaylists();
@@ -2834,6 +2907,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
     createdAt: p.createdAt || getIndianStandardDateOnly()
   }));
 
+  // Strictly exports only tracks belonging to the selected playlists
   const exportedTracks = [];
   for (const t of allTracks) {
     if (selectedPlIds && !selectedPlIds.has(t.playlistId) && t.playlistId !== 'all') continue;
@@ -2883,7 +2957,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   }
 
   const payload = {
-    version: '15.0',
+    version: '16.0',
     exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
@@ -3430,9 +3504,7 @@ if (btnCloseSuccessSummary) {
   };
 }
 
-// =============================================================
-// PLAYLISTS & BROWSING LISTING
-// =============================================================
+// Playlists & Browsing Listing
 async function loadPlaylists() {
   let list = await dbOps.getPlaylists();
   if (!list.length) {
@@ -3641,8 +3713,8 @@ function renderFilteredTracks() {
     };
 
     const btnLike = document.createElement('button');
-    btnLike.className = 'btn-icon-sm song-heart-btn';
-    btnLike.innerHTML = isFav ? '❤️' : '💛';
+    btnLike.className = 'btn-icon-sm song-heart-btn emoji-text';
+    btnLike.innerHTML = isFav ? '&#10084;&#65039;' : '&#128155;';
     btnLike.title = 'Favorite';
     btnLike.onclick = async (e) => {
       e.stopPropagation();
@@ -3993,7 +4065,7 @@ if (btnConfirmRename) {
   };
 }
 
-// Favorite Toggle
+// Favorites Toggle: Protected Against Infinite Clicks
 async function toggleFavorite(trk) {
   triggerHaptic(25);
   const songKey = trk.name;
@@ -4027,18 +4099,18 @@ async function toggleFavorite(trk) {
 }
 
 function syncHeartsEverywhere(songName, isLiked) {
-  const heart = isLiked ? '❤️' : '💛';
+  const heartCode = isLiked ? '&#10084;&#65039;' : '&#128155;';
   const rows = document.querySelectorAll(`[data-song-name="${CSS.escape(songName)}"] .song-heart-btn`);
-  rows.forEach((btn) => { btn.innerHTML = heart; });
+  rows.forEach((btn) => { btn.innerHTML = heartCode; });
   if (currentPlayingTrack && currentPlayingTrack.name === songName) {
     updateLikeButtonsUI(isLiked);
   }
 }
 
 function updateLikeButtonsUI(isLiked) {
-  const heart = isLiked ? '❤️' : '💛';
-  if (barBtnLike) barBtnLike.textContent = heart;
-  if (modalBtnLike) modalBtnLike.textContent = heart;
+  const heartCode = isLiked ? '&#10084;&#65039;' : '&#128155;';
+  if (barBtnLike) barBtnLike.innerHTML = heartCode;
+  if (modalBtnLike) modalBtnLike.innerHTML = heartCode;
 }
 
 function compressImageSafe(file) {
@@ -4182,7 +4254,7 @@ if (filePicker) {
   };
 }
 
-// Queue Playback Logic
+// Queue Playback Controller
 function playTrackFromBrowsing(idx) {
   if (idx < 0 || idx >= browsingTracks.length) return;
   playingQueue = [...browsingTracks];
@@ -4200,6 +4272,7 @@ async function playTrackDirect(trk) {
   if (currentPlayingTrack && currentPlayingTrack.name === trk.name && audio.src) {
     if (audio.paused) {
       audio.play();
+      cleanAudioBufferResume();
       syncButtons(true);
       syncGlobalEqualizerBars(true);
     }
@@ -4210,6 +4283,7 @@ async function playTrackDirect(trk) {
   audio.src = URL.createObjectURL(trk.blob);
   audio.playbackRate = speedList[currentSpeedIndex];
 
+  cleanAudioBufferResume();
   audio.play().then(() => {
     syncButtons(true);
     syncGlobalEqualizerBars(true);
@@ -4263,6 +4337,7 @@ function togglePlay() {
     return playTrackFromBrowsing(firstPlayable !== -1 ? firstPlayable : 0);
   }
   if (audio.paused) {
+    cleanAudioBufferResume();
     audio.play();
     syncButtons(true);
     syncGlobalEqualizerBars(true);
@@ -4369,6 +4444,7 @@ function updateMediaSession() {
 
   navigator.mediaSession.setActionHandler('play', () => {
     ensureAudioPipeline();
+    cleanAudioBufferResume();
     audio.play().then(() => {
       syncButtons(true);
       syncGlobalEqualizerBars(true);
@@ -4805,7 +4881,7 @@ async function renderTrimmedClipsForCurrent() {
   });
 }
 
-// Embedded Drawers
+// Embedded Drawers Navigation
 const panels = {
   vol: document.getElementById('card-volume-panel'),
   eq: document.getElementById('card-eq-panel'),
@@ -4885,7 +4961,7 @@ if (btnSaveLyrics) {
   };
 }
 
-// Timestamps
+// Timestamps Engine
 async function loadTimestampsForCurrent() {
   if (!currentPlayingTrack) {
     currentSongTimestamps = [];
@@ -4947,6 +5023,7 @@ function renderTimestampsDrawerList() {
       audio.currentTime = ts.time;
       if (audio.paused) {
         audio.play();
+        cleanAudioBufferResume();
         syncButtons(true);
         syncGlobalEqualizerBars(true);
       }
@@ -5109,7 +5186,9 @@ if (seekBar) {
   };
 }
 
-// In-Card Queue Management
+// =============================================================
+// IN-CARD QUEUE: TWO-ZONE REORDERING & AUTO-SCROLL
+// =============================================================
 function calculateAndRenderQueueDuration() {
   const badge = document.getElementById('card-queue-duration-badge');
   if (!badge) return;
@@ -5156,15 +5235,19 @@ function renderCardReorderList() {
       qLi.style.border = '1.5px dashed var(--accent-light)';
       qLi.style.background = '#0d2117';
       qLi.innerHTML = `
-        <span class="song-name" style="max-width:70%;cursor:pointer;">
-          <span style="color:var(--accent-light);font-size:0.75rem;font-weight:bold;">[Up Next]</span> ${queuedTrk.name}
-        </span>
-        <button class="btn-del" title="Remove from queue">✕</button>
+        <div class="drawer-track-info-zone">
+          <span class="song-name" style="cursor:pointer;">
+            <span style="color:var(--accent-light);font-size:0.75rem;font-weight:bold;">[Up Next]</span> ${queuedTrk.name}
+          </span>
+        </div>
+        <div class="drawer-reorder-btns">
+          <button class="btn-del" title="Remove from queue">✕</button>
+        </div>
       `;
 
-      const sName = qLi.querySelector('.song-name');
-      if (sName) {
-        sName.onclick = () => {
+      const sZone = qLi.querySelector('.drawer-track-info-zone');
+      if (sZone) {
+        sZone.onclick = () => {
           triggerHaptic(25);
           playNextQueue.splice(qIdx, 1);
           playTrackDirect(queuedTrk);
@@ -5194,150 +5277,158 @@ function renderCardReorderList() {
     li.className = `drawer-track-row ${isThisPlaying ? 'now-playing-active' : ''} ${isMissing ? 'missing-storage' : ''}`;
     li.dataset.index = idx;
 
+    // Strict Two-Zone Layout: Zone A (Drag/Swap) vs Zone B (Scroll-Only Buttons)
     li.innerHTML = `
-      <span class="song-name" style="max-width:65%;cursor:pointer;">
-        <strong>${idx + 1}.</strong> ${trk.name}
-        ${isMissing ? '<span class="missing-tag-badge">Missing</span>' : ''}
-        ${isThisPlaying ? `
-          <span class="now-playing-badge-group">
-            <span class="mini-equalizer-bars ${isAudioPlaying ? 'animating' : 'paused'}">
-              <span class="eq-bar bar-1"></span>
-              <span class="eq-bar bar-2"></span>
-              <span class="eq-bar bar-3"></span>
-              <span class="eq-bar bar-4"></span>
+      <div class="drawer-track-info-zone" data-zone="info">
+        <span class="song-name" style="cursor:pointer;">
+          <strong>${idx + 1}.</strong> ${trk.name}
+          ${isMissing ? '<span class="missing-tag-badge">Missing</span>' : ''}
+          ${isThisPlaying ? `
+            <span class="now-playing-badge-group">
+              <span class="mini-equalizer-bars ${isAudioPlaying ? 'animating' : 'paused'}">
+                <span class="eq-bar bar-1"></span>
+                <span class="eq-bar bar-2"></span>
+                <span class="eq-bar bar-3"></span>
+                <span class="eq-bar bar-4"></span>
+              </span>
+              <span class="now-playing-tag">Playing</span>
             </span>
-            <span class="now-playing-tag">Playing</span>
-          </span>
-        ` : ''}
-      </span>
-      <div class="drawer-reorder-btns">
+          ` : ''}
+        </span>
+      </div>
+      <div class="drawer-reorder-btns" data-zone="btns">
         <button class="drawer-shift-btn" onclick="shiftQueueTrack(${idx}, -1)">▲</button>
         <button class="drawer-shift-btn" onclick="shiftQueueTrack(${idx}, 1)">▼</button>
         <button class="drawer-shift-btn" style="color:#f85149;" onclick="removeTrackFromQueue(${idx})" title="Remove from queue">✕</button>
       </div>
     `;
 
-    const sName = li.querySelector('.song-name');
-    if (sName) {
-      sName.onclick = () => {
+    const infoZone = li.querySelector('.drawer-track-info-zone');
+
+    // Single Tap to Play
+    if (infoZone) {
+      infoZone.onclick = () => {
         if (isMissing) {
           showNotification(`"${trk.name}" is not in device storage.`);
           return;
         }
         playTrackDirect(trk);
       };
-    }
 
-    let pressTimer = null;
-    let isDraggingThis = false;
+      // Long-Press Touch Drag Engine (Confined Exclusively to Info Zone)
+      let pressTimer = null;
+      let isDraggingThis = false;
 
-    li.addEventListener('touchstart', (e) => {
-      pressTimer = setTimeout(() => {
-        triggerHaptic(45);
-        isDraggingThis = true;
-        draggedItemIndex = idx;
-        currentTargetDropIndex = idx;
-        li.classList.add('dragging');
+      infoZone.addEventListener('touchstart', (e) => {
+        pressTimer = setTimeout(() => {
+          triggerHaptic(45);
+          isDraggingThis = true;
+          draggedItemIndex = idx;
+          currentTargetDropIndex = idx;
+          li.classList.add('dragging');
 
-        cardReorderList.classList.add('scroll-frozen');
+          cardReorderList.classList.add('scroll-frozen');
 
-        if (dragPreview) {
-          dragPreview.innerHTML = `<span>≡ ${trk.name}</span>`;
-          dragPreview.style.display = 'flex';
-          updateDragPreviewPosition(e.touches[0].clientY);
-        }
+          if (dragPreview) {
+            dragPreview.innerHTML = `<span>≡ ${trk.name}</span>`;
+            dragPreview.style.display = 'flex';
+            updateDragPreviewPosition(e.touches[0].clientY);
+          }
 
-        attachActiveDragListeners();
-      }, 400);
-    }, { passive: true });
+          attachActiveDragListeners();
+        }, 400);
+      }, { passive: true });
 
-    const cancelLongPress = () => {
-      if (pressTimer) clearTimeout(pressTimer);
-    };
+      const cancelLongPress = () => {
+        if (pressTimer) clearTimeout(pressTimer);
+      };
 
-    li.addEventListener('touchend', cancelLongPress, { passive: true });
-    li.addEventListener('touchcancel', cancelLongPress, { passive: true });
+      infoZone.addEventListener('touchend', cancelLongPress, { passive: true });
+      infoZone.addEventListener('touchcancel', cancelLongPress, { passive: true });
 
-    function attachActiveDragListeners() {
-      activeMoveHandler = (ev) => {
-        if (!isDraggingThis) return;
-        ev.preventDefault();
+      function attachActiveDragListeners() {
+        activeMoveHandler = (ev) => {
+          if (!isDraggingThis) return;
+          ev.preventDefault();
 
-        const touchY = ev.touches[0].clientY;
-        const panel = document.getElementById('card-playlist-panel');
-        if (!panel) return;
-        const panelRect = panel.getBoundingClientRect();
+          const touchY = ev.touches[0].clientY;
+          const panel = document.getElementById('card-playlist-panel');
+          if (!panel) return;
+          const panelRect = panel.getBoundingClientRect();
 
-        updateDragPreviewPosition(touchY);
+          updateDragPreviewPosition(touchY);
 
-        const scrollZone = 44;
-        if (touchY < panelRect.top + scrollZone) {
-          startBoundaryAutoScroll(-6);
-        } else if (touchY > panelRect.bottom - scrollZone) {
-          startBoundaryAutoScroll(6);
-        } else {
-          stopBoundaryAutoScroll();
-        }
-
-        const rows = Array.from(cardReorderList.querySelectorAll('.drawer-track-row:not(.dragging)'));
-        let calculatedLineY = null;
-        let chosenTargetIndex = rows.length;
-
-        for (let i = 0; i < rows.length; i++) {
-          const rRect = rows[i].getBoundingClientRect();
-          const rMid = rRect.top + (rRect.height / 2);
-
-          if (touchY < rMid) {
-            chosenTargetIndex = parseInt(rows[i].dataset.index, 10);
-            calculatedLineY = (rows[i].offsetTop - cardReorderList.scrollTop) + cardReorderList.offsetTop;
-            break;
+          // Boundary Auto-Scroll
+          const scrollZone = 44;
+          if (touchY < panelRect.top + scrollZone) {
+            startBoundaryAutoScroll(-6);
+          } else if (touchY > panelRect.bottom - scrollZone) {
+            startBoundaryAutoScroll(6);
           } else {
-            chosenTargetIndex = parseInt(rows[i].dataset.index, 10) + 1;
-            calculatedLineY = (rows[i].offsetTop + rows[i].offsetHeight - cardReorderList.scrollTop) + cardReorderList.offsetTop;
+            stopBoundaryAutoScroll();
           }
-        }
 
-        currentTargetDropIndex = chosenTargetIndex;
+          // Exact Midpoint Snapping for the Red Guide Line
+          const rows = Array.from(cardReorderList.querySelectorAll('.drawer-track-row:not(.dragging)'));
+          let calculatedLineY = null;
+          let chosenTargetIndex = rows.length;
 
-        if (calculatedLineY !== null && dropIndicator) {
-          const clampedY = Math.max(cardReorderList.offsetTop, Math.min(cardReorderList.offsetTop + cardReorderList.offsetHeight - 4, calculatedLineY));
-          dropIndicator.style.top = `${clampedY}px`;
-          dropIndicator.style.display = 'block';
-        }
-      };
+          for (let i = 0; i < rows.length; i++) {
+            const rRect = rows[i].getBoundingClientRect();
+            const rMid = rRect.top + (rRect.height / 2);
 
-      activeUpHandler = () => {
-        stopBoundaryAutoScroll();
-        window.removeEventListener('touchmove', activeMoveHandler);
-        window.removeEventListener('touchend', activeUpHandler);
-        window.removeEventListener('touchcancel', activeUpHandler);
-
-        li.classList.remove('dragging');
-        cardReorderList.classList.remove('scroll-frozen');
-
-        if (dropIndicator) dropIndicator.style.display = 'none';
-        if (dragPreview) dragPreview.style.display = 'none';
-
-        if (isDraggingThis) {
-          if (currentTargetDropIndex !== null && currentTargetDropIndex !== draggedItemIndex) {
-            triggerHaptic(30);
-            let target = currentTargetDropIndex;
-            if (target > draggedItemIndex) target--;
-
-            const moved = playingQueue.splice(draggedItemIndex, 1)[0];
-            playingQueue.splice(target, 0, moved);
-            renderCardReorderList();
-            showNotification('Queue reordered successfully!');
+            if (touchY < rMid) {
+              chosenTargetIndex = parseInt(rows[i].dataset.index, 10);
+              calculatedLineY = (rows[i].offsetTop - cardReorderList.scrollTop) + cardReorderList.offsetTop;
+              break;
+            } else {
+              chosenTargetIndex = parseInt(rows[i].dataset.index, 10) + 1;
+              calculatedLineY = (rows[i].offsetTop + rows[i].offsetHeight - cardReorderList.scrollTop) + cardReorderList.offsetTop;
+            }
           }
-          isDraggingThis = false;
-          draggedItemIndex = null;
-          currentTargetDropIndex = null;
-        }
-      };
 
-      window.addEventListener('touchmove', activeMoveHandler, { passive: false });
-      window.addEventListener('touchend', activeUpHandler, { passive: true });
-      window.addEventListener('touchcancel', activeUpHandler, { passive: true });
+          currentTargetDropIndex = chosenTargetIndex;
+
+          if (calculatedLineY !== null && dropIndicator) {
+            const clampedY = Math.max(cardReorderList.offsetTop, Math.min(cardReorderList.offsetTop + cardReorderList.offsetHeight - 4, calculatedLineY));
+            dropIndicator.style.top = `${clampedY}px`;
+            dropIndicator.style.display = 'block';
+          }
+        };
+
+        activeUpHandler = () => {
+          stopBoundaryAutoScroll();
+          window.removeEventListener('touchmove', activeMoveHandler);
+          window.removeEventListener('touchend', activeUpHandler);
+          window.removeEventListener('touchcancel', activeUpHandler);
+
+          li.classList.remove('dragging');
+          cardReorderList.classList.remove('scroll-frozen');
+
+          if (dropIndicator) dropIndicator.style.display = 'none';
+          if (dragPreview) dragPreview.style.display = 'none';
+
+          if (isDraggingThis) {
+            if (currentTargetDropIndex !== null && currentTargetDropIndex !== draggedItemIndex) {
+              triggerHaptic(30);
+              let target = currentTargetDropIndex;
+              if (target > draggedItemIndex) target--;
+
+              const moved = playingQueue.splice(draggedItemIndex, 1)[0];
+              playingQueue.splice(target, 0, moved);
+              renderCardReorderList();
+              showNotification('Queue reordered successfully!');
+            }
+            isDraggingThis = false;
+            draggedItemIndex = null;
+            currentTargetDropIndex = null;
+          }
+        };
+
+        window.addEventListener('touchmove', activeMoveHandler, { passive: false });
+        window.addEventListener('touchend', activeUpHandler, { passive: true });
+        window.addEventListener('touchcancel', activeUpHandler, { passive: true });
+      }
     }
 
     cardReorderList.appendChild(li);
@@ -5387,7 +5478,7 @@ window.removeTrackFromQueue = (idx) => {
   showNotification(`Removed "${(removed && removed.name) || 'Track'}" from playing queue`);
 };
 
-// VLC Equalizer Controls
+// VLC Equalizer Inputs
 const sliderBassBoost = document.getElementById('slider-bass-boost');
 if (sliderBassBoost) {
   sliderBassBoost.oninput = (e) => {
@@ -5450,7 +5541,7 @@ if (btnResetEqCard) {
 }
 
 // =============================================================
-// SYSTEM BOOT (SAFE EXECUTION WITH ERROR CATCHING)
+// SYSTEM BOOT (SAFE STARTUP SEQUENCE)
 // =============================================================
 initDB().then(async () => {
   try {
@@ -5465,6 +5556,6 @@ initDB().then(async () => {
     drawVivoSplineCurve();
     loadCustomEqCarousel();
   } catch (err) {
-    console.error('Safe Boot Interception:', err);
+    console.error('System Boot Exception:', err);
   }
 });
