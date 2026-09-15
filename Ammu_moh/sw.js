@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ammu-player-v270';
+const CACHE_NAME = 'ammu-player-v280';
 const ASSETS = [
   './',
   './index.html',
@@ -25,7 +25,9 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
+  // Ignore non-GET requests and non-http(s) schemes like chrome-extension://
+  if (e.request.method !== 'GET' || !e.request.url.startsWith('http')) return;
+
   e.respondWith(
     caches.match(e.request).then((cached) => {
       const netFetch = fetch(e.request).then((res) => {
