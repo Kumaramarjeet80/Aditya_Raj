@@ -16,7 +16,7 @@
   <div id="toast-container" class="toast-container"></div>
   <div id="heart-burst-overlay" class="heart-burst-overlay" style="display:none;"></div>
 
-  <!-- Big Floating Emotional Banner with Isolated Emoji -->
+  <!-- Big Floating Emotional Banner with Isolated Large Emoji -->
   <div id="emotional-floating-container" class="emotional-floating-wrapper" style="display:none;">
     <div id="emotional-big-emoji" class="emotional-big-emoji">🥹</div>
     <div class="emotional-card">
@@ -63,7 +63,7 @@
     <button id="pl-menu-btn-delete" class="menu-pop-item" style="color:#f85149;">🗑️ Delete Playlist</button>
   </div>
 
-  <!-- PHASE 1: Isolated Decryption Modal (Appears ONLY if AES Encrypted) -->
+  <!-- PHASE 1: Isolated Decryption Modal -->
   <div id="decryption-auth-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box text-center">
       <div style="font-size:2.4rem;margin-bottom:6px;">🔐</div>
@@ -72,6 +72,9 @@
       <div class="form-group text-left">
         <label for="decryption-key-input">Decryption Key</label>
         <input type="password" id="decryption-key-input" class="input-text" placeholder="Enter encryption key" autocomplete="off" />
+      </div>
+      <div style="margin-top:6px;text-align:right;">
+        <button type="button" id="btn-forgot-decryption-key" class="btn-dim-sm" style="font-size:0.75rem;color:var(--accent-light);cursor:pointer;">❓ Forgot Key?</button>
       </div>
       <div class="modal-actions" style="margin-top:14px;">
         <button type="button" id="btn-cancel-decryption" class="btn-action">Cancel</button>
@@ -88,7 +91,7 @@
       <p class="modal-desc">This backup contains protected features. Check the keys you wish to provide:</p>
       
       <div class="form-group text-left" style="background:#090d15;padding:10px;border-radius:8px;border:1px solid var(--border);">
-        <!-- Option A: Master Key (Exclusive) -->
+        <!-- Master Key (Exclusive) -->
         <label class="checkbox-label" style="font-weight:bold;color:var(--accent-light);">
           <input type="checkbox" id="chk-enter-master-key" /> 👑 Enter Master Key (Unlocks All Features)
         </label>
@@ -97,7 +100,7 @@
           <small style="color:var(--text-muted);font-size:0.72rem;display:block;margin-top:2px;">Grants downloads and local playlist editing. Original creator attribution remains protected.</small>
         </div>
 
-        <!-- Sub-Options: Download Key & Author Key (Can be combined if Master Key is unchecked) -->
+        <!-- Download & Author Keys -->
         <div id="secondary-individual-keys-group" style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;">
           <label class="checkbox-label">
             <input type="checkbox" id="chk-enter-download-key" /> 🎵 Enter Download Key (Unlocks Song Downloads)
@@ -115,9 +118,31 @@
         </div>
       </div>
 
+      <div style="margin-top:6px;text-align:right;">
+        <button type="button" id="btn-forgot-secondary-keys" class="btn-dim-sm" style="font-size:0.75rem;color:var(--accent-light);cursor:pointer;">❓ Forgot Key?</button>
+      </div>
+
       <div class="modal-actions" style="margin-top:14px;">
         <button type="button" id="btn-cancel-secondary-keys" class="btn-action">Cancel</button>
         <button type="button" id="btn-confirm-secondary-keys" class="btn-primary-large" style="width:auto;padding:10px 20px;">Continue</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- ADMIN SUPER-KEY AUTHENTICATION MODAL -->
+  <div id="admin-auth-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <div style="font-size:2.4rem;margin-bottom:4px;">🛡️</div>
+      <h3>Admin Super-Key Access</h3>
+      <p class="modal-desc">Enter your account Admin Key to bypass all protection, grant full downloads, and unlock permanent playlist credential editing.</p>
+      <div class="form-group text-left">
+        <label for="admin-auth-input">Admin Super-Key</label>
+        <input type="password" id="admin-auth-input" class="input-text" placeholder="Enter your secret Admin Key" autocomplete="off" />
+      </div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button type="button" id="btn-cancel-admin-auth" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-admin-auth" class="btn-primary-large" style="width:auto;padding:10px 20px;">Authorize Super-Access</button>
       </div>
       <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
     </div>
@@ -345,8 +370,21 @@
         </label>
       </div>
 
+      <!-- Account-Level Admin Super-Key Configuration -->
+      <div class="backup-management-box" id="admin-key-config-box" style="border-color:#e3b341;">
+        <h4>🛡️ Admin Super-Key &amp; Recovery</h4>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 6px 0;">Set your personal master key to bypass any forgotten password and unlock permanent credential editing.</p>
+        <div class="form-group" style="margin:4px 0;">
+          <label style="font-size:0.72rem;">Set Account Admin Key</label>
+          <div style="display:flex;gap:6px;">
+            <input type="password" id="settings-admin-key-input" class="input-text" placeholder="Set or change Admin Key" style="flex:1;" />
+            <button id="btn-save-admin-key" class="btn-primary-sm" style="background:#e3b341;color:#000;">Save Key</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Universal Actions -->
-      <div class="backup-management-box" style="border-color:var(--accent);">
+      <div class="backup-management-box" style="border-color:var(--accent);margin-top:10px;">
         <h4>⚡ Universal Action Hub</h4>
         <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 8px 0;">Bulk actions across your local sound library.</p>
         <div class="backup-btn-row">
@@ -669,7 +707,7 @@
       <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
     </div>
 
-    <!-- Sticky Scaffold: Upper hero scrolls until controls dock -->
+    <!-- Sticky Scaffold Viewport -->
     <div class="card-scroll-viewport" id="card-scroll-viewport">
       <div class="player-collapsible-hero">
         <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="32"></canvas>
@@ -808,8 +846,8 @@
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
 
-        <!-- 6. In-Card Queue Drawer with Live Duration & Author -->
-        <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
+        <!-- 6. In-Card Queue Drawer with Live Duration, Author, and Drag-Target Indicator -->
+        <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;position:relative;">
           <div class="panel-header-row" style="border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;">
             <div>
               <span style="font-weight:bold;">Active Queue</span>
@@ -817,6 +855,8 @@
             </div>
             <button id="card-queue-author-btn" class="btn-author-pill">👤 Author</button>
           </div>
+          <!-- Red insertion line target -->
+          <div id="queue-drop-indicator" class="queue-drop-indicator-line" style="display:none;"></div>
           <ul id="card-reorder-list" class="song-list card-compact-list" style="margin-top:6px;"></ul>
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
