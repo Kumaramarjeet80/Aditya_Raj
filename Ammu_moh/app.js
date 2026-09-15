@@ -30,7 +30,7 @@ function getIndianStandardDateOnly(dateObj = new Date()) {
 }
 
 // -------------------------------------------------------------
-// 100% OFFLINE WEB CRYPTO (AES-GCM-256 & SHA-256)
+// OFFLINE WEB CRYPTO (AES-GCM-256 & SHA-256)
 // -------------------------------------------------------------
 async function hashPasskey(passkey) {
   if (!passkey) return '';
@@ -96,7 +96,7 @@ async function decryptPayloadAES(encryptedJsonObj, password) {
 }
 
 // -------------------------------------------------------------
-// PWA INSTALL BANNER MANAGEMENT
+// PWA INSTALL BANNER
 // -------------------------------------------------------------
 let deferredPrompt = null;
 const persistentInstallBanner = document.getElementById('persistent-install-banner');
@@ -140,7 +140,7 @@ function triggerHaptic(ms = 35) {
   }
 }
 
-// Android Back Gesture & Navigation Trap
+// Android Back Trap & Dismiss Handling
 window.history.pushState({ page: 'home' }, '');
 window.addEventListener('popstate', () => {
   const modals = [
@@ -158,7 +158,8 @@ window.addEventListener('popstate', () => {
     'dev-modal',
     'onboarding-modal',
     'user-profile-modal',
-    'key-auth-modal'
+    'decryption-auth-modal',
+    'secondary-keys-modal'
   ];
   for (const id of modals) {
     const el = document.getElementById(id);
@@ -189,7 +190,7 @@ window.addEventListener('touchmove', dismissAllMenus, { passive: true });
 window.addEventListener('wheel', dismissAllMenus, { passive: true });
 
 // ==========================================
-// 5-SECOND GRACEFUL UNDO ENGINE & TOASTS
+// TOASTS, UNDO & FLOATING EMOTIONAL BANNER
 // ==========================================
 let activeUndoAction = null;
 
@@ -208,9 +209,7 @@ function showNotification(msg) {
 }
 
 function showUndoToast(msg, onUndo, onCommit) {
-  if (activeUndoAction) {
-    activeUndoAction.commit();
-  }
+  if (activeUndoAction) activeUndoAction.commit();
 
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -272,9 +271,7 @@ function triggerHeartBurst(isFavorited) {
   overlay.style.display = 'block';
 
   const heartChar = isFavorited ? '❤️' : '💛';
-  const count = 18;
-
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 18; i++) {
     const p = document.createElement('div');
     p.className = 'burst-particle';
     p.textContent = heartChar;
@@ -291,7 +288,7 @@ function triggerHeartBurst(isFavorited) {
   }, 1600);
 }
 
-// Emotional Floating Banner with Large Isolated Emoji
+// Floating Emotional Message with Isolated Large Emoji
 let emotionalTimeout = null;
 function showEmotionalMessage(isLiked) {
   const container = document.getElementById('emotional-floating-container');
@@ -320,7 +317,7 @@ function showEmotionalMessage(isLiked) {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmmuMusicDB_v210';
+const DB_NAME = 'AmmuMusicDB_v220';
 const DB_VER = 1;
 let db;
 
@@ -688,7 +685,7 @@ function ensureAudioPipeline() {
       f.type = i === 0 ? 'lowshelf' : i === bands.length - 1 ? 'highshelf' : 'peaking';
       if (i !== 0 && i !== bands.length - 1) f.Q.value = 1.0;
       f.frequency.value = freq;
-      f.gain.value = 0; // Flat initial
+      f.gain.value = 0;
       prevNode.connect(f);
       prevNode = f;
       filters.push(f);
@@ -702,11 +699,11 @@ function ensureAudioPipeline() {
 
     startVisualizerLoop();
   } catch (e) {
-    console.warn('Web Audio routing fallback:', e);
+    console.warn('Web Audio pipeline init fallback:', e);
   }
 }
 
-// DSP Rule: Turning DSP Active drops Volume to 20%; Turning DSP Off sets Volume to 100%
+// Volume & DSP Rule: DSP Active -> 20% Volume | DSP Off -> 100% Volume
 function applyDSPState(enabled) {
   eqEnabled = enabled;
   const chk = document.getElementById('card-eq-enable');
@@ -737,10 +734,10 @@ function applyDSPState(enabled) {
 
   if (eqEnabled) {
     setVolume(20);
-    showNotification('DSP Active: VLC 10-Band EQ ON (Volume 20%)');
+    showNotification('DSP Active: 10-Band EQ ON (Auto Volume 20%)');
   } else {
     setVolume(100);
-    showNotification('DSP Bypassed: Flat Response (Volume 100%)');
+    showNotification('DSP Bypassed: Flat Sound (Volume 100%)');
   }
 }
 
@@ -878,7 +875,7 @@ const addToPlaylistSubmenu = document.getElementById('add-to-playlist-submenu');
 const playlistContextMenu = document.getElementById('playlist-context-menu');
 const headerSettingsMenu = document.getElementById('header-settings-menu');
 
-// Settings Header Menu Trigger
+// Settings Header Trigger
 document.getElementById('btn-main-settings-trigger').onclick = (e) => {
   e.stopPropagation();
   triggerHaptic(20);
@@ -902,7 +899,7 @@ document.getElementById('menu-btn-dev-profile').onclick = () => {
   openDevModal();
 };
 
-// Sort Trigger
+// Sort Menu Trigger
 btnSortTrigger.onclick = (e) => {
   e.stopPropagation();
   triggerHaptic(20);
@@ -921,13 +918,13 @@ document.querySelectorAll('.sort-item').forEach(btn => {
     triggerHaptic(20);
     currentSortMode = btn.dataset.sort;
     sortByMenu.style.display = 'none';
-    renderFilteredTracks(); // Affects ONLY browsing view, playing queue is safe!
+    renderFilteredTracks();
     showNotification(`Browsing Sorted: ${btn.textContent}`);
   };
 });
 
 // -------------------------------------------------------------
-// TRACK 3-DOTS CONTEXT MENU ACTIONS
+// TRACK 3-DOTS CONTEXT MENU
 // -------------------------------------------------------------
 document.getElementById('menu-btn-track-select').onclick = () => {
   if (activeContextTrack) {
@@ -966,7 +963,6 @@ document.getElementById('menu-btn-remove-from-pl').onclick = () => {
   trackContextMenu.style.display = 'none';
 };
 
-// Submenu: Add Song to Other Existing Playlists
 function openAddToPlaylistSubmenu() {
   const box = document.getElementById('add-to-playlist-options-box');
   box.innerHTML = '';
@@ -1008,7 +1004,7 @@ document.getElementById('pl-menu-btn-edit').onclick = () => {
   playlistContextMenu.style.display = 'none';
 
   if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally) {
-    promptKeyAuth(
+    promptGenericKeyAuth(
       '🔒 Creator Passkey Required',
       'This playlist is locked by its creator. Enter the passkey or Master Key to edit.',
       [activeContextPlaylist.passkeyHash, activeContextPlaylist.masterKeyHash],
@@ -1028,7 +1024,7 @@ document.getElementById('pl-menu-btn-delete').onclick = () => {
   playlistContextMenu.style.display = 'none';
 
   if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally) {
-    promptKeyAuth(
+    promptGenericKeyAuth(
       '🔒 Creator Passkey Required',
       'Enter the passkey or Master Key to delete this protected playlist.',
       [activeContextPlaylist.passkeyHash, activeContextPlaylist.masterKeyHash],
@@ -1049,47 +1045,21 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// -------------------------------------------------------------
-// 4-KEY AUTHENTICATION MODAL ENGINE
-// -------------------------------------------------------------
-const keyAuthModal = document.getElementById('key-auth-modal');
-const keyAuthTitle = document.getElementById('key-auth-title');
-const keyAuthDesc = document.getElementById('key-auth-desc');
-const keyAuthInput = document.getElementById('key-auth-input');
-let pendingKeyHashes = [];
-let pendingKeySuccessCallback = null;
-
-function promptKeyAuth(title, desc, acceptedHashes, onSuccess) {
-  keyAuthTitle.textContent = title;
-  keyAuthDesc.textContent = desc;
-  pendingKeyHashes = acceptedHashes.filter(Boolean);
-  pendingKeySuccessCallback = onSuccess;
-  keyAuthInput.value = '';
-  keyAuthModal.style.display = 'flex';
+// Generic Key Auth Prompt Helper
+function promptGenericKeyAuth(title, desc, acceptedHashes, onSuccess) {
+  const entered = prompt(`${title}\n${desc}`);
+  if (!entered) return;
+  hashPasskey(entered.trim()).then(h => {
+    if (acceptedHashes.includes(h)) {
+      triggerHaptic(30);
+      showNotification('Action Authorized!');
+      onSuccess();
+    } else {
+      triggerHaptic(45);
+      showNotification('Invalid Key. Authorization Denied.');
+    }
+  });
 }
-
-document.getElementById('btn-cancel-key-auth').onclick = () => {
-  keyAuthModal.style.display = 'none';
-  pendingKeyHashes = [];
-  pendingKeySuccessCallback = null;
-};
-
-document.getElementById('btn-confirm-key-auth').onclick = async () => {
-  const entered = keyAuthInput.value.trim();
-  const enteredHash = await hashPasskey(entered);
-
-  if (pendingKeyHashes.includes(enteredHash)) {
-    triggerHaptic(30);
-    keyAuthModal.style.display = 'none';
-    showNotification('Action Authorized!');
-    if (pendingKeySuccessCallback) pendingKeySuccessCallback();
-    pendingKeyHashes = [];
-    pendingKeySuccessCallback = null;
-  } else {
-    triggerHaptic(45);
-    showNotification('Invalid Key. Authorization Denied.');
-  }
-};
 
 // Edit Playlist Details Modal
 const editPlaylistModal = document.getElementById('edit-playlist-modal');
@@ -1156,7 +1126,7 @@ document.getElementById('btn-save-edit-playlist').onclick = async () => {
 
   await dbOps.savePlaylist(activeContextPlaylist);
   editPlaylistModal.style.display = 'none';
-  showNotification('Playlist details updated!');
+  showNotification('Playlist details updated locally!');
   await loadPlaylists();
 };
 
@@ -1312,7 +1282,9 @@ document.getElementById('btn-save-user-profile').onclick = async () => {
   await loadPlaylists();
 };
 
-// Direct Download Execution
+// -------------------------------------------------------------
+// DOWNLOAD HANDLERS WITH PERSISTENT PLAYLIST KEY MEMORY
+// -------------------------------------------------------------
 async function downloadEntirePlaylist() {
   triggerHaptic(35);
   const available = browsingTracks.filter(t => t.blob && t.blob.size > 0);
@@ -1320,14 +1292,19 @@ async function downloadEntirePlaylist() {
     return showNotification('No playable audio files to download in this playlist.');
   }
 
-  // Check if entire playlist is restricted
-  if (currentPlaylist.downloadRestricted) {
-    promptKeyAuth(
-      '🔒 Download Key Required',
-      'This entire playlist is download-restricted. Enter the Download Key or Master Key.',
-      [currentPlaylist.downloadKeyHash, currentPlaylist.masterKeyHash],
-      () => executeBulkPlaylistDownload(available)
-    );
+  // If playlist has been unlocked once, or no restrictions exist, proceed
+  if (currentPlaylist.downloadRestricted && !currentPlaylist.isDownloadUnlocked) {
+    const entered = prompt('🔒 Download Key Required:\nThis playlist is download-restricted. Enter the Download Key or Master Key:');
+    if (!entered) return;
+    const h = await hashPasskey(entered.trim());
+    if (h === currentPlaylist.downloadKeyHash || h === currentPlaylist.masterKeyHash) {
+      currentPlaylist.isDownloadUnlocked = true;
+      await dbOps.savePlaylist(currentPlaylist);
+      showNotification('Playlist download unlocked!');
+      executeBulkPlaylistDownload(available);
+    } else {
+      showNotification('Invalid Key. You are not allowed to download this playlist.');
+    }
     return;
   }
 
@@ -1339,7 +1316,7 @@ async function executeBulkPlaylistDownload(list) {
   let successCount = 0;
 
   for (const trk of list) {
-    if (trk.downloadRestricted) continue;
+    if (trk.downloadRestricted && !currentPlaylist.isDownloadUnlocked) continue;
     downloadSingleTrack(trk, false, authorName);
     successCount++;
     await new Promise(r => setTimeout(r, 220));
@@ -1352,18 +1329,24 @@ document.getElementById('btn-download-playlist-to-storage').onclick = async () =
   await downloadEntirePlaylist();
 };
 
-function downloadSingleTrack(trk, notify = true, explicitAuthorName = '') {
+async function downloadSingleTrack(trk, notify = true, explicitAuthorName = '') {
   if (!trk.blob || trk.blob.size === 0) {
     return showNotification(`Cannot download: "${trk.name}" is missing from storage.`);
   }
 
-  if (trk.downloadRestricted) {
-    promptKeyAuth(
-      '🔒 Song Download Restricted',
-      `The creator locked downloading for "${trk.name}". Enter the Download Key or Master Key.`,
-      [trk.downloadKeyHash, trk.masterKeyHash],
-      () => executeSingleDownload(trk, notify, explicitAuthorName)
-    );
+  // Check if song is download-restricted and not yet unlocked on this device
+  if (trk.downloadRestricted && !currentPlaylist.isDownloadUnlocked) {
+    const entered = prompt(`🔒 Song Download Restricted:\nEnter Download Key or Master Key to download "${trk.name}":`);
+    if (!entered) return;
+    const h = await hashPasskey(entered.trim());
+    if (h === trk.downloadKeyHash || h === trk.masterKeyHash || h === currentPlaylist.downloadKeyHash || h === currentPlaylist.masterKeyHash) {
+      currentPlaylist.isDownloadUnlocked = true;
+      await dbOps.savePlaylist(currentPlaylist);
+      showNotification('Download authorized for this playlist!');
+      executeSingleDownload(trk, notify, explicitAuthorName);
+    } else {
+      showNotification('Invalid Key. You are not allowed to download this song.');
+    }
     return;
   }
 
@@ -1408,7 +1391,7 @@ document.getElementById('btn-close-author').onclick = () => {
   document.getElementById('author-modal').style.display = 'none';
 };
 
-// Tap Album Art to Toggle Disc/Vinyl Mode
+// Vinyl Disc Mode Toggle
 const artDisplayBox = document.getElementById('art-display-box');
 let lastTapTime = 0;
 const seekFeedbackOverlay = document.getElementById('art-seek-feedback');
@@ -1749,7 +1732,7 @@ async function openSettingsModal() {
   settingsModal.style.display = 'flex';
 }
 
-// Granular Export Permissions Matrix with Search
+// Granular Export Checklist with Search
 async function renderExportTrackPermissionMatrix() {
   const box = document.getElementById('export-tracks-permission-checklist');
   box.innerHTML = '';
@@ -1788,7 +1771,7 @@ async function renderAuditLogs() {
   }
   logs.slice().reverse().forEach(log => {
     const li = document.createElement('li');
-    li.innerHTML = `<strong>[${log.type}]</strong> ${log.desc} ${log.key ? `<span style="color:var(--accent-light);">[Key: ${log.key}]</span>` : ''} <span style="float:right;font-size:0.68rem;">${log.date}</span>`;
+    li.innerHTML = `<strong>[${log.type}]</strong> ${log.desc} <div style="color:var(--accent-light);font-size:0.7rem;margin-top:2px;">${log.keysDetail || ''}</div> <span style="float:right;font-size:0.68rem;color:var(--text-muted);">${log.date}</span>`;
     listEl.appendChild(li);
   });
 }
@@ -1876,14 +1859,13 @@ document.getElementById('btn-export-backup').onclick = async () => {
 };
 
 // -------------------------------------------------------------
-// 4-KEY HIERARCHICAL EXPORT ENGINE (AES-256 GCM)
+// EXPORT PIPELINE WITH FULL KEY HISTORY LOGGING
 // -------------------------------------------------------------
 async function executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds) {
   const allTracks = await dbOps.getAllTracks();
   const allPlaylists = await dbOps.getPlaylists();
   const devProfile = await dbOps.getDevProfile();
 
-  // 4 Keys
   const masterKey = document.getElementById('export-master-key-input').value.trim();
   const encryptionKey = document.getElementById('export-encryption-key-input').value.trim();
   const plainPasskey = document.getElementById('export-passkey-input').value.trim();
@@ -1893,7 +1875,6 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   const passkeyHash = plainPasskey ? await hashPasskey(plainPasskey) : '';
   const downloadKeyHash = downloadKey ? await hashPasskey(downloadKey) : '';
 
-  // Download Allow Set from Matrix
   const allowedDownloadNames = new Set(
     Array.from(document.querySelectorAll('.export-dl-allow-cb:checked'))
       .map(cb => cb.dataset.trackName)
@@ -1961,7 +1942,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   }
 
   const payload = {
-    version: '11.0',
+    version: '12.0',
     exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
@@ -1982,7 +1963,6 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
 
   let rawDataToEmit = JSON.stringify(payload, null, 2);
 
-  // Apply AES-GCM-256 Encryption if Encryption Key is specified
   if (encryptionKey) {
     rawDataToEmit = await encryptPayloadAES(rawDataToEmit, encryptionKey);
   }
@@ -2000,20 +1980,23 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   a.remove();
   URL.revokeObjectURL(downloadUrl);
 
+  const keysDetailStr = `Keys Implemented: [Master: ${masterKey || 'None'}] | [Encryption: ${encryptionKey ? 'Enabled' : 'None'}] | [Creator Passkey: ${plainPasskey || 'None'}] | [Download Key: ${downloadKey || 'None'}]`;
+
   await dbOps.addAuditLog({
     type: 'EXPORT',
     desc: `Exported: "${finalBackupFileName}"`,
-    key: masterKey ? 'Master-Locked' : (encryptionKey ? 'Encrypted' : 'Standard')
+    keysDetail: keysDetailStr
   });
   renderAuditLogs();
   showNotification(`Downloaded backup: ${finalBackupFileName}`);
 }
 
-// -------------------------------------------------------------
-// IMPORT ENGINE (WITH DECRYPTION KEY PROMPT)
-// -------------------------------------------------------------
-let pendingImportPayload = null;
-let auditMatchMap = new Map();
+// =============================================================
+// TWO-PHASE IMPORT SYSTEM WITH CHECKBOX MUTUAL EXCLUSION
+// =============================================================
+let rawEncryptedDataToDecrypt = null;
+let parsedDecryptedPayload = null;
+let currentImportBypassOnboarding = false;
 
 document.getElementById('import-backup-file').onchange = (e) => {
   handleDirectImport(e.target.files[0], false);
@@ -2021,33 +2004,23 @@ document.getElementById('import-backup-file').onchange = (e) => {
 
 async function handleDirectImport(file, bypassOnboarding) {
   if (!file) return;
+  currentImportBypassOnboarding = bypassOnboarding;
   const reader = new FileReader();
   reader.onload = async (ev) => {
     try {
-      let content = ev.target.result;
-      let parsed = JSON.parse(content);
+      const content = ev.target.result;
+      const parsed = JSON.parse(content);
 
-      // Check if file is AES-GCM-256 Encrypted
+      // PHASE 1: Isolated Decryption Check
       if (parsed.encrypted && parsed.cipherData) {
-        promptKeyAuth(
-          '🔐 Decryption Key Required',
-          'This backup file is encrypted with AES-256. Enter the encryption key to decrypt.',
-          ['ANY'],
-          async () => {
-            const enteredKey = keyAuthInput.value.trim();
-            try {
-              const decryptedStr = await decryptPayloadAES(parsed, enteredKey);
-              const decPayload = JSON.parse(decryptedStr);
-              proceedWithParsedImport(decPayload, bypassOnboarding);
-            } catch (err) {
-              alert('Import Failed: Incorrect decryption key or corrupted payload.');
-            }
-          }
-        );
+        rawEncryptedDataToDecrypt = parsed;
+        document.getElementById('decryption-key-input').value = '';
+        document.getElementById('decryption-auth-modal').style.display = 'flex';
         return;
       }
 
-      proceedWithParsedImport(parsed, bypassOnboarding);
+      // No Encryption: Proceed Directly to Phase 2
+      evaluateSecondaryKeysPhase(parsed);
     } catch (_) {
       showNotification('Import Failed: Corrupted or invalid JSON backup file.');
     }
@@ -2055,39 +2028,182 @@ async function handleDirectImport(file, bypassOnboarding) {
   reader.readAsText(file);
 }
 
-function proceedWithParsedImport(data, bypassOnboarding) {
-  if (!data.playlists || !data.tracks) {
-    return alert('Import Failed: Invalid Ammu backup structure.');
+// Phase 1 Decryption Listeners
+document.getElementById('btn-cancel-decryption').onclick = () => {
+  document.getElementById('decryption-auth-modal').style.display = 'none';
+  rawEncryptedDataToDecrypt = null;
+};
+
+document.getElementById('btn-confirm-decryption').onclick = async () => {
+  const enteredKey = document.getElementById('decryption-key-input').value.trim();
+  if (!enteredKey) return showNotification('Please enter the decryption key.');
+
+  try {
+    const decryptedStr = await decryptPayloadAES(rawEncryptedDataToDecrypt, enteredKey);
+    const decryptedPayload = JSON.parse(decryptedStr);
+    document.getElementById('decryption-auth-modal').style.display = 'none';
+    rawEncryptedDataToDecrypt = null;
+    showNotification('File decrypted successfully!');
+    evaluateSecondaryKeysPhase(decryptedPayload);
+  } catch (err) {
+    alert('Decryption Failed: Incorrect key or corrupted payload.');
+  }
+};
+
+// PHASE 2: Secondary Keys Multi-Checkbox Selector
+function evaluateSecondaryKeysPhase(payload) {
+  parsedDecryptedPayload = payload;
+
+  const hasMaster = Boolean(payload.masterKeyHash);
+  const hasDownload = Boolean(payload.downloadKeyHash);
+  const hasAuthor = Boolean(payload.passkeyHash);
+
+  // If all secondary keys are blank, bypass key dialog completely
+  if (!hasMaster && !hasDownload && !hasAuthor) {
+    proceedToStorageMatcherScreen(false, false, false);
+    return;
   }
 
-  if (bypassOnboarding && data.author) {
+  // Configure Secondary Keys Modal
+  const modal = document.getElementById('secondary-keys-modal');
+  const chkMaster = document.getElementById('chk-enter-master-key');
+  const boxMaster = document.getElementById('box-master-key-input');
+  const inMaster = document.getElementById('in-master-key');
+
+  const chkDownload = document.getElementById('chk-enter-download-key');
+  const boxDownload = document.getElementById('box-download-key-input');
+  const inDownload = document.getElementById('in-download-key');
+
+  const chkAuthor = document.getElementById('chk-enter-author-key');
+  const boxAuthor = document.getElementById('box-author-key-input');
+  const inAuthor = document.getElementById('in-author-key');
+
+  const secondaryGroup = document.getElementById('secondary-individual-keys-group');
+
+  // Reset states
+  chkMaster.checked = false;
+  boxMaster.style.display = 'none';
+  inMaster.value = '';
+
+  chkDownload.checked = false;
+  boxDownload.style.display = 'none';
+  inDownload.value = '';
+
+  chkAuthor.checked = false;
+  boxAuthor.style.display = 'none';
+  inAuthor.value = '';
+
+  secondaryGroup.style.display = 'block';
+
+  // Mutual Exclusion Rules:
+  chkMaster.onchange = () => {
+    if (chkMaster.checked) {
+      boxMaster.style.display = 'block';
+      secondaryGroup.style.display = 'none';
+      chkDownload.checked = false;
+      chkAuthor.checked = false;
+      boxDownload.style.display = 'none';
+      boxAuthor.style.display = 'none';
+      inDownload.value = '';
+      inAuthor.value = '';
+    } else {
+      boxMaster.style.display = 'none';
+      inMaster.value = '';
+      secondaryGroup.style.display = 'block';
+    }
+  };
+
+  chkDownload.onchange = () => {
+    boxDownload.style.display = chkDownload.checked ? 'block' : 'none';
+    if (!chkDownload.checked) inDownload.value = '';
+  };
+
+  chkAuthor.onchange = () => {
+    boxAuthor.style.display = chkAuthor.checked ? 'block' : 'none';
+    if (!chkAuthor.checked) inAuthor.value = '';
+  };
+
+  modal.style.display = 'flex';
+}
+
+document.getElementById('btn-cancel-secondary-keys').onclick = () => {
+  document.getElementById('secondary-keys-modal').style.display = 'none';
+  parsedDecryptedPayload = null;
+};
+
+document.getElementById('btn-confirm-secondary-keys').onclick = async () => {
+  const payload = parsedDecryptedPayload;
+  let isMasterUnlocked = false;
+  let isDownloadUnlocked = false;
+  let isAuthorUnlocked = false;
+
+  const chkMaster = document.getElementById('chk-enter-master-key').checked;
+  const inMaster = document.getElementById('in-master-key').value.trim();
+
+  if (chkMaster && inMaster) {
+    const h = await hashPasskey(inMaster);
+    if (h === payload.masterKeyHash) {
+      isMasterUnlocked = true;
+      isDownloadUnlocked = true;
+      isAuthorUnlocked = true;
+      showNotification('Master Key Verified: Full Local Access Granted!');
+    } else {
+      alert('Master Key did not match creator records.');
+    }
+  } else {
+    // Individual key verification
+    const chkDownload = document.getElementById('chk-enter-download-key').checked;
+    const inDownload = document.getElementById('in-download-key').value.trim();
+    if (chkDownload && inDownload) {
+      const h = await hashPasskey(inDownload);
+      if (h === payload.downloadKeyHash || h === payload.masterKeyHash) {
+        isDownloadUnlocked = true;
+        showNotification('Download Key Verified: Song Downloads Unlocked!');
+      } else {
+        alert('Download Key did not match creator records.');
+      }
+    }
+
+    const chkAuthor = document.getElementById('chk-enter-author-key').checked;
+    const inAuthor = document.getElementById('in-author-key').value.trim();
+    if (chkAuthor && inAuthor) {
+      const h = await hashPasskey(inAuthor);
+      if (h === payload.passkeyHash || h === payload.masterKeyHash) {
+        isAuthorUnlocked = true;
+        showNotification('Author Key Verified: Local Playlist Editing Unlocked!');
+      } else {
+        alert('Author Key did not match creator records.');
+      }
+    }
+  }
+
+  document.getElementById('secondary-keys-modal').style.display = 'none';
+  proceedToStorageMatcherScreen(isMasterUnlocked, isDownloadUnlocked, isAuthorUnlocked);
+};
+
+// Storage Matcher Screen
+let pendingImportPermissions = { isMasterUnlocked: false, isDownloadUnlocked: false, isAuthorUnlocked: false };
+
+function proceedToStorageMatcherScreen(isMaster, isDownload, isAuthor) {
+  const data = parsedDecryptedPayload;
+  pendingImportPermissions = { isMasterUnlocked: isMaster, isDownloadUnlocked: isDownload, isAuthorUnlocked: isAuthor };
+
+  if (currentImportBypassOnboarding && data.author) {
     userProfile = data.author;
     dbOps.setUserProfile(userProfile);
     updateUserProfileLabels();
     document.getElementById('onboarding-modal').style.display = 'none';
   }
 
-  pendingImportPayload = data;
-
-  const author = data.author || { name: 'Unknown Author', avatar: 'my-icon.png' };
-  document.getElementById('pre-import-author-name').textContent = `Created by: ${author.name} (Protected)`;
+  const author = data.author || { name: 'External Creator', avatar: 'my-icon.png' };
+  document.getElementById('pre-import-author-name').textContent = `Curated by: ${author.name} (Protected)`;
   document.getElementById('pre-import-avatar').src = author.avatar || 'my-icon.png';
   document.getElementById('pre-import-file-meta').textContent = `Tracks: ${data.tracks.length} • Playlists: ${data.playlists.length}`;
-
-  const keyBox = document.getElementById('pre-import-keys-container');
-  const keyIn = document.getElementById('pre-import-key-input');
-  keyIn.value = '';
-  if (data.passkeyHash || data.masterKeyHash) {
-    keyBox.style.display = 'block';
-  } else {
-    keyBox.style.display = 'none';
-  }
 
   dbOps.getAllTracks().then(localAll => {
     const localNamesSet = new Set(localAll.filter(t => t.blob && t.blob.size > 0).map(t => t.name.trim().toLowerCase()));
     let availableCount = 0;
     let missingCount = 0;
-    auditMatchMap.clear();
 
     const auditBox = document.getElementById('pre-import-audit-checklist');
     auditBox.innerHTML = '';
@@ -2097,8 +2213,6 @@ function proceedWithParsedImport(data, bypassOnboarding) {
       const hasPayloadAudio = Boolean(trk.audioBase64);
       const existsInLocal = localNamesSet.has(cleanName);
       const isAvailable = hasPayloadAudio || existsInLocal;
-
-      auditMatchMap.set(trk.id || trk.name, isAvailable);
 
       if (isAvailable) availableCount++;
       else missingCount++;
@@ -2130,11 +2244,11 @@ function proceedWithParsedImport(data, bypassOnboarding) {
 
 document.getElementById('btn-cancel-pre-import').onclick = () => {
   document.getElementById('pre-import-modal').style.display = 'none';
-  pendingImportPayload = null;
+  parsedDecryptedPayload = null;
 };
 
 document.getElementById('btn-confirm-final-import').onclick = async () => {
-  if (!pendingImportPayload) return;
+  if (!parsedDecryptedPayload) return;
   triggerHaptic(40);
 
   const selectedPlIds = new Set(
@@ -2145,20 +2259,11 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
   const importMarkers = document.getElementById('chk-import-markers').checked;
   const importLyrics = document.getElementById('chk-import-lyrics').checked;
   const importClips = document.getElementById('chk-import-clips').checked;
-  const author = pendingImportPayload.author || { name: 'External Creator', avatar: 'my-icon.png' };
+  const author = parsedDecryptedPayload.author || { name: 'External Creator', avatar: 'my-icon.png' };
 
-  // Evaluate Entered Key (Unlocks creator restrictions if passkey or master key matches)
-  const enteredKey = document.getElementById('pre-import-key-input').value.trim();
-  let isUnlocked = false;
-  if (pendingImportPayload.passkeyHash || pendingImportPayload.masterKeyHash) {
-    const enteredHash = await hashPasskey(enteredKey);
-    isUnlocked = (enteredHash === pendingImportPayload.passkeyHash || enteredHash === pendingImportPayload.masterKeyHash);
-    if (!isUnlocked && enteredKey) {
-      showNotification('Key did not match creator records. Details remain protected.');
-    }
-  }
+  const { isDownloadUnlocked, isAuthorUnlocked } = pendingImportPermissions;
 
-  for (const p of pendingImportPayload.playlists) {
+  for (const p of parsedDecryptedPayload.playlists) {
     if (selectedPlIds.has(p.id)) {
       await dbOps.savePlaylist({
         ...p,
@@ -2167,12 +2272,13 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
         originalCover: p.cover || 'my-icon.png',
         author: p.author || author,
         isImported: true,
-        isAuthorLocked: !isUnlocked,
-        isUnlockedLocally: isUnlocked,
-        passkeyHash: pendingImportPayload.passkeyHash || '',
-        masterKeyHash: pendingImportPayload.masterKeyHash || '',
-        downloadKeyHash: pendingImportPayload.downloadKeyHash || '',
-        downloadRestricted: p.downloadRestricted && !isUnlocked
+        isAuthorLocked: !isAuthorUnlocked,
+        isUnlockedLocally: isAuthorUnlocked,
+        passkeyHash: parsedDecryptedPayload.passkeyHash || '',
+        masterKeyHash: parsedDecryptedPayload.masterKeyHash || '',
+        downloadKeyHash: parsedDecryptedPayload.downloadKeyHash || '',
+        downloadRestricted: p.downloadRestricted && !isDownloadUnlocked,
+        isDownloadUnlocked: isDownloadUnlocked
       });
     }
   }
@@ -2187,7 +2293,7 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
   let availableSongsCount = 0;
   let missingSongsCount = 0;
 
-  for (const trk of pendingImportPayload.tracks) {
+  for (const trk of parsedDecryptedPayload.tracks) {
     if (!selectedPlIds.has(trk.playlistId) && trk.playlistId !== 'all') continue;
     
     let blob = null;
@@ -2210,7 +2316,7 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
       blob: blob || new Blob([], { type: 'audio/mp3' }),
       isMissing: !hasAudio,
       order: trk.order || Date.now(),
-      downloadRestricted: trk.downloadRestricted && !isUnlocked,
+      downloadRestricted: trk.downloadRestricted && !isDownloadUnlocked,
       downloadKeyHash: trk.downloadKeyHash || '',
       masterKeyHash: trk.masterKeyHash || ''
     });
@@ -2222,8 +2328,8 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
     importedSongs.push({ name: trk.name, isAvailable: hasAudio });
   }
 
-  if (importClips && pendingImportPayload.trimmedClips) {
-    for (const c of pendingImportPayload.trimmedClips) {
+  if (importClips && parsedDecryptedPayload.trimmedClips) {
+    for (const c of parsedDecryptedPayload.trimmedClips) {
       if (c.clipBase64) {
         const clipBlob = base64ToBlob(c.clipBase64);
         await dbOps.saveTrimmedClip({
@@ -2240,7 +2346,7 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
   await dbOps.addAuditLog({
     type: 'IMPORT',
     desc: `Imported ${importedSongs.length} tracks (${availableSongsCount} ready, ${missingSongsCount} missing)`,
-    key: isUnlocked ? 'Unlocked' : 'Protected'
+    keysDetail: `Permissions: [Downloads: ${isDownloadUnlocked ? 'Unlocked' : 'Restricted'}] | [Authoring: ${isAuthorUnlocked ? 'Unlocked' : 'Locked'}]`
   });
 
   document.getElementById('pre-import-modal').style.display = 'none';
@@ -2280,7 +2386,7 @@ async function loadPlaylists() {
 
   playlistTabs.innerHTML = '';
 
-  // 1. Pinned "➕ New" Playlist Trigger as First Item
+  // Anchored "➕ New" Playlist Chip
   const newPlChip = document.createElement('div');
   newPlChip.className = 'chip';
   newPlChip.style.border = '1px dashed var(--accent-light)';
@@ -2295,7 +2401,6 @@ async function loadPlaylists() {
   };
   playlistTabs.appendChild(newPlChip);
 
-  // 2. Playlists Categories
   combined.forEach((p) => {
     const chip = document.createElement('div');
     chip.className = `chip ${p.id === activePlaylistId ? 'active' : ''}`;
@@ -2344,7 +2449,7 @@ async function loadTracks() {
   renderFilteredTracks();
 }
 
-// Render Browsing Tracklist (Search/Sort changes affect ONLY this view, playing queue is decoupled!)
+// Render Browsing Tracklist (Search/Sort changes affect ONLY this list)
 function renderFilteredTracks() {
   const currentScrollTop = upperContentViewport.scrollTop;
 
@@ -2417,7 +2522,7 @@ function renderFilteredTracks() {
       <span class="song-sub-info">${isMissing ? 'Audio file missing from device' : `Plays: ${playCount} • ${(trk.blob?.size / (1024*1024) || 0).toFixed(1)}MB`}</span>
     `;
 
-    // Long-Press Gesture Detection for Multi-Select
+    // Long-Press for Multi-Select
     let pressTimer = null;
     info.addEventListener('touchstart', () => {
       pressTimer = setTimeout(() => {
@@ -2450,7 +2555,7 @@ function renderFilteredTracks() {
 
     const btnDownload = document.createElement('button');
     btnDownload.className = 'btn-icon-sm';
-    btnDownload.innerHTML = trk.downloadRestricted ? '🔒' : '📥';
+    btnDownload.innerHTML = (trk.downloadRestricted && !currentPlaylist.isDownloadUnlocked) ? '🔒' : '📥';
     btnDownload.title = trk.downloadRestricted ? 'Download Restricted' : 'Download to device';
     btnDownload.onclick = (e) => {
       e.stopPropagation();
@@ -2486,7 +2591,6 @@ function renderFilteredTracks() {
       triggerHaptic(20);
       activeContextTrack = trk;
       
-      // Conditionally show/hide "Remove from Playlist" if in "all" view
       const removeBtn = document.getElementById('menu-btn-remove-from-pl');
       if (removeBtn) {
         removeBtn.style.display = (activePlaylistId === 'all') ? 'none' : 'block';
@@ -2686,7 +2790,6 @@ document.getElementById('btn-batch-delete').onclick = () => {
   });
 };
 
-// Batch Add to Playlist
 document.getElementById('btn-batch-add-playlist').onclick = () => {
   if (!selectedTrackIds.size) return;
   const available = availablePlaylistList.filter(p => p.id !== 'all');
@@ -2793,7 +2896,7 @@ async function toggleFavorite(trk) {
     const existing = favTracks.find((t) => t.name.trim().toLowerCase() === trk.name.trim().toLowerCase());
     if (existing) await dbOps.deleteTrack(existing.id);
     triggerHeartBurst(false);
-    showEmotionalMessage(false); // Dil tod diya na mera 🥲
+    showEmotionalMessage(false);
     syncHeartsEverywhere(songKey, false);
   } else {
     await dbOps.setFavorite(songKey, true);
@@ -2805,7 +2908,7 @@ async function toggleFavorite(trk) {
       order: Date.now()
     });
     triggerHeartBurst(true);
-    showEmotionalMessage(true); // Thank you for loving me 🥹
+    showEmotionalMessage(true);
     syncHeartsEverywhere(songKey, true);
   }
   loadTracks();
@@ -2956,8 +3059,6 @@ document.getElementById('file-picker').onchange = async (e) => {
 // ==========================================
 function playTrackFromBrowsing(idx) {
   if (idx < 0 || idx >= browsingTracks.length) return;
-
-  // Clone current browsing list into dedicated playing queue
   playingQueue = [...browsingTracks];
   playTrackDirect(browsingTracks[idx]);
 }
@@ -3050,7 +3151,6 @@ function togglePlay() {
 function loopNext() {
   if (!playingQueue.length) return;
   
-  // Up Next Queue Priority
   if (playNextQueue.length > 0) {
     const nextTrk = playNextQueue.shift();
     renderCardReorderList();
@@ -3231,7 +3331,7 @@ btnSleepTimer.onclick = () => {
   }
 };
 
-// Touch Gestures on Mini Player & Card
+// Touch Gestures on Mini Player
 let miniStartX = 0;
 let miniStartY = 0;
 miniPlayerBar.addEventListener('touchstart', (e) => {
@@ -3780,14 +3880,13 @@ seekBar.oninput = () => {
 };
 
 // -------------------------------------------------------------
-// IN-CARD QUEUE DRAWER & DYNAMIC DURATION CALCULATION
+// IN-CARD QUEUE: LIVE DURATION & TOUCH DRAG-TO-REORDER
 // -------------------------------------------------------------
 function calculateAndRenderQueueDuration() {
   const badge = document.getElementById('card-queue-duration-badge');
   if (!badge) return;
 
   const totalCount = playingQueue.length + playNextQueue.length;
-  // Estimate ~3.5 minutes per track for offline files, or real duration if cached
   const totalSeconds = totalCount * 210;
 
   const hrs = Math.floor(totalSeconds / 3600);
@@ -3801,6 +3900,8 @@ function calculateAndRenderQueueDuration() {
   badge.textContent = `${totalCount} song${totalCount === 1 ? '' : 's'} • ~${formatted}`;
 }
 
+let draggedItemIndex = null;
+
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
   if (!playingQueue.length && !playNextQueue.length) {
@@ -3810,7 +3911,6 @@ function renderCardReorderList() {
 
   const isAudioPlaying = !audio.paused && audio.currentTime > 0;
 
-  // Render Up Next Queue First
   if (playNextQueue.length > 0) {
     playNextQueue.forEach((queuedTrk, qIdx) => {
       const qLi = document.createElement('li');
@@ -3842,14 +3942,14 @@ function renderCardReorderList() {
     });
   }
 
-  // Render Active Queue Items
   playingQueue.forEach((trk, idx) => {
     const isThisPlaying = (currentPlayingTrack && currentPlayingTrack.name === trk.name);
     const isMissing = trk.isMissing || (!trk.blob || trk.blob.size === 0);
 
     const li = document.createElement('li');
     li.className = `drawer-track-row ${isThisPlaying ? 'now-playing-active' : ''} ${isMissing ? 'missing-storage' : ''}`;
-    
+    li.dataset.index = idx;
+
     li.innerHTML = `
       <span class="song-name" style="max-width:65%;cursor:pointer;">
         <strong>${idx + 1}.</strong> ${trk.name}
@@ -3880,6 +3980,58 @@ function renderCardReorderList() {
       }
       playTrackDirect(trk);
     };
+
+    // Long-Press Swipe Reorder Gesture
+    let pressTimer = null;
+    let isDraggingThis = false;
+
+    li.addEventListener('touchstart', (e) => {
+      pressTimer = setTimeout(() => {
+        triggerHaptic(40);
+        isDraggingThis = true;
+        draggedItemIndex = idx;
+        li.classList.add('dragging');
+      }, 400);
+    }, { passive: true });
+
+    li.addEventListener('touchmove', (e) => {
+      if (!isDraggingThis) {
+        if (pressTimer) clearTimeout(pressTimer);
+        return;
+      }
+      const touchY = e.touches[0].clientY;
+      const elements = document.elementsFromPoint(e.touches[0].clientX, touchY);
+      const targetRow = elements.find(el => el.classList && el.classList.contains('drawer-track-row') && el !== li);
+      
+      document.querySelectorAll('.drawer-track-row').forEach(r => r.classList.remove('drag-over'));
+      if (targetRow) {
+        targetRow.classList.add('drag-over');
+      }
+    }, { passive: true });
+
+    li.addEventListener('touchend', (e) => {
+      if (pressTimer) clearTimeout(pressTimer);
+      if (isDraggingThis) {
+        li.classList.remove('dragging');
+        document.querySelectorAll('.drawer-track-row').forEach(r => r.classList.remove('drag-over'));
+        
+        const touchY = e.changedTouches[0].clientY;
+        const elements = document.elementsFromPoint(e.changedTouches[0].clientX, touchY);
+        const targetRow = elements.find(el => el.classList && el.classList.contains('drawer-track-row') && el !== li);
+
+        if (targetRow && targetRow.dataset.index !== undefined) {
+          const targetIndex = parseInt(targetRow.dataset.index, 10);
+          triggerHaptic(30);
+          const moved = playingQueue.splice(draggedItemIndex, 1)[0];
+          playingQueue.splice(targetIndex, 0, moved);
+          renderCardReorderList();
+          showNotification('Queue sequence reordered!');
+        }
+        isDraggingThis = false;
+        draggedItemIndex = null;
+      }
+    }, { passive: true });
+
     cardReorderList.appendChild(li);
   });
 }
@@ -3903,7 +4055,7 @@ window.removeTrackFromQueue = (idx) => {
   showNotification(`Removed "${removed?.name}" from playing queue`);
 };
 
-// Bass Boost & Equalizer Controls
+// Equalizer Sliders & Preamp Controls
 document.getElementById('slider-bass-boost').oninput = (e) => {
   triggerHaptic(10);
   const val = parseFloat(e.target.value);
@@ -3920,6 +4072,7 @@ document.querySelectorAll('[data-band]').forEach((s) => {
     document.getElementById(`val-${bands[b]}`).textContent = `${val}dB`;
   };
 });
+
 document.getElementById('eq-preamp').oninput = (e) => {
   triggerHaptic(10);
   const val = parseFloat(e.target.value);
@@ -3956,7 +4109,7 @@ initDB().then(async () => {
   await loadPlaylists();
   checkResumeSession();
   
-  // Default Boot State: 100% Volume & DSP Flat (Off)
+  // Default State: 100% Volume, Flat Response (DSP Inactive)
   applyDSPState(false);
   setVolume(100);
 });
