@@ -28,6 +28,13 @@ body.amoled-mode {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Cross-Platform Laptop & Mobile Emoji Font Definition */
+.emoji-text {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif !important;
+  font-variant-emoji: emoji;
+  line-height: 1;
+}
+
 html, body {
   background-color: var(--bg-main);
   color: var(--text-primary);
@@ -137,7 +144,7 @@ body {
 }
 
 /* ==========================================================================
-   FLOATING EMOTIONAL POPUP (ISOLATED LARGE EMOJI)
+   FLOATING EMOTIONAL POPUP (CROSS-PLATFORM DISPLAY)
    ========================================================================== */
 .emotional-floating-wrapper {
   position: fixed;
@@ -157,7 +164,6 @@ body {
   line-height: 1;
   margin-bottom: -16px;
   z-index: 2;
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
   filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.8));
   animation: floatEmojiBounce 1.4s ease-in-out infinite alternate;
 }
@@ -529,7 +535,7 @@ body {
 }
 
 /* ==========================================================================
-   IN-CARD ACTIVE QUEUE: SCROLL-FREEZE, RED LINE & DRAG PREVIEW
+   IN-CARD ACTIVE QUEUE: TWO-ZONE PARTITION (SWAP ZONE vs SCROLL-ONLY ZONE)
    ========================================================================== */
 .card-compact-list {
   max-height: 380px;
@@ -609,10 +615,9 @@ body {
   justify-content: space-between;
   background: #0c1017 !important;
   border: 1px solid #1e2638 !important;
-  padding: 10px 14px !important;
+  padding: 8px 12px !important;
   border-radius: 12px !important;
   transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-  touch-action: pan-y;
   position: relative;
 }
 
@@ -623,15 +628,28 @@ body {
 }
 
 .drawer-track-row.dragging {
-  opacity: 0.45;
+  opacity: 0.4;
   background: #111822 !important;
   border-color: #3b465a !important;
 }
 
+/* Zone A: Left Track Title & Meta (Drag & Swap Enabled) */
+.drawer-track-info-zone {
+  flex: 1;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y;
+  padding: 4px 6px 4px 0;
+}
+
+/* Zone B: Right Buttons (Scroll-Only Zone, No Swap Action) */
 .drawer-reorder-btns {
   display: flex;
   align-items: center;
   gap: 6px;
+  touch-action: pan-y !important;
+  pointer-events: auto;
+  user-select: none;
 }
 
 .drawer-shift-btn {
@@ -646,6 +664,7 @@ body {
   justify-content: center;
   font-size: 0.72rem;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .card-credit-footer {
@@ -983,7 +1002,6 @@ body {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Fluid Drag Dismiss Pill */
 .card-drag-dismiss-handle {
   width: 100%;
   height: 18px;
