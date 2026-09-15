@@ -50,7 +50,7 @@ body {
 }
 
 /* ==========================================================================
-   FLOATING EMOTIONAL POPUP & ISOLATED LARGE EMOJI (UNIVERSAL FONT FALLBACK)
+   FLOATING EMOTIONAL POPUP WITH ISOLATED LARGE EMOJI (UPWARD FADE-OUT)
    ========================================================================== */
 .emotional-floating-wrapper {
   position: fixed;
@@ -62,28 +62,28 @@ body {
   align-items: center;
   z-index: 100002;
   pointer-events: none;
-  animation: emotionalPop 2.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: emotionalSlideUpFade 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .emotional-big-emoji {
-  font-size: 5rem;
+  font-size: 5.2rem;
   line-height: 1;
-  margin-bottom: -15px;
+  margin-bottom: -16px;
   z-index: 2;
   font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.7));
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.8));
   animation: floatEmojiBounce 1.4s ease-in-out infinite alternate;
 }
 
 .emotional-card {
-  background: rgba(21, 27, 38, 0.95);
+  background: rgba(21, 27, 38, 0.96);
   border: 1.5px solid var(--accent);
-  padding: 16px 24px;
+  padding: 16px 26px;
   border-radius: 20px;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(14px);
   text-align: center;
-  min-width: 260px;
+  min-width: 270px;
 }
 
 .emotional-card h3 {
@@ -94,22 +94,37 @@ body {
 }
 
 .emotional-card p {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--accent-light);
   font-weight: 600;
 }
 
-@keyframes emotionalPop {
-  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
-  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
-  25% { transform: translate(-50%, -50%) scale(1); }
-  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.85); }
+@keyframes emotionalSlideUpFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20%) scale(0.65);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.03);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -95%) scale(0.88);
+  }
 }
 
 @keyframes floatEmojiBounce {
   0% { transform: translateY(0px) scale(1); }
-  100% { transform: translateY(-8px) scale(1.08); }
+  100% { transform: translateY(-7px) scale(1.08); }
 }
 
 /* Install Banner */
@@ -358,7 +373,7 @@ body {
   line-height: 1;
 }
 
-/* Full Width Toolbar */
+/* Toolbar */
 .search-sort-bar {
   position: sticky;
   top: 0;
@@ -436,7 +451,7 @@ body {
   gap: 8px;
 }
 
-/* In-Card Queue Drawer */
+/* In-Card Queue Drawer with Drag-and-Drop Touch States */
 .card-compact-list {
   max-height: 380px;
   overflow-y: auto;
@@ -454,13 +469,29 @@ body {
   border: 1px solid #1e2638 !important;
   padding: 10px 14px !important;
   border-radius: 12px !important;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  touch-action: pan-y;
+  position: relative;
 }
 
 .drawer-track-row.now-playing-active {
   border: 1.5px solid #2ea043 !important;
   background: #0e1d16 !important;
   box-shadow: 0 0 10px rgba(46, 160, 67, 0.4);
+}
+
+/* Long-press dragging dynamic elevation */
+.drawer-track-row.dragging {
+  opacity: 0.88;
+  transform: scale(1.03);
+  background: #172436 !important;
+  border-color: var(--accent-light) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.9);
+  z-index: 10;
+}
+
+.drawer-track-row.drag-over {
+  border-top: 2px solid var(--accent-light) !important;
 }
 
 .drawer-reorder-btns {
@@ -566,7 +597,7 @@ body {
   border: 1px solid #f85149;
 }
 
-/* Equalizer Bars Animation */
+/* Equalizer Animation */
 .now-playing-badge-group {
   display: inline-flex;
   align-items: center;
@@ -657,7 +688,7 @@ body {
   line-height: 1;
 }
 
-/* Popups & Menus */
+/* Context Menu Popups */
 .context-menu-pop {
   position: fixed;
   background: #1c2635;
@@ -804,7 +835,7 @@ body {
 }
 
 /* ==========================================================================
-   FULLSCREEN PLAYER CARD & STICKY CONTROLS SCAFFOLD
+   FULLSCREEN PLAYER CARD & STICKY CONTROLS
    ========================================================================== */
 .fullscreen-player-card {
   position: fixed;
@@ -867,7 +898,7 @@ body {
   cursor: pointer;
 }
 
-/* Viewport that handles upward scrolling until controls stick */
+/* Card Scrollable Viewport */
 .card-scroll-viewport {
   flex: 1;
   overflow-y: auto;
@@ -1623,7 +1654,8 @@ body {
 }
 
 #user-profile-modal,
-#key-auth-modal {
+#decryption-auth-modal,
+#secondary-keys-modal {
   z-index: 10001;
 }
 
