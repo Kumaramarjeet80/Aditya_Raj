@@ -140,9 +140,22 @@ function triggerHaptic(ms = 35) {
   }
 }
 
-// Android Back Trap & Dismiss Handling
+// Android Back Gesture & Multi-Select Interception
 window.history.pushState({ page: 'home' }, '');
 window.addEventListener('popstate', () => {
+  // 1. If Multi-Select is active, Back immediately cancels selection first
+  if (multiSelectMode || selectedTrackIds.size > 0) {
+    multiSelectMode = false;
+    selectedTrackIds.clear();
+    const batchBar = document.getElementById('batch-action-bar');
+    if (batchBar) batchBar.style.display = 'none';
+    renderFilteredTracks();
+    showNotification('Selection cleared');
+    window.history.pushState({ page: 'home' }, '');
+    return;
+  }
+
+  // 2. Otherwise handle modal dismissals
   const modals = [
     'player-box-modal',
     'playlist-create-modal',
@@ -159,7 +172,8 @@ window.addEventListener('popstate', () => {
     'onboarding-modal',
     'user-profile-modal',
     'decryption-auth-modal',
-    'secondary-keys-modal'
+    'secondary-keys-modal',
+    'admin-auth-modal'
   ];
   for (const id of modals) {
     const el = document.getElementById(id);
@@ -288,7 +302,7 @@ function triggerHeartBurst(isFavorited) {
   }, 1600);
 }
 
-// Floating Emotional Message with Isolated Large Emoji
+// Floating Emotional Message with Large Isolated Emoji
 let emotionalTimeout = null;
 function showEmotionalMessage(isLiked) {
   const container = document.getElementById('emotional-floating-container');
@@ -317,7 +331,7 @@ function showEmotionalMessage(isLiked) {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmmuMusicDB_v220';
+const DB_NAME = 'AmmuMusicDB_v230';
 const DB_VER = 1;
 let db;
 
@@ -924,6 +938,19 @@ document.querySelectorAll('.sort-item').forEach(btn => {
 });
 
 // -------------------------------------------------------------
+// ACCOUNT-LEVEL ADMIN SUPER-KEY CONTROLS
+// -------------------------------------------------------------
+document.getElementById('btn-save-admin-key').onclick = async () => {
+  triggerHaptic(30);
+  const keyInput = document.getElementById('settings-admin-key-input').value.trim();
+  if (!keyInput) return showNotification('Please enter a valid Admin Key.');
+  const h = await hashPasskey(keyInput);
+  await dbOps.setConfig('account_admin_key_hash', h);
+  document.getElementById('settings-admin-key-input').value = '';
+  showNotification('Admin Super-Key successfully updated!');
+};
+
+// -------------------------------------------------------------
 // TRACK 3-DOTS CONTEXT MENU
 // -------------------------------------------------------------
 document.getElementById('menu-btn-track-select').onclick = () => {
@@ -1003,7 +1030,7 @@ document.getElementById('pl-menu-btn-edit').onclick = () => {
   if (!activeContextPlaylist) return;
   playlistContextMenu.style.display = 'none';
 
-  if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally) {
+  if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally && !activeContextPlaylist.isPermanentAdminUnlocked) {
     promptGenericKeyAuth(
       '🔒 Creator Passkey Required',
       'This playlist is locked by its creator. Enter the passkey or Master Key to edit.',
@@ -1023,7 +1050,7 @@ document.getElementById('pl-menu-btn-delete').onclick = () => {
   if (!activeContextPlaylist) return;
   playlistContextMenu.style.display = 'none';
 
-  if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally) {
+  if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally && !activeContextPlaylist.isPermanentAdminUnlocked) {
     promptGenericKeyAuth(
       '🔒 Creator Passkey Required',
       'Enter the passkey or Master Key to delete this protected playlist.',
@@ -1101,6 +1128,8 @@ document.getElementById('btn-save-edit-playlist').onclick = async () => {
   triggerHaptic(30);
   if (!activeContextPlaylist) return;
 
+  const isPermAdmin = Boolean(activeContextPlaylist.isPermanentAdminUnlocked);
+
   if (!activeContextPlaylist.originalName) {
     activeContextPlaylist.originalName = activeContextPlaylist.name;
     activeContextPlaylist.originalAuthor = activeContextPlaylist.author || userProfile;
@@ -1109,24 +1138,30 @@ document.getElementById('btn-save-edit-playlist').onclick = async () => {
 
   if (activeContextPlaylist.id !== 'favorites') {
     const newName = editPlaylistNameInput.value.trim();
-    if (newName) activeContextPlaylist.localName = newName;
+    if (newName) {
+      if (isPermAdmin) activeContextPlaylist.name = newName;
+      activeContextPlaylist.localName = newName;
+    }
   }
 
   const newAuthorName = editPlaylistAuthorInput.value.trim();
   if (newAuthorName) {
-    activeContextPlaylist.localAuthor = {
+    const newAuthObj = {
       name: newAuthorName,
       avatar: activeContextPlaylist.author ? activeContextPlaylist.author.avatar : userProfile.avatar
     };
+    if (isPermAdmin) activeContextPlaylist.author = newAuthObj;
+    activeContextPlaylist.localAuthor = newAuthObj;
   }
 
   if (tempEditPlaylistArt) {
+    if (isPermAdmin) activeContextPlaylist.cover = tempEditPlaylistArt;
     activeContextPlaylist.localCover = tempEditPlaylistArt;
   }
 
   await dbOps.savePlaylist(activeContextPlaylist);
   editPlaylistModal.style.display = 'none';
-  showNotification('Playlist details updated locally!');
+  showNotification(isPermAdmin ? 'Playlist credentials permanently updated!' : 'Playlist details updated locally!');
   await loadPlaylists();
 };
 
@@ -1292,7 +1327,6 @@ async function downloadEntirePlaylist() {
     return showNotification('No playable audio files to download in this playlist.');
   }
 
-  // If playlist has been unlocked once, or no restrictions exist, proceed
   if (currentPlaylist.downloadRestricted && !currentPlaylist.isDownloadUnlocked) {
     const entered = prompt('🔒 Download Key Required:\nThis playlist is download-restricted. Enter the Download Key or Master Key:');
     if (!entered) return;
@@ -1334,7 +1368,6 @@ async function downloadSingleTrack(trk, notify = true, explicitAuthorName = '') 
     return showNotification(`Cannot download: "${trk.name}" is missing from storage.`);
   }
 
-  // Check if song is download-restricted and not yet unlocked on this device
   if (trk.downloadRestricted && !currentPlaylist.isDownloadUnlocked) {
     const entered = prompt(`🔒 Song Download Restricted:\nEnter Download Key or Master Key to download "${trk.name}":`);
     if (!entered) return;
@@ -1626,7 +1659,7 @@ async function renderPlaybackHistoryTimeline() {
   }
   history.slice().reverse().slice(0, 20).forEach(h => {
     const li = document.createElement('li');
-    li.innerHTML = `<strong>${h.name}</strong> <span style="font-size:0.68rem;color:var(--text-muted);">(${h.playlist})</span> <span style="float:right;">${h.dateStr}</span>`;
+    li.innerHTML = `<strong>${h.name}</strong> <span style="font-size:0.68rem;color:var(--text-muted);">${h.playlist}</span> <span style="float:right;">${h.dateStr}</span>`;
     li.onclick = () => playSongByNameGlobally(h.name);
     historyListEl.appendChild(li);
   });
@@ -1992,7 +2025,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
 }
 
 // =============================================================
-// TWO-PHASE IMPORT SYSTEM WITH CHECKBOX MUTUAL EXCLUSION
+// TWO-PHASE IMPORT SYSTEM WITH CHECKBOX MUTUAL EXCLUSION & ADMIN KEY
 // =============================================================
 let rawEncryptedDataToDecrypt = null;
 let parsedDecryptedPayload = null;
@@ -2019,7 +2052,7 @@ async function handleDirectImport(file, bypassOnboarding) {
         return;
       }
 
-      // No Encryption: Proceed Directly to Phase 2
+      // No Encryption: Proceed to Phase 2
       evaluateSecondaryKeysPhase(parsed);
     } catch (_) {
       showNotification('Import Failed: Corrupted or invalid JSON backup file.');
@@ -2050,6 +2083,49 @@ document.getElementById('btn-confirm-decryption').onclick = async () => {
   }
 };
 
+// Forgot Key Triggers
+document.getElementById('btn-forgot-decryption-key').onclick = () => {
+  openAdminAuthModal(() => {
+    showNotification('Admin Super-Key Verified: Bypassing file lock.');
+    document.getElementById('decryption-auth-modal').style.display = 'none';
+  });
+};
+
+document.getElementById('btn-forgot-secondary-keys').onclick = () => {
+  openAdminAuthModal(() => {
+    document.getElementById('secondary-keys-modal').style.display = 'none';
+    showNotification('Admin Super-Key Verified: Permanent Author & Download Access Granted!');
+    proceedToStorageMatcherScreen(true, true, true, true);
+  });
+};
+
+function openAdminAuthModal(onSuccess) {
+  const modal = document.getElementById('admin-auth-modal');
+  const input = document.getElementById('admin-auth-input');
+  input.value = '';
+  modal.style.display = 'flex';
+
+  document.getElementById('btn-cancel-admin-auth').onclick = () => {
+    modal.style.display = 'none';
+  };
+
+  document.getElementById('btn-confirm-admin-auth').onclick = async () => {
+    const entered = input.value.trim();
+    if (!entered) return showNotification('Please enter Admin Key');
+    const savedHash = await dbOps.getConfig('account_admin_key_hash');
+    const enteredHash = await hashPasskey(entered);
+
+    if (savedHash && enteredHash === savedHash) {
+      triggerHaptic(35);
+      modal.style.display = 'none';
+      onSuccess();
+    } else {
+      triggerHaptic(45);
+      alert('Invalid Admin Key. Access denied.');
+    }
+  };
+}
+
 // PHASE 2: Secondary Keys Multi-Checkbox Selector
 function evaluateSecondaryKeysPhase(payload) {
   parsedDecryptedPayload = payload;
@@ -2058,13 +2134,11 @@ function evaluateSecondaryKeysPhase(payload) {
   const hasDownload = Boolean(payload.downloadKeyHash);
   const hasAuthor = Boolean(payload.passkeyHash);
 
-  // If all secondary keys are blank, bypass key dialog completely
   if (!hasMaster && !hasDownload && !hasAuthor) {
-    proceedToStorageMatcherScreen(false, false, false);
+    proceedToStorageMatcherScreen(false, false, false, false);
     return;
   }
 
-  // Configure Secondary Keys Modal
   const modal = document.getElementById('secondary-keys-modal');
   const chkMaster = document.getElementById('chk-enter-master-key');
   const boxMaster = document.getElementById('box-master-key-input');
@@ -2080,7 +2154,6 @@ function evaluateSecondaryKeysPhase(payload) {
 
   const secondaryGroup = document.getElementById('secondary-individual-keys-group');
 
-  // Reset states
   chkMaster.checked = false;
   boxMaster.style.display = 'none';
   inMaster.value = '';
@@ -2095,7 +2168,6 @@ function evaluateSecondaryKeysPhase(payload) {
 
   secondaryGroup.style.display = 'block';
 
-  // Mutual Exclusion Rules:
   chkMaster.onchange = () => {
     if (chkMaster.checked) {
       boxMaster.style.display = 'block';
@@ -2151,7 +2223,6 @@ document.getElementById('btn-confirm-secondary-keys').onclick = async () => {
       alert('Master Key did not match creator records.');
     }
   } else {
-    // Individual key verification
     const chkDownload = document.getElementById('chk-enter-download-key').checked;
     const inDownload = document.getElementById('in-download-key').value.trim();
     if (chkDownload && inDownload) {
@@ -2178,15 +2249,15 @@ document.getElementById('btn-confirm-secondary-keys').onclick = async () => {
   }
 
   document.getElementById('secondary-keys-modal').style.display = 'none';
-  proceedToStorageMatcherScreen(isMasterUnlocked, isDownloadUnlocked, isAuthorUnlocked);
+  proceedToStorageMatcherScreen(isMasterUnlocked, isDownloadUnlocked, isAuthorUnlocked, false);
 };
 
 // Storage Matcher Screen
-let pendingImportPermissions = { isMasterUnlocked: false, isDownloadUnlocked: false, isAuthorUnlocked: false };
+let pendingImportPermissions = { isMasterUnlocked: false, isDownloadUnlocked: false, isAuthorUnlocked: false, isPermanentAdmin: false };
 
-function proceedToStorageMatcherScreen(isMaster, isDownload, isAuthor) {
+function proceedToStorageMatcherScreen(isMaster, isDownload, isAuthor, isPermanentAdmin) {
   const data = parsedDecryptedPayload;
-  pendingImportPermissions = { isMasterUnlocked: isMaster, isDownloadUnlocked: isDownload, isAuthorUnlocked: isAuthor };
+  pendingImportPermissions = { isMasterUnlocked: isMaster, isDownloadUnlocked: isDownload, isAuthorUnlocked: isAuthor, isPermanentAdmin: isPermanentAdmin };
 
   if (currentImportBypassOnboarding && data.author) {
     userProfile = data.author;
@@ -2261,7 +2332,7 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
   const importClips = document.getElementById('chk-import-clips').checked;
   const author = parsedDecryptedPayload.author || { name: 'External Creator', avatar: 'my-icon.png' };
 
-  const { isDownloadUnlocked, isAuthorUnlocked } = pendingImportPermissions;
+  const { isDownloadUnlocked, isAuthorUnlocked, isPermanentAdmin } = pendingImportPermissions;
 
   for (const p of parsedDecryptedPayload.playlists) {
     if (selectedPlIds.has(p.id)) {
@@ -2272,13 +2343,14 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
         originalCover: p.cover || 'my-icon.png',
         author: p.author || author,
         isImported: true,
-        isAuthorLocked: !isAuthorUnlocked,
+        isAuthorLocked: (!isAuthorUnlocked && !isPermanentAdmin),
         isUnlockedLocally: isAuthorUnlocked,
+        isPermanentAdminUnlocked: isPermanentAdmin,
         passkeyHash: parsedDecryptedPayload.passkeyHash || '',
         masterKeyHash: parsedDecryptedPayload.masterKeyHash || '',
         downloadKeyHash: parsedDecryptedPayload.downloadKeyHash || '',
-        downloadRestricted: p.downloadRestricted && !isDownloadUnlocked,
-        isDownloadUnlocked: isDownloadUnlocked
+        downloadRestricted: (p.downloadRestricted && !isDownloadUnlocked && !isPermanentAdmin),
+        isDownloadUnlocked: (isDownloadUnlocked || isPermanentAdmin)
       });
     }
   }
@@ -2316,7 +2388,7 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
       blob: blob || new Blob([], { type: 'audio/mp3' }),
       isMissing: !hasAudio,
       order: trk.order || Date.now(),
-      downloadRestricted: trk.downloadRestricted && !isDownloadUnlocked,
+      downloadRestricted: (trk.downloadRestricted && !isDownloadUnlocked && !isPermanentAdmin),
       downloadKeyHash: trk.downloadKeyHash || '',
       masterKeyHash: trk.masterKeyHash || ''
     });
@@ -2346,7 +2418,7 @@ document.getElementById('btn-confirm-final-import').onclick = async () => {
   await dbOps.addAuditLog({
     type: 'IMPORT',
     desc: `Imported ${importedSongs.length} tracks (${availableSongsCount} ready, ${missingSongsCount} missing)`,
-    keysDetail: `Permissions: [Downloads: ${isDownloadUnlocked ? 'Unlocked' : 'Restricted'}] | [Authoring: ${isAuthorUnlocked ? 'Unlocked' : 'Locked'}]`
+    keysDetail: `Permissions: [Downloads: ${isDownloadUnlocked || isPermanentAdmin ? 'Unlocked' : 'Restricted'}] | [Authoring: ${isAuthorUnlocked || isPermanentAdmin ? 'Unlocked' : 'Locked'}] | [Admin Super-Access: ${isPermanentAdmin ? 'Yes' : 'No'}]`
   });
 
   document.getElementById('pre-import-modal').style.display = 'none';
@@ -2386,7 +2458,6 @@ async function loadPlaylists() {
 
   playlistTabs.innerHTML = '';
 
-  // Anchored "➕ New" Playlist Chip
   const newPlChip = document.createElement('div');
   newPlChip.className = 'chip';
   newPlChip.style.border = '1px dashed var(--accent-light)';
@@ -2449,7 +2520,6 @@ async function loadTracks() {
   renderFilteredTracks();
 }
 
-// Render Browsing Tracklist (Search/Sort changes affect ONLY this list)
 function renderFilteredTracks() {
   const currentScrollTop = upperContentViewport.scrollTop;
 
@@ -3880,7 +3950,7 @@ seekBar.oninput = () => {
 };
 
 // -------------------------------------------------------------
-// IN-CARD QUEUE: LIVE DURATION & TOUCH DRAG-TO-REORDER
+// IN-CARD QUEUE: SCROLL-FREEZE, AUTO-SCROLL & RED TARGET DROP LINE
 // -------------------------------------------------------------
 function calculateAndRenderQueueDuration() {
   const badge = document.getElementById('card-queue-duration-badge');
@@ -3901,9 +3971,14 @@ function calculateAndRenderQueueDuration() {
 }
 
 let draggedItemIndex = null;
+let currentTargetDropIndex = null;
+let autoScrollInterval = null;
 
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
+  const dropIndicator = document.getElementById('queue-drop-indicator');
+  if (dropIndicator) dropIndicator.style.display = 'none';
+
   if (!playingQueue.length && !playNextQueue.length) {
     cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">Playing queue is empty.</li>';
     return;
@@ -3981,16 +4056,20 @@ function renderCardReorderList() {
       playTrackDirect(trk);
     };
 
-    // Long-Press Swipe Reorder Gesture
+    // Long-Press Touch Drag Engine with Scroll-Freeze & Red Drop Line
     let pressTimer = null;
     let isDraggingThis = false;
 
     li.addEventListener('touchstart', (e) => {
       pressTimer = setTimeout(() => {
-        triggerHaptic(40);
+        triggerHaptic(45);
         isDraggingThis = true;
         draggedItemIndex = idx;
+        currentTargetDropIndex = idx;
         li.classList.add('dragging');
+
+        // 1. Freeze native drawer scrolling
+        cardReorderList.classList.add('scroll-frozen');
       }, 400);
     }, { passive: true });
 
@@ -3999,41 +4078,93 @@ function renderCardReorderList() {
         if (pressTimer) clearTimeout(pressTimer);
         return;
       }
+
       const touchY = e.touches[0].clientY;
-      const elements = document.elementsFromPoint(e.touches[0].clientX, touchY);
-      const targetRow = elements.find(el => el.classList && el.classList.contains('drawer-track-row') && el !== li);
-      
-      document.querySelectorAll('.drawer-track-row').forEach(r => r.classList.remove('drag-over'));
-      if (targetRow) {
-        targetRow.classList.add('drag-over');
+      const containerRect = cardReorderList.getBoundingClientRect();
+
+      // 2. Boundary Radar Auto-Scrolling
+      const scrollZoneHeight = 44;
+      if (touchY < containerRect.top + scrollZoneHeight) {
+        startBoundaryAutoScroll(-6);
+      } else if (touchY > containerRect.bottom - scrollZoneHeight) {
+        startBoundaryAutoScroll(6);
+      } else {
+        stopBoundaryAutoScroll();
+      }
+
+      // 3. Calculate Midpoints for Red Indicator Placement
+      const rows = Array.from(cardReorderList.querySelectorAll('.drawer-track-row:not(.dragging)'));
+      let indicatorY = null;
+      let targetIdx = rows.length;
+
+      for (let i = 0; i < rows.length; i++) {
+        const rRect = rows[i].getBoundingClientRect();
+        const rMid = rRect.top + (rRect.height / 2);
+
+        if (touchY < rMid) {
+          targetIdx = parseInt(rows[i].dataset.index, 10);
+          indicatorY = rows[i].offsetTop - 2;
+          break;
+        } else {
+          targetIdx = parseInt(rows[i].dataset.index, 10) + 1;
+          indicatorY = rows[i].offsetTop + rows[i].offsetHeight + 2;
+        }
+      }
+
+      currentTargetDropIndex = targetIdx;
+
+      // 4. Render Red Insertion Line
+      if (indicatorY !== null && dropIndicator) {
+        dropIndicator.style.top = `${indicatorY}px`;
+        dropIndicator.style.display = 'block';
       }
     }, { passive: true });
 
-    li.addEventListener('touchend', (e) => {
+    const finishDragOperation = (e) => {
       if (pressTimer) clearTimeout(pressTimer);
+      stopBoundaryAutoScroll();
+
       if (isDraggingThis) {
         li.classList.remove('dragging');
-        document.querySelectorAll('.drawer-track-row').forEach(r => r.classList.remove('drag-over'));
-        
-        const touchY = e.changedTouches[0].clientY;
-        const elements = document.elementsFromPoint(e.changedTouches[0].clientX, touchY);
-        const targetRow = elements.find(el => el.classList && el.classList.contains('drawer-track-row') && el !== li);
+        cardReorderList.classList.remove('scroll-frozen');
+        if (dropIndicator) dropIndicator.style.display = 'none';
 
-        if (targetRow && targetRow.dataset.index !== undefined) {
-          const targetIndex = parseInt(targetRow.dataset.index, 10);
+        if (currentTargetDropIndex !== null && currentTargetDropIndex !== draggedItemIndex) {
           triggerHaptic(30);
+          let targetIndex = currentTargetDropIndex;
+          if (targetIndex > draggedItemIndex) targetIndex--;
+
           const moved = playingQueue.splice(draggedItemIndex, 1)[0];
           playingQueue.splice(targetIndex, 0, moved);
           renderCardReorderList();
           showNotification('Queue sequence reordered!');
         }
+
         isDraggingThis = false;
         draggedItemIndex = null;
+        currentTargetDropIndex = null;
       }
-    }, { passive: true });
+    };
+
+    li.addEventListener('touchend', finishDragOperation, { passive: true });
+    li.addEventListener('touchcancel', finishDragOperation, { passive: true });
 
     cardReorderList.appendChild(li);
   });
+}
+
+function startBoundaryAutoScroll(speed) {
+  if (autoScrollInterval) return;
+  autoScrollInterval = setInterval(() => {
+    cardReorderList.scrollTop += speed;
+  }, 16);
+}
+
+function stopBoundaryAutoScroll() {
+  if (autoScrollInterval) {
+    clearInterval(autoScrollInterval);
+    autoScrollInterval = null;
+  }
 }
 
 window.shiftQueueTrack = (from, delta) => {
