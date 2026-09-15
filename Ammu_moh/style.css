@@ -8,6 +8,8 @@
   --text-muted: #8b949e;
   --border: #30363d;
   --bar-height: 80px;
+  --vivo-red: #e83e8c;
+  --vivo-track: #dcdcdc;
 }
 
 body.amoled-mode {
@@ -424,6 +426,11 @@ body {
   border-color: var(--accent-light);
 }
 
+.chip.smart-chip {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 .chip-img {
   width: 20px;
   height: 20px;
@@ -540,7 +547,6 @@ body {
   touch-action: none !important;
 }
 
-/* Clamped Red Insertion Line Guide */
 .queue-drop-indicator-line {
   position: absolute;
   left: 8px;
@@ -578,7 +584,6 @@ body {
   box-shadow: 0 0 6px #f85149;
 }
 
-/* Floating clone tile tracking finger movement */
 .queue-drag-floating-preview {
   position: absolute;
   left: 8px;
@@ -862,7 +867,8 @@ body {
   padding: 0 14px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
   z-index: 100;
-  touch-action: none;
+  touch-action: pan-x;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .player-left-group {
@@ -974,7 +980,32 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Fluid Drag Dismiss Pill */
+.card-drag-dismiss-handle {
+  width: 100%;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.drag-pill-indicator {
+  width: 38px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.card-drag-dismiss-handle:active .drag-pill-indicator {
+  background: var(--accent-light);
 }
 
 .ambient-glow {
@@ -992,16 +1023,11 @@ body {
   transition: background 0.8s ease;
 }
 
-@keyframes slideUpModal {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
 .card-top-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
+  padding: 8px 16px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -1038,7 +1064,7 @@ body {
 }
 
 .player-collapsible-hero {
-  padding: 8px 16px 4px 16px;
+  padding: 6px 16px 4px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1056,8 +1082,8 @@ body {
 
 .detail-art-container {
   position: relative;
-  width: 150px;
-  height: 150px;
+  width: 145px;
+  height: 145px;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0,0,0,0.8);
@@ -1156,7 +1182,7 @@ body {
 }
 
 .current-marker-badge-row {
-  min-height: 20px;
+  min-height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1179,9 +1205,27 @@ body {
   100% { box-shadow: 0 0 0 rgba(46,160,67,0.4); }
 }
 
-.progress-bar-box {
+/* Waveform Seek Container */
+.waveform-seek-container {
   width: 100%;
   max-width: 440px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.waveform-canvas {
+  width: 100%;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(10, 13, 20, 0.5);
+  cursor: pointer;
+}
+
+.progress-bar-box {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1370,6 +1414,63 @@ body {
   cursor: pointer;
 }
 
+/* ==========================================================================
+   DUAL EQUALIZER: VLC EQ & VIVO STUDIO EQUALIZER
+   ========================================================================== */
+.eq-engine-switch-row {
+  display: flex;
+  background: #090d15;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  margin-bottom: 8px;
+}
+
+.eq-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.eq-tab-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.quick-eq-presets-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 8px 0;
+  scrollbar-width: none;
+}
+.quick-eq-presets-strip::-webkit-scrollbar { display: none; }
+
+.quick-preset-chip {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.quick-preset-chip.active {
+  border-color: var(--vivo-red);
+  color: #fff;
+  background: rgba(232, 62, 140, 0.2);
+}
+
 .bass-boost-strip {
   display: flex;
   justify-content: space-between;
@@ -1381,6 +1482,113 @@ body {
   font-size: 0.8rem;
 }
 .bass-boost-strip input { width: 50%; }
+
+.eq-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 8px 0;
+  justify-content: space-between;
+}
+
+.eq-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 38px;
+}
+
+.vertical-slider {
+  appearance: slider-vertical;
+  -webkit-appearance: slider-vertical;
+  width: 20px;
+  height: 95px;
+  margin: 6px 0;
+}
+
+.eq-val { font-size: 0.65rem; color: var(--accent-light); }
+.eq-freq { font-size: 0.65rem; color: var(--text-muted); }
+
+/* Vivo Studio Style Equalizer (Images Replica) */
+.vivo-sliders-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 220px;
+  padding: 10px 4px 4px 4px;
+  position: relative;
+}
+
+.vivo-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.vivo-vertical-slider {
+  appearance: slider-vertical;
+  -webkit-appearance: slider-vertical;
+  width: 24px;
+  height: 180px;
+  cursor: pointer;
+  accent-color: var(--vivo-red);
+}
+
+.vivo-freq {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.vivo-curve-box {
+  width: 100%;
+  height: 70px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+}
+
+.vivo-curve-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.vivo-presets-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 10px 4px;
+  scrollbar-width: none;
+  align-items: center;
+}
+.vivo-presets-carousel::-webkit-scrollbar { display: none; }
+
+.vivo-preset-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 4px 8px;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.vivo-preset-btn.active {
+  color: var(--vivo-red) !important;
+  font-size: 0.94rem;
+  font-weight: 800;
+  transform: scale(1.06);
+}
 
 .looper-action-row {
   display: flex;
@@ -1466,32 +1674,6 @@ body {
   border: 2px solid #fff;
   cursor: pointer;
 }
-
-.eq-container {
-  display: flex;
-  overflow-x: auto;
-  gap: 8px;
-  padding: 8px 0;
-  justify-content: space-between;
-}
-
-.eq-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 38px;
-}
-
-.vertical-slider {
-  appearance: slider-vertical;
-  -webkit-appearance: slider-vertical;
-  width: 20px;
-  height: 95px;
-  margin: 6px 0;
-}
-
-.eq-val { font-size: 0.65rem; color: var(--accent-light); }
-.eq-freq { font-size: 0.65rem; color: var(--text-muted); }
 
 /* Universal Backup & Stats Styles */
 .modal-box-large {
