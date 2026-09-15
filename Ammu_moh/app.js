@@ -140,10 +140,9 @@ function triggerHaptic(ms = 35) {
   }
 }
 
-// Android Back Gesture & Multi-Select Interception
+// Android Back Gesture & Multi-Select Cancellation Handling
 window.history.pushState({ page: 'home' }, '');
 window.addEventListener('popstate', () => {
-  // 1. If Multi-Select is active, Back immediately cancels selection first
   if (multiSelectMode || selectedTrackIds.size > 0) {
     multiSelectMode = false;
     selectedTrackIds.clear();
@@ -155,7 +154,6 @@ window.addEventListener('popstate', () => {
     return;
   }
 
-  // 2. Otherwise handle modal dismissals
   const modals = [
     'player-box-modal',
     'playlist-create-modal',
@@ -192,11 +190,15 @@ function dismissAllMenus() {
   const plMenu = document.getElementById('playlist-context-menu');
   const headerMenu = document.getElementById('header-settings-menu');
   const sortMenu = document.getElementById('sort-by-menu');
+  const sortSubName = document.getElementById('sort-sub-name');
+  const sortSubSize = document.getElementById('sort-sub-size');
   const subMenu = document.getElementById('add-to-playlist-submenu');
   if (trackMenu) trackMenu.style.display = 'none';
   if (plMenu) plMenu.style.display = 'none';
   if (headerMenu) headerMenu.style.display = 'none';
   if (sortMenu) sortMenu.style.display = 'none';
+  if (sortSubName) sortSubName.style.display = 'none';
+  if (sortSubSize) sortSubSize.style.display = 'none';
   if (subMenu) subMenu.style.display = 'none';
 }
 
@@ -302,7 +304,6 @@ function triggerHeartBurst(isFavorited) {
   }, 1600);
 }
 
-// Floating Emotional Message with Large Isolated Emoji
 let emotionalTimeout = null;
 function showEmotionalMessage(isLiked) {
   const container = document.getElementById('emotional-floating-container');
@@ -331,7 +332,7 @@ function showEmotionalMessage(isLiked) {
 // -------------------------------------------------------------
 // INDEXEDDB ENGINE
 // -------------------------------------------------------------
-const DB_NAME = 'AmmuMusicDB_v230';
+const DB_NAME = 'AmmuMusicDB_v240';
 const DB_VER = 1;
 let db;
 
@@ -662,8 +663,8 @@ const bands = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
 const defaultGains = [18.2, 11.8, 3.7, -1.7, -7.8, 2.1, 9.8, 14.1, -3.6, 11.6];
 const defaultPreamp = 14.1;
 let filters = [];
-let eqEnabled = false; // Default DSP OFF
-let currentVol = 1.0;   // Default Volume 100%
+let eqEnabled = false;
+let currentVol = 1.0;
 let isVisualizerActive = true;
 
 let wasPlayingBeforeInterruption = false;
@@ -717,7 +718,6 @@ function ensureAudioPipeline() {
   }
 }
 
-// Volume & DSP Rule: DSP Active -> 20% Volume | DSP Off -> 100% Volume
 function applyDSPState(enabled) {
   eqEnabled = enabled;
   const chk = document.getElementById('card-eq-enable');
@@ -821,8 +821,8 @@ function updateAmbientGlow(imgEl) {
 // State
 let activePlaylistId = 'all';
 let currentPlaylist = { id: 'all', name: 'All', cover: '' };
-let browsingTracks = []; // UI Browsing Only
-let playingQueue = [];   // Isolated Now Playing Queue
+let browsingTracks = [];
+let playingQueue = [];
 let allTracksRaw = [];
 let currentPlayingTrack = null;
 let currentAppLogo = 'my-icon.png';
@@ -848,6 +848,7 @@ let availablePlaylistList = [];
 let activeContextTrack = null;
 let activeContextPlaylist = null;
 let tempEditPlaylistArt = null;
+let isCurrentAdminKeyRevealed = false;
 
 // UI References
 const playlistTabs = document.getElementById('playlist-tabs');
@@ -859,6 +860,8 @@ const librarySearchInput = document.getElementById('library-search-input');
 const btnClearSearch = document.getElementById('btn-clear-search');
 const btnSortTrigger = document.getElementById('btn-sort-trigger');
 const sortByMenu = document.getElementById('sort-by-menu');
+const sortSubName = document.getElementById('sort-sub-name');
+const sortSubSize = document.getElementById('sort-sub-size');
 const upperContentViewport = document.getElementById('upper-content-viewport');
 
 const miniCover = document.getElementById('mini-cover');
@@ -913,7 +916,9 @@ document.getElementById('menu-btn-dev-profile').onclick = () => {
   openDevModal();
 };
 
-// Sort Menu Trigger
+// ==========================================
+// HIERARCHICAL TWO-TIER SORT MENUS
+// ==========================================
 btnSortTrigger.onclick = (e) => {
   e.stopPropagation();
   triggerHaptic(20);
@@ -922,37 +927,116 @@ btnSortTrigger.onclick = (e) => {
   if (isHidden) {
     const rect = btnSortTrigger.getBoundingClientRect();
     sortByMenu.style.top = `${rect.bottom + window.scrollY + 6}px`;
-    sortByMenu.style.left = `${Math.max(10, rect.left - 120)}px`;
+    sortByMenu.style.left = `${Math.max(10, rect.left - 100)}px`;
     sortByMenu.style.display = 'flex';
   }
+};
+
+document.getElementById('sort-cat-name').onclick = (e) => {
+  e.stopPropagation();
+  triggerHaptic(15);
+  sortSubSize.style.display = 'none';
+  const rect = document.getElementById('sort-cat-name').getBoundingClientRect();
+  sortSubName.style.top = `${rect.top + window.scrollY}px`;
+  sortSubName.style.left = `${Math.max(10, rect.left - 160)}px`;
+  sortSubName.style.display = 'flex';
+};
+
+document.getElementById('sort-cat-size').onclick = (e) => {
+  e.stopPropagation();
+  triggerHaptic(15);
+  sortSubName.style.display = 'none';
+  const rect = document.getElementById('sort-cat-size').getBoundingClientRect();
+  sortSubSize.style.top = `${rect.top + window.scrollY}px`;
+  sortSubSize.style.left = `${Math.max(10, rect.left - 160)}px`;
+  sortSubSize.style.display = 'flex';
 };
 
 document.querySelectorAll('.sort-item').forEach(btn => {
   btn.onclick = () => {
     triggerHaptic(20);
     currentSortMode = btn.dataset.sort;
-    sortByMenu.style.display = 'none';
+    dismissAllMenus();
     renderFilteredTracks();
-    showNotification(`Browsing Sorted: ${btn.textContent}`);
+    showNotification(`Sorted: ${btn.textContent}`);
   };
 });
 
-// -------------------------------------------------------------
-// ACCOUNT-LEVEL ADMIN SUPER-KEY CONTROLS
-// -------------------------------------------------------------
+// ==========================================
+// ACCOUNT ADMIN SUPER-KEY SUITE (VIEW/UPDATE/DELETE)
+// ==========================================
+async function refreshAdminKeyUI() {
+  const plainKey = await dbOps.getConfig('account_admin_key_plain');
+  const statusLbl = document.getElementById('admin-key-status-lbl');
+  const createdBox = document.getElementById('admin-key-created-controls');
+  const setupBox = document.getElementById('admin-key-setup-controls');
+  const displayInput = document.getElementById('display-admin-key-val');
+  const toggleBtn = document.getElementById('btn-toggle-view-admin-key');
+
+  if (plainKey) {
+    statusLbl.textContent = 'Status: Active Admin Super-Key Registered';
+    statusLbl.style.color = 'var(--accent-light)';
+    createdBox.style.display = 'block';
+    setupBox.style.display = 'none';
+    isCurrentAdminKeyRevealed = false;
+    displayInput.type = 'password';
+    displayInput.value = plainKey;
+    toggleBtn.textContent = '👁️ View';
+  } else {
+    statusLbl.textContent = 'Status: No Admin Key Created (Super-Access Disabled)';
+    statusLbl.style.color = 'var(--text-muted)';
+    createdBox.style.display = 'none';
+    setupBox.style.display = 'flex';
+    document.getElementById('settings-admin-key-input').value = '';
+  }
+}
+
 document.getElementById('btn-save-admin-key').onclick = async () => {
   triggerHaptic(30);
   const keyInput = document.getElementById('settings-admin-key-input').value.trim();
   if (!keyInput) return showNotification('Please enter a valid Admin Key.');
   const h = await hashPasskey(keyInput);
   await dbOps.setConfig('account_admin_key_hash', h);
-  document.getElementById('settings-admin-key-input').value = '';
-  showNotification('Admin Super-Key successfully updated!');
+  await dbOps.setConfig('account_admin_key_plain', keyInput);
+  showNotification('Admin Super-Key registered successfully!');
+  refreshAdminKeyUI();
 };
 
-// -------------------------------------------------------------
+document.getElementById('btn-toggle-view-admin-key').onclick = () => {
+  triggerHaptic(15);
+  const displayInput = document.getElementById('display-admin-key-val');
+  const toggleBtn = document.getElementById('btn-toggle-view-admin-key');
+  isCurrentAdminKeyRevealed = !isCurrentAdminKeyRevealed;
+  displayInput.type = isCurrentAdminKeyRevealed ? 'text' : 'password';
+  toggleBtn.textContent = isCurrentAdminKeyRevealed ? '🙈 Hide' : '👁️ View';
+};
+
+document.getElementById('btn-open-update-admin-key').onclick = async () => {
+  triggerHaptic(20);
+  const currentKey = await dbOps.getConfig('account_admin_key_plain');
+  const newKey = prompt('Enter new Admin Super-Key to replace the current key:', currentKey || '');
+  if (newKey !== null && newKey.trim() !== '') {
+    const h = await hashPasskey(newKey.trim());
+    await dbOps.setConfig('account_admin_key_hash', h);
+    await dbOps.setConfig('account_admin_key_plain', newKey.trim());
+    showNotification('Admin Super-Key updated successfully!');
+    refreshAdminKeyUI();
+  }
+};
+
+document.getElementById('btn-remove-admin-key').onclick = async () => {
+  triggerHaptic(35);
+  if (confirm('Remove your account Admin Super-Key? Super-Access recovery will be disabled until you set a new key.')) {
+    await dbOps.setConfig('account_admin_key_hash', null);
+    await dbOps.setConfig('account_admin_key_plain', null);
+    showNotification('Admin Super-Key removed. Storage is blank.');
+    refreshAdminKeyUI();
+  }
+};
+
+// ==========================================
 // TRACK 3-DOTS CONTEXT MENU
-// -------------------------------------------------------------
+// ==========================================
 document.getElementById('menu-btn-track-select').onclick = () => {
   if (activeContextTrack) {
     triggerHaptic(30);
@@ -1072,7 +1156,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Generic Key Auth Prompt Helper
 function promptGenericKeyAuth(title, desc, acceptedHashes, onSuccess) {
   const entered = prompt(`${title}\n${desc}`);
   if (!entered) return;
@@ -1749,6 +1832,7 @@ async function openSettingsModal() {
   settingsLogoPreview.src = currentAppLogo;
   tempNewLogoBase64 = currentAppLogo;
   updateUserProfileLabels();
+  refreshAdminKeyUI();
 
   const plChecklist = document.getElementById('export-playlist-checklist');
   plChecklist.innerHTML = '';
@@ -1765,7 +1849,6 @@ async function openSettingsModal() {
   settingsModal.style.display = 'flex';
 }
 
-// Granular Export Checklist with Search
 async function renderExportTrackPermissionMatrix() {
   const box = document.getElementById('export-tracks-permission-checklist');
   box.innerHTML = '';
@@ -1975,7 +2058,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   }
 
   const payload = {
-    version: '12.0',
+    version: '13.0',
     exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
@@ -2025,7 +2108,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
 }
 
 // =============================================================
-// TWO-PHASE IMPORT SYSTEM WITH CHECKBOX MUTUAL EXCLUSION & ADMIN KEY
+// TWO-PHASE IMPORT SYSTEM WITH ADMIN SUPER-ACCESS & FORGOT GUARD
 // =============================================================
 let rawEncryptedDataToDecrypt = null;
 let parsedDecryptedPayload = null;
@@ -2044,7 +2127,6 @@ async function handleDirectImport(file, bypassOnboarding) {
       const content = ev.target.result;
       const parsed = JSON.parse(content);
 
-      // PHASE 1: Isolated Decryption Check
       if (parsed.encrypted && parsed.cipherData) {
         rawEncryptedDataToDecrypt = parsed;
         document.getElementById('decryption-key-input').value = '';
@@ -2052,7 +2134,6 @@ async function handleDirectImport(file, bypassOnboarding) {
         return;
       }
 
-      // No Encryption: Proceed to Phase 2
       evaluateSecondaryKeysPhase(parsed);
     } catch (_) {
       showNotification('Import Failed: Corrupted or invalid JSON backup file.');
@@ -2061,7 +2142,6 @@ async function handleDirectImport(file, bypassOnboarding) {
   reader.readAsText(file);
 }
 
-// Phase 1 Decryption Listeners
 document.getElementById('btn-cancel-decryption').onclick = () => {
   document.getElementById('decryption-auth-modal').style.display = 'none';
   rawEncryptedDataToDecrypt = null;
@@ -2083,23 +2163,30 @@ document.getElementById('btn-confirm-decryption').onclick = async () => {
   }
 };
 
-// Forgot Key Triggers
+// "Forgot Key?" Guard
 document.getElementById('btn-forgot-decryption-key').onclick = () => {
-  openAdminAuthModal(() => {
+  attemptAdminSuperKeyAccess(() => {
     showNotification('Admin Super-Key Verified: Bypassing file lock.');
     document.getElementById('decryption-auth-modal').style.display = 'none';
   });
 };
 
 document.getElementById('btn-forgot-secondary-keys').onclick = () => {
-  openAdminAuthModal(() => {
+  attemptAdminSuperKeyAccess(() => {
     document.getElementById('secondary-keys-modal').style.display = 'none';
     showNotification('Admin Super-Key Verified: Permanent Author & Download Access Granted!');
     proceedToStorageMatcherScreen(true, true, true, true);
   });
 };
 
-function openAdminAuthModal(onSuccess) {
+async function attemptAdminSuperKeyAccess(onSuccess) {
+  const savedHash = await dbOps.getConfig('account_admin_key_hash');
+  if (!savedHash) {
+    triggerHaptic(45);
+    alert('There is no super access. You have to put keys to get access.\nNo super access allowed.');
+    return;
+  }
+
   const modal = document.getElementById('admin-auth-modal');
   const input = document.getElementById('admin-auth-input');
   input.value = '';
@@ -2112,10 +2199,9 @@ function openAdminAuthModal(onSuccess) {
   document.getElementById('btn-confirm-admin-auth').onclick = async () => {
     const entered = input.value.trim();
     if (!entered) return showNotification('Please enter Admin Key');
-    const savedHash = await dbOps.getConfig('account_admin_key_hash');
     const enteredHash = await hashPasskey(entered);
 
-    if (savedHash && enteredHash === savedHash) {
+    if (enteredHash === savedHash) {
       triggerHaptic(35);
       modal.style.display = 'none';
       onSuccess();
@@ -2126,7 +2212,6 @@ function openAdminAuthModal(onSuccess) {
   };
 }
 
-// PHASE 2: Secondary Keys Multi-Checkbox Selector
 function evaluateSecondaryKeysPhase(payload) {
   parsedDecryptedPayload = payload;
 
@@ -2252,7 +2337,6 @@ document.getElementById('btn-confirm-secondary-keys').onclick = async () => {
   proceedToStorageMatcherScreen(isMasterUnlocked, isDownloadUnlocked, isAuthorUnlocked, false);
 };
 
-// Storage Matcher Screen
 let pendingImportPermissions = { isMasterUnlocked: false, isDownloadUnlocked: false, isAuthorUnlocked: false, isPermanentAdmin: false };
 
 function proceedToStorageMatcherScreen(isMaster, isDownload, isAuthor, isPermanentAdmin) {
@@ -2592,7 +2676,6 @@ function renderFilteredTracks() {
       <span class="song-sub-info">${isMissing ? 'Audio file missing from device' : `Plays: ${playCount} • ${(trk.blob?.size / (1024*1024) || 0).toFixed(1)}MB`}</span>
     `;
 
-    // Long-Press for Multi-Select
     let pressTimer = null;
     info.addEventListener('touchstart', () => {
       pressTimer = setTimeout(() => {
@@ -2796,7 +2879,6 @@ function bindSongRowSwipeGestures(rowEl, trk) {
   }, { passive: true });
 }
 
-// Multi-Select Batch Actions
 document.getElementById('btn-batch-select-all').onclick = () => {
   triggerHaptic(20);
   if (selectedTrackIds.size === browsingTracks.length) {
@@ -2951,7 +3033,6 @@ document.getElementById('btn-confirm-rename').onclick = async () => {
   }
 };
 
-// Toggle Favorite with Emotional Floating Banner
 async function toggleFavorite(trk) {
   triggerHaptic(25);
   const songKey = trk.name;
@@ -3950,7 +4031,7 @@ seekBar.oninput = () => {
 };
 
 // -------------------------------------------------------------
-// IN-CARD QUEUE: SCROLL-FREEZE, AUTO-SCROLL & RED TARGET DROP LINE
+// IN-CARD QUEUE: SCROLL-FREEZE, AUTO-SCROLL, FLOATING PREVIEW & RED GUIDE
 // -------------------------------------------------------------
 function calculateAndRenderQueueDuration() {
   const badge = document.getElementById('card-queue-duration-badge');
@@ -3973,11 +4054,15 @@ function calculateAndRenderQueueDuration() {
 let draggedItemIndex = null;
 let currentTargetDropIndex = null;
 let autoScrollInterval = null;
+let activeMoveHandler = null;
+let activeUpHandler = null;
 
 function renderCardReorderList() {
   cardReorderList.innerHTML = '';
   const dropIndicator = document.getElementById('queue-drop-indicator');
+  const dragPreview = document.getElementById('queue-drag-preview');
   if (dropIndicator) dropIndicator.style.display = 'none';
+  if (dragPreview) dragPreview.style.display = 'none';
 
   if (!playingQueue.length && !playNextQueue.length) {
     cardReorderList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:8px 0;">Playing queue is empty.</li>';
@@ -4056,7 +4141,7 @@ function renderCardReorderList() {
       playTrackDirect(trk);
     };
 
-    // Long-Press Touch Drag Engine with Scroll-Freeze & Red Drop Line
+    // Long-Press Scroll-Freeze Drag Engine
     let pressTimer = null;
     let isDraggingThis = false;
 
@@ -4068,89 +4153,120 @@ function renderCardReorderList() {
         currentTargetDropIndex = idx;
         li.classList.add('dragging');
 
-        // 1. Freeze native drawer scrolling
         cardReorderList.classList.add('scroll-frozen');
+
+        if (dragPreview) {
+          dragPreview.innerHTML = `<span>≡ ${trk.name}</span>`;
+          dragPreview.style.display = 'flex';
+          updateDragPreviewPosition(e.touches[0].clientY);
+        }
+
+        attachActiveDragListeners();
       }, 400);
     }, { passive: true });
 
-    li.addEventListener('touchmove', (e) => {
-      if (!isDraggingThis) {
-        if (pressTimer) clearTimeout(pressTimer);
-        return;
-      }
-
-      const touchY = e.touches[0].clientY;
-      const containerRect = cardReorderList.getBoundingClientRect();
-
-      // 2. Boundary Radar Auto-Scrolling
-      const scrollZoneHeight = 44;
-      if (touchY < containerRect.top + scrollZoneHeight) {
-        startBoundaryAutoScroll(-6);
-      } else if (touchY > containerRect.bottom - scrollZoneHeight) {
-        startBoundaryAutoScroll(6);
-      } else {
-        stopBoundaryAutoScroll();
-      }
-
-      // 3. Calculate Midpoints for Red Indicator Placement
-      const rows = Array.from(cardReorderList.querySelectorAll('.drawer-track-row:not(.dragging)'));
-      let indicatorY = null;
-      let targetIdx = rows.length;
-
-      for (let i = 0; i < rows.length; i++) {
-        const rRect = rows[i].getBoundingClientRect();
-        const rMid = rRect.top + (rRect.height / 2);
-
-        if (touchY < rMid) {
-          targetIdx = parseInt(rows[i].dataset.index, 10);
-          indicatorY = rows[i].offsetTop - 2;
-          break;
-        } else {
-          targetIdx = parseInt(rows[i].dataset.index, 10) + 1;
-          indicatorY = rows[i].offsetTop + rows[i].offsetHeight + 2;
-        }
-      }
-
-      currentTargetDropIndex = targetIdx;
-
-      // 4. Render Red Insertion Line
-      if (indicatorY !== null && dropIndicator) {
-        dropIndicator.style.top = `${indicatorY}px`;
-        dropIndicator.style.display = 'block';
-      }
-    }, { passive: true });
-
-    const finishDragOperation = (e) => {
+    const cancelLongPress = () => {
       if (pressTimer) clearTimeout(pressTimer);
-      stopBoundaryAutoScroll();
-
-      if (isDraggingThis) {
-        li.classList.remove('dragging');
-        cardReorderList.classList.remove('scroll-frozen');
-        if (dropIndicator) dropIndicator.style.display = 'none';
-
-        if (currentTargetDropIndex !== null && currentTargetDropIndex !== draggedItemIndex) {
-          triggerHaptic(30);
-          let targetIndex = currentTargetDropIndex;
-          if (targetIndex > draggedItemIndex) targetIndex--;
-
-          const moved = playingQueue.splice(draggedItemIndex, 1)[0];
-          playingQueue.splice(targetIndex, 0, moved);
-          renderCardReorderList();
-          showNotification('Queue sequence reordered!');
-        }
-
-        isDraggingThis = false;
-        draggedItemIndex = null;
-        currentTargetDropIndex = null;
-      }
     };
 
-    li.addEventListener('touchend', finishDragOperation, { passive: true });
-    li.addEventListener('touchcancel', finishDragOperation, { passive: true });
+    li.addEventListener('touchend', cancelLongPress, { passive: true });
+    li.addEventListener('touchcancel', cancelLongPress, { passive: true });
+
+    function attachActiveDragListeners() {
+      activeMoveHandler = (ev) => {
+        if (!isDraggingThis) return;
+        ev.preventDefault();
+
+        const touchY = ev.touches[0].clientY;
+        const panelRect = document.getElementById('card-playlist-panel').getBoundingClientRect();
+
+        updateDragPreviewPosition(touchY);
+
+        // Boundary Auto-Scroll Radar
+        const scrollZone = 44;
+        if (touchY < panelRect.top + scrollZone) {
+          startBoundaryAutoScroll(-6);
+        } else if (touchY > panelRect.bottom - scrollZone) {
+          startBoundaryAutoScroll(6);
+        } else {
+          stopBoundaryAutoScroll();
+        }
+
+        // Strict Midpoint Calculation for Red Indicator Line
+        const rows = Array.from(cardReorderList.querySelectorAll('.drawer-track-row:not(.dragging)'));
+        let calculatedLineY = null;
+        let chosenTargetIndex = rows.length;
+
+        for (let i = 0; i < rows.length; i++) {
+          const rRect = rows[i].getBoundingClientRect();
+          const rMid = rRect.top + (rRect.height / 2);
+
+          if (touchY < rMid) {
+            chosenTargetIndex = parseInt(rows[i].dataset.index, 10);
+            calculatedLineY = (rows[i].offsetTop - cardReorderList.scrollTop) + cardReorderList.offsetTop;
+            break;
+          } else {
+            chosenTargetIndex = parseInt(rows[i].dataset.index, 10) + 1;
+            calculatedLineY = (rows[i].offsetTop + rows[i].offsetHeight - cardReorderList.scrollTop) + cardReorderList.offsetTop;
+          }
+        }
+
+        currentTargetDropIndex = chosenTargetIndex;
+
+        // Position & strictly bound the Red Target Guide inside the playlist box
+        if (calculatedLineY !== null && dropIndicator) {
+          const clampedY = Math.max(cardReorderList.offsetTop, Math.min(cardReorderList.offsetTop + cardReorderList.offsetHeight - 4, calculatedLineY));
+          dropIndicator.style.top = `${clampedY}px`;
+          dropIndicator.style.display = 'block';
+        }
+      };
+
+      activeUpHandler = () => {
+        stopBoundaryAutoScroll();
+        window.removeEventListener('touchmove', activeMoveHandler);
+        window.removeEventListener('touchend', activeUpHandler);
+        window.removeEventListener('touchcancel', activeUpHandler);
+
+        li.classList.remove('dragging');
+        cardReorderList.classList.remove('scroll-frozen');
+
+        if (dropIndicator) dropIndicator.style.display = 'none';
+        if (dragPreview) dragPreview.style.display = 'none';
+
+        if (isDraggingThis) {
+          if (currentTargetDropIndex !== null && currentTargetDropIndex !== draggedItemIndex) {
+            triggerHaptic(30);
+            let target = currentTargetDropIndex;
+            if (target > draggedItemIndex) target--;
+
+            const moved = playingQueue.splice(draggedItemIndex, 1)[0];
+            playingQueue.splice(target, 0, moved);
+            renderCardReorderList();
+            showNotification('Queue reordered successfully!');
+          }
+          isDraggingThis = false;
+          draggedItemIndex = null;
+          currentTargetDropIndex = null;
+        }
+      };
+
+      window.addEventListener('touchmove', activeMoveHandler, { passive: false });
+      window.addEventListener('touchend', activeUpHandler, { passive: true });
+      window.addEventListener('touchcancel', activeUpHandler, { passive: true });
+    }
 
     cardReorderList.appendChild(li);
   });
+}
+
+function updateDragPreviewPosition(touchY) {
+  const dragPreview = document.getElementById('queue-drag-preview');
+  const panel = document.getElementById('card-playlist-panel');
+  if (!dragPreview || !panel) return;
+  const pRect = panel.getBoundingClientRect();
+  const relY = touchY - pRect.top - 20;
+  const clampedY = Math.max(cardReorderList.offsetTop, Math.min(cardReorderList.offsetTop + cardReorderList.offsetHeight - 48, relY));
+  dragPreview.style.top = `${clampedY}px`;
 }
 
 function startBoundaryAutoScroll(speed) {
@@ -4240,7 +4356,6 @@ initDB().then(async () => {
   await loadPlaylists();
   checkResumeSession();
   
-  // Default State: 100% Volume, Flat Response (DSP Inactive)
   applyDSPState(false);
   setVolume(100);
 });
