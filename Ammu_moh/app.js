@@ -4,9 +4,108 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// -------------------------------------------------------------
+// =============================================================
+// DOM REFERENCES (DECLARED AT TOP TO PREVENT TEMPORAL DEAD ZONE)
+// =============================================================
+const playlistTabs = document.getElementById('playlist-tabs');
+const songList = document.getElementById('song-list');
+const cardReorderList = document.getElementById('card-reorder-list');
+const viewPlaylistName = document.getElementById('view-playlist-name');
+const trackCountLabel = document.getElementById('track-count-label');
+const librarySearchInput = document.getElementById('library-search-input');
+const btnClearSearch = document.getElementById('btn-clear-search');
+const btnSortTrigger = document.getElementById('btn-sort-trigger');
+const sortByMenu = document.getElementById('sort-by-menu');
+const sortSubName = document.getElementById('sort-sub-name');
+const sortSubSize = document.getElementById('sort-sub-size');
+const upperContentViewport = document.getElementById('upper-content-viewport');
+
+const miniPlayerBar = document.getElementById('mini-player');
+const miniCover = document.getElementById('mini-cover');
+const miniTitle = document.getElementById('mini-title');
+const miniSub = document.getElementById('mini-sub');
+const barBtnPlay = document.getElementById('bar-btn-play');
+const barBtnLike = document.getElementById('bar-btn-like');
+
+const playerBoxModal = document.getElementById('player-box-modal');
+const boxCover = document.getElementById('box-cover');
+const boxTitle = document.getElementById('box-title');
+const boxPlaylist = document.getElementById('box-playlist');
+const boxBtnPrev = document.getElementById('box-btn-prev');
+const boxBtnPlay = document.getElementById('box-btn-play');
+const boxBtnNext = document.getElementById('box-btn-next');
+const modalBtnLike = document.getElementById('modal-btn-like');
+
+const seekBar = document.getElementById('seek-bar');
+const currTime = document.getElementById('curr-time');
+const durTime = document.getElementById('dur-time');
+const seekTicksLayer = document.getElementById('seek-ticks-layer');
+const activeMarkerPill = document.getElementById('active-marker-pill');
+const activeMarkerName = document.getElementById('active-marker-name');
+
+const trackContextMenu = document.getElementById('track-context-menu');
+const addToPlaylistSubmenu = document.getElementById('add-to-playlist-submenu');
+const playlistContextMenu = document.getElementById('playlist-context-menu');
+const headerSettingsMenu = document.getElementById('header-settings-menu');
+
+const visualizerCanvas = document.getElementById('audio-visualizer');
+const vCtx = visualizerCanvas ? visualizerCanvas.getContext('2d') : null;
+const artDisplayBox = document.getElementById('art-display-box');
+const seekFeedbackOverlay = document.getElementById('art-seek-feedback');
+const dragHandleBar = document.getElementById('card-drag-handle-bar');
+const mainViewport = document.getElementById('main-swipe-viewport');
+
+const settingsModal = document.getElementById('settings-modal');
+const customAppNameInput = document.getElementById('custom-app-name');
+const customAppLogoInput = document.getElementById('custom-app-logo');
+const settingsLogoPreview = document.getElementById('settings-logo-preview');
+const headerAppLogo = document.getElementById('header-app-logo');
+const displayAppName = document.getElementById('display-app-name');
+const htmlTitle = document.getElementById('html-title');
+const appFavicon = document.getElementById('app-favicon');
+
+const userProfileModal = document.getElementById('user-profile-modal');
+const editUserNameInput = document.getElementById('edit-user-name');
+const editUserAvatarInput = document.getElementById('edit-user-avatar');
+const userEditAvatarPreview = document.getElementById('user-edit-avatar-preview');
+
+const editPlaylistModal = document.getElementById('edit-playlist-modal');
+const editPlaylistNameInput = document.getElementById('edit-playlist-name-input');
+const editPlaylistAuthorInput = document.getElementById('edit-playlist-author-input');
+const editPlaylistArtInput = document.getElementById('edit-playlist-art-input');
+const editPlaylistPreviewImg = document.getElementById('edit-playlist-preview-img');
+const editPlNameWarning = document.getElementById('edit-pl-name-warning');
+
+const devModal = document.getElementById('dev-modal');
+const devAvatarImg = document.getElementById('dev-avatar-img');
+const devNameDisplay = document.getElementById('dev-name-display');
+const devTitleDisplay = document.getElementById('dev-title-display');
+const devBioDisplay = document.getElementById('dev-bio-display');
+const devLocationDisplay = document.getElementById('dev-location-display');
+const devEmailDisplay = document.getElementById('dev-email-display');
+
+const editDevName = document.getElementById('edit-dev-name');
+const editDevTitle = document.getElementById('edit-dev-title');
+const editDevBio = document.getElementById('edit-dev-bio');
+const editDevLocation = document.getElementById('edit-dev-location');
+const editDevEmail = document.getElementById('edit-dev-email');
+const editDevAvatar = document.getElementById('edit-dev-avatar');
+
+const customEqModal = document.getElementById('custom-eq-modal');
+const inputCustomEqName = document.getElementById('input-custom-eq-name');
+const storageAuditorModal = document.getElementById('storage-auditor-modal');
+const trimmerModal = document.getElementById('trimmer-modal');
+const renameModal = document.getElementById('rename-modal');
+const renameInput = document.getElementById('rename-input');
+const timestampModal = document.getElementById('timestamp-modal');
+const timestampNameInput = document.getElementById('timestamp-name-input');
+const timestampTimePreview = document.getElementById('timestamp-time-preview');
+const timestampMarkersList = document.getElementById('timestamp-markers-list');
+const lyricsTextarea = document.getElementById('lyrics-textarea');
+
+// =============================================================
 // INDIAN STANDARD TIME (IST) FORMATTERS
-// -------------------------------------------------------------
+// =============================================================
 function getIndianStandardTime(dateObj = new Date()) {
   return new Intl.DateTimeFormat('en-IN', {
     timeZone: 'Asia/Kolkata',
@@ -29,9 +128,9 @@ function getIndianStandardDateOnly(dateObj = new Date()) {
   }).format(dateObj);
 }
 
-// -------------------------------------------------------------
+// =============================================================
 // OFFLINE WEB CRYPTO (AES-GCM-256 & SHA-256)
-// -------------------------------------------------------------
+// =============================================================
 async function hashPasskey(passkey) {
   if (!passkey) return '';
   const enc = new TextEncoder().encode(passkey);
@@ -95,9 +194,9 @@ async function decryptPayloadAES(encryptedJsonObj, password) {
   return new TextDecoder().decode(decryptedBuf);
 }
 
-// -------------------------------------------------------------
+// =============================================================
 // PWA INSTALL BANNER
-// -------------------------------------------------------------
+// =============================================================
 let deferredPrompt = null;
 const persistentInstallBanner = document.getElementById('persistent-install-banner');
 const bannerInstallBtn = document.getElementById('btn-banner-install');
@@ -131,7 +230,7 @@ async function triggerPWAInstall() {
 
 if (bannerInstallBtn) bannerInstallBtn.addEventListener('click', triggerPWAInstall);
 if (bannerDismissBtn) bannerDismissBtn.addEventListener('click', () => {
-  persistentInstallBanner.style.display = 'none';
+  if (persistentInstallBanner) persistentInstallBanner.style.display = 'none';
 });
 
 function triggerHaptic(ms = 35) {
@@ -206,13 +305,14 @@ function dismissAllMenus() {
 window.addEventListener('touchmove', dismissAllMenus, { passive: true });
 window.addEventListener('wheel', dismissAllMenus, { passive: true });
 
-// ==========================================
+// =============================================================
 // TOASTS, UNDO & FLOATING EMOTIONAL BANNER
-// ==========================================
+// =============================================================
 let activeUndoAction = null;
 
 function showNotification(msg) {
   const container = document.getElementById('toast-container');
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.innerHTML = `
@@ -229,6 +329,7 @@ function showUndoToast(msg, onUndo, onCommit) {
   if (activeUndoAction) activeUndoAction.commit();
 
   const container = document.getElementById('toast-container');
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.innerHTML = `
@@ -267,23 +368,27 @@ function showUndoToast(msg, onUndo, onCommit) {
     }
   };
 
-  toast.querySelector('#btn-toast-undo').onclick = () => {
-    triggerHaptic(40);
-    if (!committed) {
-      committed = true;
-      clearTimeout(timeoutId);
-      toast.remove();
-      activeUndoAction = null;
-      if (onUndo) onUndo();
-      showNotification('Action reverted successfully');
-    }
-  };
+  const undoBtn = toast.querySelector('#btn-toast-undo');
+  if (undoBtn) {
+    undoBtn.onclick = () => {
+      triggerHaptic(40);
+      if (!committed) {
+        committed = true;
+        clearTimeout(timeoutId);
+        toast.remove();
+        activeUndoAction = null;
+        if (onUndo) onUndo();
+        showNotification('Action reverted successfully');
+      }
+    };
+  }
 
   container.appendChild(toast);
 }
 
 function triggerHeartBurst(isFavorited) {
   const overlay = document.getElementById('heart-burst-overlay');
+  if (!overlay) return;
   overlay.innerHTML = '';
   overlay.style.display = 'block';
 
@@ -311,6 +416,7 @@ function showEmotionalMessage(isLiked) {
   const emojiEl = document.getElementById('emotional-big-emoji');
   const titleEl = document.getElementById('emotional-title');
   const subEl = document.getElementById('emotional-sub');
+  if (!container || !emojiEl || !titleEl || !subEl) return;
 
   if (emotionalTimeout) clearTimeout(emotionalTimeout);
 
@@ -330,10 +436,10 @@ function showEmotionalMessage(isLiked) {
   }, 2800);
 }
 
-// -------------------------------------------------------------
+// =============================================================
 // INDEXEDDB ENGINE
-// -------------------------------------------------------------
-const DB_NAME = 'AmmuMusicDB_v250';
+// =============================================================
+const DB_NAME = 'AmmuMusicDB_v260';
 const DB_VER = 1;
 let db;
 
@@ -405,7 +511,6 @@ const dbOps = {
       });
       return Array.from(uniqueMap.values());
     }
-    // Smart Playlists
     if (playlistId === 'smart_rotation') {
       const all = await this.getAllTracks();
       const stats = await this.getAllStats();
@@ -704,27 +809,26 @@ const vlcBands = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
 const defaultVlcGains = [18.2, 11.8, 3.7, -1.7, -7.8, 2.1, 9.8, 14.1, -3.6, 11.6];
 let vlcFilters = [];
 
-// Vivo EQ Frequencies (Direct from Screenshots)
+// Vivo EQ Frequencies
 const vivoBands = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 let vivoFilters = [];
-let activeEqEngine = 'vlc'; // 'vlc' or 'vivo'
+let activeEqEngine = 'vlc';
 let eqEnabled = false;
 let currentVol = 1.0;
-let currentCrossfadeDuration = 2; // Default 2s
+let currentCrossfadeDuration = 2;
 
-// Exact Preset Mappings From Uploaded Images
 const vivoOfficialPresets = {
-  custom: [12, 8, 5, 2, -2, -6, -8, -11, -3, 7], // Default Custom (Image 1 & 2)
-  pop: [6, 4, -3, -2, 4, 2, -4, -3, 6, 3],       // Pop (Image 3)
-  dance: [6, 4, -3, -3, 3, 2, -2, 0, 6, 4],     // Dance (Image 4)
-  blues: [3, 4, 0, 0, 4, 2, 2, 1, 3, 3],        // Blues (Image 5)
-  classical: [6, 8, 2, 3, 0, 2, -2, -6, -7, -8],// Classical (Image 6)
-  jazz: [-4, -3, -1, 0, 4, 2, 2, 0, 3, 3],      // Jazz (Image 7)
-  slow: [-4, -4, -2, -2, 4, 2, 5, 5, 0, 0],      // Slow songs (Image 8)
-  electro: [7, 4, 0, -2, -4, -3, 0, 0, 2, 5],   // Electro (Image 9)
-  rock: [7, 5, 1, 0, -3, -4, 2, 0, 3, 5],       // Rock (Image 10)
-  country: [4, 4, 2, 0, -2, -2, 0, 2, 4, 4],    // Country
-  close: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]         // Flat bypass
+  custom: [12, 8, 5, 2, -2, -6, -8, -11, -3, 7],
+  pop: [6, 4, -3, -2, 4, 2, -4, -3, 6, 3],
+  dance: [6, 4, -3, -3, 3, 2, -2, 0, 6, 4],
+  blues: [3, 4, 0, 0, 4, 2, 2, 1, 3, 3],
+  classical: [6, 8, 2, 3, 0, 2, -2, -6, -7, -8],
+  jazz: [-4, -3, -1, 0, 4, 2, 2, 0, 3, 3],
+  slow: [-4, -4, -2, -2, 4, 2, 5, 5, 0, 0],
+  electro: [7, 4, 0, -2, -4, -3, 0, 0, 2, 5],
+  rock: [7, 5, 1, 0, -3, -4, 2, 0, 3, 5],
+  country: [4, 4, 2, 0, -2, -2, 0, 2, 4, 4],
+  close: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 };
 
 let activeVivoPresetKey = 'custom';
@@ -804,21 +908,23 @@ function applyDSPState(enabled) {
   if (chk) chk.checked = enabled;
 
   if (activeEqEngine === 'vlc') {
-    // Apply VLC Gains, bypass Vivo
     if (vlcFilters && vlcFilters.length) {
       vlcFilters.forEach((f, i) => {
         const slider = document.querySelector(`[data-vlc-band="${i}"]`);
         const val = slider ? parseFloat(slider.value) : defaultVlcGains[i];
-        f.gain.value = eqEnabled ? val : 0;
+        if (f) f.gain.value = eqEnabled ? val : 0;
       });
     }
-    if (vivoFilters) vivoFilters.forEach(f => { f.gain.value = 0; });
+    if (vivoFilters && vivoFilters.length) {
+      vivoFilters.forEach(f => { if (f) f.gain.value = 0; });
+    }
   } else {
-    // Apply Vivo Gains, bypass VLC
-    if (vlcFilters) vlcFilters.forEach(f => { f.gain.value = 0; });
+    if (vlcFilters && vlcFilters.length) {
+      vlcFilters.forEach(f => { if (f) f.gain.value = 0; });
+    }
     if (vivoFilters && vivoFilters.length) {
       vivoFilters.forEach((f, i) => {
-        f.gain.value = eqEnabled ? currentVivoGains[i] : 0;
+        if (f) f.gain.value = eqEnabled ? currentVivoGains[i] : 0;
       });
     }
   }
@@ -872,26 +978,37 @@ document.querySelectorAll('.vol-snap-btn').forEach(btn => {
 });
 
 // Dual EQ Tab Switching (VLC vs Vivo)
-document.getElementById('btn-tab-vlc-eq').onclick = () => {
-  triggerHaptic(20);
-  activeEqEngine = 'vlc';
-  document.getElementById('btn-tab-vlc-eq').classList.add('active');
-  document.getElementById('btn-tab-vivo-eq').classList.remove('active');
-  document.getElementById('vlc-eq-view-container').style.display = 'block';
-  document.getElementById('vivo-eq-view-container').style.display = 'none';
-  applyDSPState(eqEnabled);
-};
+const btnTabVlc = document.getElementById('btn-tab-vlc-eq');
+const btnTabVivo = document.getElementById('btn-tab-vivo-eq');
 
-document.getElementById('btn-tab-vivo-eq').onclick = () => {
-  triggerHaptic(20);
-  activeEqEngine = 'vivo';
-  document.getElementById('btn-tab-vivo-eq').classList.add('active');
-  document.getElementById('btn-tab-vlc-eq').classList.remove('active');
-  document.getElementById('vlc-eq-view-container').style.display = 'none';
-  document.getElementById('vivo-eq-view-container').style.display = 'block';
-  applyDSPState(eqEnabled);
-  drawVivoSplineCurve();
-};
+if (btnTabVlc) {
+  btnTabVlc.onclick = () => {
+    triggerHaptic(20);
+    activeEqEngine = 'vlc';
+    btnTabVlc.classList.add('active');
+    if (btnTabVivo) btnTabVivo.classList.remove('active');
+    const vlcBox = document.getElementById('vlc-eq-view-container');
+    const vivoBox = document.getElementById('vivo-eq-view-container');
+    if (vlcBox) vlcBox.style.display = 'block';
+    if (vivoBox) vivoBox.style.display = 'none';
+    applyDSPState(eqEnabled);
+  };
+}
+
+if (btnTabVivo) {
+  btnTabVivo.onclick = () => {
+    triggerHaptic(20);
+    activeEqEngine = 'vivo';
+    btnTabVivo.classList.add('active');
+    if (btnTabVlc) btnTabVlc.classList.remove('active');
+    const vlcBox = document.getElementById('vlc-eq-view-container');
+    const vivoBox = document.getElementById('vivo-eq-view-container');
+    if (vlcBox) vlcBox.style.display = 'none';
+    if (vivoBox) vivoBox.style.display = 'block';
+    applyDSPState(eqEnabled);
+    drawVivoSplineCurve();
+  };
+}
 
 // Quick EQ Presets Strip
 document.querySelectorAll('.quick-preset-chip').forEach(chip => {
@@ -920,9 +1037,9 @@ function applyQuickPreset(type) {
   showNotification(`Preset Applied: ${type.toUpperCase()}`);
 }
 
-// ==========================================
+// =============================================================
 // VIVO STUDIO EQUALIZER LOGIC & CURVE CANVAS
-// ==========================================
+// =============================================================
 function applyVivoPreset(presetKey, customGains = null) {
   activeVivoPresetKey = presetKey;
   currentVivoGains = customGains ? [...customGains] : [...(vivoOfficialPresets[presetKey] || vivoOfficialPresets.custom)];
@@ -934,7 +1051,6 @@ function applyVivoPreset(presetKey, customGains = null) {
   const nameLbl = document.getElementById('vivo-active-preset-name');
   if (nameLbl) nameLbl.textContent = `Preset: ${presetKey.charAt(0).toUpperCase() + presetKey.slice(1)}`;
 
-  // Sync sliders
   document.querySelectorAll('.vivo-vertical-slider').forEach((s, i) => {
     s.value = currentVivoGains[i];
   });
@@ -956,7 +1072,8 @@ document.querySelectorAll('.vivo-vertical-slider').forEach(slider => {
     const idx = parseInt(e.target.dataset.vivoBand, 10);
     currentVivoGains[idx] = parseFloat(e.target.value);
     activeVivoPresetKey = 'custom';
-    document.getElementById('vivo-active-preset-name').textContent = 'Preset: Custom';
+    const nameLbl = document.getElementById('vivo-active-preset-name');
+    if (nameLbl) nameLbl.textContent = 'Preset: Custom';
     document.querySelectorAll('.vivo-preset-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.vpreset === 'custom');
     });
@@ -964,10 +1081,9 @@ document.querySelectorAll('.vivo-vertical-slider').forEach(slider => {
   };
 });
 
-// Spline Curve Drawing (Cubic Bezier curve matching Vivo images)
 function drawVivoSplineCurve() {
   const canvas = document.getElementById('vivo-curve-canvas');
-  if (!canvas) return;
+  if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d');
   const w = canvas.width;
   const h = canvas.height;
@@ -983,18 +1099,15 @@ function drawVivoSplineCurve() {
   ctx.lineTo(w, midY);
   ctx.stroke();
 
-  // Convert -12 to +12 dB into canvas coordinates
   const points = [];
   const stepX = w / (currentVivoGains.length - 1);
 
   currentVivoGains.forEach((g, i) => {
     const x = i * stepX;
-    // Reverse Y: +12dB is top, -12dB is bottom
     const y = midY - (g / 12) * (midY - 8);
     points.push({ x, y });
   });
 
-  // Draw Spline
   ctx.strokeStyle = '#e83e8c';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
@@ -1016,43 +1129,49 @@ function drawVivoSplineCurve() {
   ctx.stroke();
 }
 
-// Custom Preset Save, Export & Import
-const customEqModal = document.getElementById('custom-eq-modal');
-const inputCustomEqName = document.getElementById('input-custom-eq-name');
-
-document.getElementById('btn-save-as-custom-eq').onclick = () => {
-  triggerHaptic(20);
-  inputCustomEqName.value = '';
-  customEqModal.style.display = 'flex';
-};
-
-document.getElementById('btn-cancel-custom-eq').onclick = () => {
-  customEqModal.style.display = 'none';
-};
-
-document.getElementById('btn-confirm-save-custom-eq').onclick = async () => {
-  triggerHaptic(30);
-  const name = inputCustomEqName.value.trim();
-  if (!name) return showNotification('Please enter a name for your preset');
-
-  const presetObj = {
-    name,
-    gains: [...currentVivoGains],
-    preamp: 14.1,
-    createdAt: getIndianStandardTime()
+// Custom EQ Modal Handlers
+const btnSaveAsCustomEq = document.getElementById('btn-save-as-custom-eq');
+if (btnSaveAsCustomEq) {
+  btnSaveAsCustomEq.onclick = () => {
+    triggerHaptic(20);
+    if (inputCustomEqName) inputCustomEqName.value = '';
+    if (customEqModal) customEqModal.style.display = 'flex';
   };
+}
 
-  await dbOps.saveCustomEqPreset(presetObj);
-  customEqModal.style.display = 'none';
-  showNotification(`Preset "${name}" saved!`);
-  await loadCustomEqCarousel();
-  applyVivoPreset(name, presetObj.gains);
-};
+const btnCancelCustomEq = document.getElementById('btn-cancel-custom-eq');
+if (btnCancelCustomEq) {
+  btnCancelCustomEq.onclick = () => {
+    if (customEqModal) customEqModal.style.display = 'none';
+  };
+}
+
+const btnConfirmSaveCustomEq = document.getElementById('btn-confirm-save-custom-eq');
+if (btnConfirmSaveCustomEq) {
+  btnConfirmSaveCustomEq.onclick = async () => {
+    triggerHaptic(30);
+    const name = inputCustomEqName ? inputCustomEqName.value.trim() : '';
+    if (!name) return showNotification('Please enter a name for your preset');
+
+    const presetObj = {
+      name,
+      gains: [...currentVivoGains],
+      preamp: 14.1,
+      createdAt: getIndianStandardTime()
+    };
+
+    await dbOps.saveCustomEqPreset(presetObj);
+    if (customEqModal) customEqModal.style.display = 'none';
+    showNotification(`Preset "${name}" saved!`);
+    await loadCustomEqCarousel();
+    applyVivoPreset(name, presetObj.gains);
+  };
+}
 
 async function loadCustomEqCarousel() {
   const list = await dbOps.getCustomEqPresets();
   const carousel = document.getElementById('vivo-presets-carousel');
-  // Remove existing user custom buttons
+  if (!carousel) return;
   document.querySelectorAll('.user-custom-preset-btn').forEach(b => b.remove());
 
   list.forEach(p => {
@@ -1077,64 +1196,71 @@ async function loadCustomEqCarousel() {
   });
 }
 
-document.getElementById('btn-export-current-eq').onclick = () => {
-  triggerHaptic(25);
-  const payload = {
-    type: 'AMMU_VIVO_EQ',
-    version: '1.0',
-    presetName: activeVivoPresetKey,
-    gains: currentVivoGains,
-    preamp: 14.1,
-    exportedAt: getIndianStandardTime()
+const btnExportEq = document.getElementById('btn-export-current-eq');
+if (btnExportEq) {
+  btnExportEq.onclick = () => {
+    triggerHaptic(25);
+    const payload = {
+      type: 'AMMU_VIVO_EQ',
+      version: '1.0',
+      presetName: activeVivoPresetKey,
+      gains: currentVivoGains,
+      preamp: 14.1,
+      exportedAt: getIndianStandardTime()
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Ammu_EQ_${activeVivoPresetKey}_profile.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showNotification('Equalizer profile exported!');
   };
+}
 
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `Ammu_EQ_${activeVivoPresetKey}_profile.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  showNotification('Equalizer profile exported!');
-};
-
-document.getElementById('import-eq-file').onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const r = new FileReader();
-  r.onload = async (ev) => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (data.gains && Array.isArray(data.gains)) {
-        triggerHaptic(30);
-        applyVivoPreset(data.presetName || 'Imported', data.gains);
-        await dbOps.saveCustomEqPreset({
-          name: data.presetName || 'Imported',
-          gains: data.gains,
-          preamp: 14.1,
-          createdAt: getIndianStandardTime()
-        });
-        loadCustomEqCarousel();
-        showNotification('Equalizer profile imported & applied!');
+const importEqFile = document.getElementById('import-eq-file');
+if (importEqFile) {
+  importEqFile.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = async (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (data.gains && Array.isArray(data.gains)) {
+          triggerHaptic(30);
+          applyVivoPreset(data.presetName || 'Imported', data.gains);
+          await dbOps.saveCustomEqPreset({
+            name: data.presetName || 'Imported',
+            gains: data.gains,
+            preamp: 14.1,
+            createdAt: getIndianStandardTime()
+          });
+          loadCustomEqCarousel();
+          showNotification('Equalizer profile imported & applied!');
+        }
+      } catch {
+        showNotification('Invalid EQ profile file.');
       }
-    } catch {
-      showNotification('Invalid EQ profile file.');
-    }
+    };
+    r.readAsText(file);
   };
-  r.readAsText(file);
-};
+}
 
-// ==========================================
-// SEAMLESS CROSSFADE & WAVEFORM ENGINE
-// ==========================================
-document.getElementById('select-crossfade-sec').onchange = (e) => {
-  currentCrossfadeDuration = parseInt(e.target.value, 10);
-  dbOps.setConfig('crossfade_sec', currentCrossfadeDuration);
-  showNotification(`Crossfade set to ${currentCrossfadeDuration}s`);
-};
+// Crossfade Transition
+const selectCrossfade = document.getElementById('select-crossfade-sec');
+if (selectCrossfade) {
+  selectCrossfade.onchange = (e) => {
+    currentCrossfadeDuration = parseInt(e.target.value, 10);
+    dbOps.setConfig('crossfade_sec', currentCrossfadeDuration);
+    showNotification(`Crossfade set to ${currentCrossfadeDuration}s`);
+  };
+}
 
 async function executeCrossfadeTransition(nextTrackAction) {
-  if (!audioCtx || currentCrossfadeDuration <= 0) {
+  if (!audioCtx || currentCrossfadeDuration <= 0 || !crossfadeGainNode) {
     return nextTrackAction();
   }
   try {
@@ -1179,7 +1305,6 @@ async function renderWaveformForTrack(blob) {
       ctx.fillRect(i, (h - barH) / 2, 2, barH);
     }
   } catch (_) {
-    // Fallback simple wave
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     for (let i = 0; i < w; i += 4) {
       const barH = (Math.sin(i * 0.1) * 0.5 + 0.5) * (h * 0.7) + 4;
@@ -1188,85 +1313,85 @@ async function renderWaveformForTrack(blob) {
   }
 }
 
-// ==========================================
+// =============================================================
 // TOUCH ERGONOMICS: MINI-PLAYER SWIPE & DRAG DISMISS
-// ==========================================
+// =============================================================
 let miniTouchStartX = 0;
 let miniTouchStartY = 0;
 
-miniPlayerBar.addEventListener('touchstart', (e) => {
-  miniTouchStartX = e.touches[0].clientX;
-  miniTouchStartY = e.touches[0].clientY;
-}, { passive: true });
+if (miniPlayerBar) {
+  miniPlayerBar.addEventListener('touchstart', (e) => {
+    miniTouchStartX = e.touches[0].clientX;
+    miniTouchStartY = e.touches[0].clientY;
+  }, { passive: true });
 
-miniPlayerBar.addEventListener('touchend', (e) => {
-  const diffX = e.changedTouches[0].clientX - miniTouchStartX;
-  const diffY = e.changedTouches[0].clientY - miniTouchStartY;
+  miniPlayerBar.addEventListener('touchend', (e) => {
+    const diffX = e.changedTouches[0].clientX - miniTouchStartX;
+    const diffY = e.changedTouches[0].clientY - miniTouchStartY;
 
-  if (diffY < -40 && Math.abs(diffX) < 60) {
-    triggerHaptic(25);
-    playerBoxModal.style.display = 'flex';
-    renderSeekTicks();
-    renderCardReorderList();
-    calculateAndRenderQueueDuration();
-    updateAmbientGlow(boxCover);
-    return;
-  }
-
-  // Mini-player horizontal swipe
-  if (Math.abs(diffX) > 55 && Math.abs(diffY) < 45) {
-    if (diffX < 0) {
+    if (diffY < -40 && Math.abs(diffX) < 60) {
       triggerHaptic(25);
-      showNotification('⏩ Next Track');
-      loopNext();
-    } else {
-      triggerHaptic(25);
-      showNotification('⏪ Previous Track');
-      boxBtnPrev.click();
+      if (playerBoxModal) playerBoxModal.style.display = 'flex';
+      renderSeekTicks();
+      renderCardReorderList();
+      calculateAndRenderQueueDuration();
+      updateAmbientGlow(boxCover);
+      return;
     }
-  }
-}, { passive: true });
 
-// Fluid Drag-to-Dismiss on Fullscreen Card
-const dragHandleBar = document.getElementById('card-drag-handle-bar');
+    if (Math.abs(diffX) > 55 && Math.abs(diffY) < 45) {
+      if (diffX < 0) {
+        triggerHaptic(25);
+        showNotification('⏩ Next Track');
+        loopNext();
+      } else {
+        triggerHaptic(25);
+        showNotification('⏪ Previous Track');
+        if (boxBtnPrev) boxBtnPrev.click();
+      }
+    }
+  }, { passive: true });
+}
+
+// Fluid Drag-to-Dismiss
 let dragStartY = 0;
 let isDraggingCard = false;
 
-dragHandleBar.addEventListener('touchstart', (e) => {
-  dragStartY = e.touches[0].clientY;
-  isDraggingCard = true;
-}, { passive: true });
+if (dragHandleBar) {
+  dragHandleBar.addEventListener('touchstart', (e) => {
+    dragStartY = e.touches[0].clientY;
+    isDraggingCard = true;
+  }, { passive: true });
 
-dragHandleBar.addEventListener('touchmove', (e) => {
-  if (!isDraggingCard) return;
-  const currentY = e.touches[0].clientY;
-  const diffY = currentY - dragStartY;
-  if (diffY > 0) {
-    playerBoxModal.style.transform = `translateY(${diffY}px)`;
-  }
-}, { passive: true });
+  dragHandleBar.addEventListener('touchmove', (e) => {
+    if (!isDraggingCard || !playerBoxModal) return;
+    const currentY = e.touches[0].clientY;
+    const diffY = currentY - dragStartY;
+    if (diffY > 0) {
+      playerBoxModal.style.transform = `translateY(${diffY}px)`;
+    }
+  }, { passive: true });
 
-dragHandleBar.addEventListener('touchend', (e) => {
-  if (!isDraggingCard) return;
-  isDraggingCard = false;
-  const diffY = e.changedTouches[0].clientY - dragStartY;
-  if (diffY > 120) {
-    triggerHaptic(25);
-    playerBoxModal.style.transform = 'translateY(100%)';
-    setTimeout(() => {
-      playerBoxModal.style.display = 'none';
+  dragHandleBar.addEventListener('touchend', (e) => {
+    if (!isDraggingCard || !playerBoxModal) return;
+    isDraggingCard = false;
+    const diffY = e.changedTouches[0].clientY - dragStartY;
+    if (diffY > 120) {
+      triggerHaptic(25);
+      playerBoxModal.style.transform = 'translateY(100%)';
+      setTimeout(() => {
+        playerBoxModal.style.display = 'none';
+        playerBoxModal.style.transform = 'translateY(0)';
+      }, 200);
+    } else {
       playerBoxModal.style.transform = 'translateY(0)';
-    }, 200);
-  } else {
-    playerBoxModal.style.transform = 'translateY(0)';
-  }
-}, { passive: true });
+    }
+  }, { passive: true });
+}
 
 // Visualizer Loop
-const visualizerCanvas = document.getElementById('audio-visualizer');
-const vCtx = visualizerCanvas ? visualizerCanvas.getContext('2d') : null;
 function startVisualizerLoop() {
-  if (!analyserNode || !vCtx) return;
+  if (!analyserNode || !vCtx || !visualizerCanvas) return;
   const bufferLength = analyserNode.frequencyBinCount;
   const dataArray = new Uint8Array(bufferLength);
 
@@ -1300,7 +1425,8 @@ function updateAmbientGlow(imgEl) {
     ctx.drawImage(imgEl, 0, 0, 10, 10);
     const p = ctx.getImageData(5, 5, 1, 1).data;
     const color = `rgba(${p[0]}, ${p[1]}, ${p[2]}, 0.38)`;
-    document.getElementById('ambient-glow-layer').style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
+    const glow = document.getElementById('ambient-glow-layer');
+    if (glow) glow.style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
   } catch (_) {}
 }
 
@@ -1336,110 +1462,95 @@ let activeContextPlaylist = null;
 let tempEditPlaylistArt = null;
 let isCurrentAdminKeyRevealed = false;
 
-// UI References
-const playlistTabs = document.getElementById('playlist-tabs');
-const songList = document.getElementById('song-list');
-const cardReorderList = document.getElementById('card-reorder-list');
-const viewPlaylistName = document.getElementById('view-playlist-name');
-const trackCountLabel = document.getElementById('track-count-label');
-const librarySearchInput = document.getElementById('library-search-input');
-const btnClearSearch = document.getElementById('btn-clear-search');
-const btnSortTrigger = document.getElementById('btn-sort-trigger');
-const sortByMenu = document.getElementById('sort-by-menu');
-const sortSubName = document.getElementById('sort-sub-name');
-const sortSubSize = document.getElementById('sort-sub-size');
-const upperContentViewport = document.getElementById('upper-content-viewport');
+// Header Triggers
+const btnMainSettings = document.getElementById('btn-main-settings-trigger');
+if (btnMainSettings) {
+  btnMainSettings.onclick = (e) => {
+    e.stopPropagation();
+    triggerHaptic(20);
+    const isHidden = !headerSettingsMenu || headerSettingsMenu.style.display === 'none' || !headerSettingsMenu.style.display;
+    dismissAllMenus();
+    if (isHidden && headerSettingsMenu) headerSettingsMenu.style.display = 'flex';
+  };
+}
 
-const miniCover = document.getElementById('mini-cover');
-const miniTitle = document.getElementById('mini-title');
-const miniSub = document.getElementById('mini-sub');
-const barBtnPlay = document.getElementById('bar-btn-play');
-const barBtnLike = document.getElementById('bar-btn-like');
-const miniPlayerBar = document.getElementById('mini-player');
+const menuBtnMyAccount = document.getElementById('menu-btn-my-account');
+if (menuBtnMyAccount) {
+  menuBtnMyAccount.onclick = () => {
+    if (headerSettingsMenu) headerSettingsMenu.style.display = 'none';
+    openSettingsModal();
+  };
+}
 
-const playerBoxModal = document.getElementById('player-box-modal');
-const boxCover = document.getElementById('box-cover');
-const boxTitle = document.getElementById('box-title');
-const boxPlaylist = document.getElementById('box-playlist');
-const boxBtnPrev = document.getElementById('box-btn-prev');
-const boxBtnPlay = document.getElementById('box-btn-play');
-const boxBtnNext = document.getElementById('box-btn-next');
-const modalBtnLike = document.getElementById('modal-btn-like');
+const menuBtnStorageAuditor = document.getElementById('menu-btn-storage-auditor');
+if (menuBtnStorageAuditor) {
+  menuBtnStorageAuditor.onclick = () => {
+    if (headerSettingsMenu) headerSettingsMenu.style.display = 'none';
+    openStorageAuditorModal();
+  };
+}
 
-const seekBar = document.getElementById('seek-bar');
-const currTime = document.getElementById('curr-time');
-const durTime = document.getElementById('dur-time');
-const seekTicksLayer = document.getElementById('seek-ticks-layer');
-const activeMarkerPill = document.getElementById('active-marker-pill');
-const activeMarkerName = document.getElementById('active-marker-name');
+const menuBtnInstallPwa = document.getElementById('menu-btn-install-pwa');
+if (menuBtnInstallPwa) {
+  menuBtnInstallPwa.onclick = () => {
+    if (headerSettingsMenu) headerSettingsMenu.style.display = 'none';
+    triggerPWAInstall();
+  };
+}
 
-const trackContextMenu = document.getElementById('track-context-menu');
-const addToPlaylistSubmenu = document.getElementById('add-to-playlist-submenu');
-const playlistContextMenu = document.getElementById('playlist-context-menu');
-const headerSettingsMenu = document.getElementById('header-settings-menu');
+const menuBtnDevProfile = document.getElementById('menu-btn-dev-profile');
+if (menuBtnDevProfile) {
+  menuBtnDevProfile.onclick = () => {
+    if (headerSettingsMenu) headerSettingsMenu.style.display = 'none';
+    openDevModal();
+  };
+}
 
-// Settings Header Trigger
-document.getElementById('btn-main-settings-trigger').onclick = (e) => {
-  e.stopPropagation();
-  triggerHaptic(20);
-  const isHidden = headerSettingsMenu.style.display === 'none' || !headerSettingsMenu.style.display;
-  dismissAllMenus();
-  if (isHidden) headerSettingsMenu.style.display = 'flex';
-};
+// Hierarchical Sort Menus
+if (btnSortTrigger) {
+  btnSortTrigger.onclick = (e) => {
+    e.stopPropagation();
+    triggerHaptic(20);
+    const isHidden = !sortByMenu || sortByMenu.style.display === 'none' || !sortByMenu.style.display;
+    dismissAllMenus();
+    if (isHidden && sortByMenu) {
+      const rect = btnSortTrigger.getBoundingClientRect();
+      sortByMenu.style.top = `${rect.bottom + window.scrollY + 6}px`;
+      sortByMenu.style.left = `${Math.max(10, rect.left - 100)}px`;
+      sortByMenu.style.display = 'flex';
+    }
+  };
+}
 
-document.getElementById('menu-btn-my-account').onclick = () => {
-  headerSettingsMenu.style.display = 'none';
-  openSettingsModal();
-};
+const sortCatName = document.getElementById('sort-cat-name');
+if (sortCatName) {
+  sortCatName.onclick = (e) => {
+    e.stopPropagation();
+    triggerHaptic(15);
+    if (sortSubSize) sortSubSize.style.display = 'none';
+    const rect = sortCatName.getBoundingClientRect();
+    if (sortSubName) {
+      sortSubName.style.top = `${rect.top + window.scrollY}px`;
+      sortSubName.style.left = `${Math.max(10, rect.left - 160)}px`;
+      sortSubName.style.display = 'flex';
+    }
+  };
+}
 
-document.getElementById('menu-btn-storage-auditor').onclick = () => {
-  headerSettingsMenu.style.display = 'none';
-  openStorageAuditorModal();
-};
-
-document.getElementById('menu-btn-install-pwa').onclick = () => {
-  headerSettingsMenu.style.display = 'none';
-  triggerPWAInstall();
-};
-
-document.getElementById('menu-btn-dev-profile').onclick = () => {
-  headerSettingsMenu.style.display = 'none';
-  openDevModal();
-};
-
-// Hierarchical Two-Tier Sort Menus
-btnSortTrigger.onclick = (e) => {
-  e.stopPropagation();
-  triggerHaptic(20);
-  const isHidden = sortByMenu.style.display === 'none' || !sortByMenu.style.display;
-  dismissAllMenus();
-  if (isHidden) {
-    const rect = btnSortTrigger.getBoundingClientRect();
-    sortByMenu.style.top = `${rect.bottom + window.scrollY + 6}px`;
-    sortByMenu.style.left = `${Math.max(10, rect.left - 100)}px`;
-    sortByMenu.style.display = 'flex';
-  }
-};
-
-document.getElementById('sort-cat-name').onclick = (e) => {
-  e.stopPropagation();
-  triggerHaptic(15);
-  sortSubSize.style.display = 'none';
-  const rect = document.getElementById('sort-cat-name').getBoundingClientRect();
-  sortSubName.style.top = `${rect.top + window.scrollY}px`;
-  sortSubName.style.left = `${Math.max(10, rect.left - 160)}px`;
-  sortSubName.style.display = 'flex';
-};
-
-document.getElementById('sort-cat-size').onclick = (e) => {
-  e.stopPropagation();
-  triggerHaptic(15);
-  sortSubName.style.display = 'none';
-  const rect = document.getElementById('sort-cat-size').getBoundingClientRect();
-  sortSubSize.style.top = `${rect.top + window.scrollY}px`;
-  sortSubSize.style.left = `${Math.max(10, rect.left - 160)}px`;
-  sortSubSize.style.display = 'flex';
-};
+const sortCatSize = document.getElementById('sort-cat-size');
+if (sortCatSize) {
+  sortCatSize.onclick = (e) => {
+    e.stopPropagation();
+    triggerHaptic(15);
+    if (sortSubName) sortSubName.style.display = 'none';
+    const rect = sortCatSize.getBoundingClientRect();
+    if (sortSubSize) {
+      sortSubSize.style.top = `${rect.top + window.scrollY}px`;
+      sortSubSize.style.left = `${Math.max(10, rect.left - 160)}px`;
+      sortSubSize.style.display = 'flex';
+    }
+  };
+}
 
 document.querySelectorAll('.sort-item').forEach(btn => {
   btn.onclick = () => {
@@ -1461,106 +1572,142 @@ async function refreshAdminKeyUI() {
   const toggleBtn = document.getElementById('btn-toggle-view-admin-key');
 
   if (plainKey) {
-    statusLbl.textContent = 'Status: Active Admin Super-Key Registered';
-    statusLbl.style.color = 'var(--accent-light)';
-    createdBox.style.display = 'block';
-    setupBox.style.display = 'none';
+    if (statusLbl) {
+      statusLbl.textContent = 'Status: Active Admin Super-Key Registered';
+      statusLbl.style.color = 'var(--accent-light)';
+    }
+    if (createdBox) createdBox.style.display = 'block';
+    if (setupBox) setupBox.style.display = 'none';
     isCurrentAdminKeyRevealed = false;
-    displayInput.type = 'password';
-    displayInput.value = plainKey;
-    toggleBtn.textContent = '👁️ View';
+    if (displayInput) {
+      displayInput.type = 'password';
+      displayInput.value = plainKey;
+    }
+    if (toggleBtn) toggleBtn.textContent = '👁️ View';
   } else {
-    statusLbl.textContent = 'Status: No Admin Key Created';
-    statusLbl.style.color = 'var(--text-muted)';
-    createdBox.style.display = 'none';
-    setupBox.style.display = 'flex';
-    document.getElementById('settings-admin-key-input').value = '';
+    if (statusLbl) {
+      statusLbl.textContent = 'Status: No Admin Key Created';
+      statusLbl.style.color = 'var(--text-muted)';
+    }
+    if (createdBox) createdBox.style.display = 'none';
+    if (setupBox) setupBox.style.display = 'flex';
+    const sInput = document.getElementById('settings-admin-key-input');
+    if (sInput) sInput.value = '';
   }
 }
 
-document.getElementById('btn-save-admin-key').onclick = async () => {
-  triggerHaptic(30);
-  const keyInput = document.getElementById('settings-admin-key-input').value.trim();
-  if (!keyInput) return showNotification('Please enter a valid Admin Key.');
-  const h = await hashPasskey(keyInput);
-  await dbOps.setConfig('account_admin_key_hash', h);
-  await dbOps.setConfig('account_admin_key_plain', keyInput);
-  showNotification('Admin Super-Key registered successfully!');
-  refreshAdminKeyUI();
-};
-
-document.getElementById('btn-toggle-view-admin-key').onclick = () => {
-  triggerHaptic(15);
-  const displayInput = document.getElementById('display-admin-key-val');
-  const toggleBtn = document.getElementById('btn-toggle-view-admin-key');
-  isCurrentAdminKeyRevealed = !isCurrentAdminKeyRevealed;
-  displayInput.type = isCurrentAdminKeyRevealed ? 'text' : 'password';
-  toggleBtn.textContent = isCurrentAdminKeyRevealed ? '🙈 Hide' : '👁️ View';
-};
-
-document.getElementById('btn-open-update-admin-key').onclick = async () => {
-  triggerHaptic(20);
-  const currentKey = await dbOps.getConfig('account_admin_key_plain');
-  const newKey = prompt('Enter new Admin Super-Key to replace the current key:', currentKey || '');
-  if (newKey !== null && newKey.trim() !== '') {
-    const h = await hashPasskey(newKey.trim());
-    await dbOps.setConfig('account_admin_key_hash', h);
-    await dbOps.setConfig('account_admin_key_plain', newKey.trim());
-    showNotification('Admin Super-Key updated successfully!');
-    refreshAdminKeyUI();
-  }
-};
-
-document.getElementById('btn-remove-admin-key').onclick = async () => {
-  triggerHaptic(35);
-  if (confirm('Remove your account Admin Super-Key?')) {
-    await dbOps.setConfig('account_admin_key_hash', null);
-    await dbOps.setConfig('account_admin_key_plain', null);
-    showNotification('Admin Super-Key removed.');
-    refreshAdminKeyUI();
-  }
-};
-
-// Track 3-Dots Context Actions
-document.getElementById('menu-btn-track-select').onclick = () => {
-  if (activeContextTrack) {
+const btnSaveAdminKey = document.getElementById('btn-save-admin-key');
+if (btnSaveAdminKey) {
+  btnSaveAdminKey.onclick = async () => {
     triggerHaptic(30);
-    multiSelectMode = true;
-    selectedTrackIds.add(activeContextTrack.id);
-    document.getElementById('batch-action-bar').style.display = 'flex';
-    renderFilteredTracks();
-  }
-  trackContextMenu.style.display = 'none';
-};
+    const sInput = document.getElementById('settings-admin-key-input');
+    const keyInput = sInput ? sInput.value.trim() : '';
+    if (!keyInput) return showNotification('Please enter a valid Admin Key.');
+    const h = await hashPasskey(keyInput);
+    await dbOps.setConfig('account_admin_key_hash', h);
+    await dbOps.setConfig('account_admin_key_plain', keyInput);
+    showNotification('Admin Super-Key registered successfully!');
+    refreshAdminKeyUI();
+  };
+}
 
-document.getElementById('menu-btn-play-next').onclick = () => {
-  if (activeContextTrack) {
-    queueSongPlayNext(activeContextTrack);
-  }
-  trackContextMenu.style.display = 'none';
-};
+const btnToggleViewAdmin = document.getElementById('btn-toggle-view-admin-key');
+if (btnToggleViewAdmin) {
+  btnToggleViewAdmin.onclick = () => {
+    triggerHaptic(15);
+    const displayInput = document.getElementById('display-admin-key-val');
+    isCurrentAdminKeyRevealed = !isCurrentAdminKeyRevealed;
+    if (displayInput) displayInput.type = isCurrentAdminKeyRevealed ? 'text' : 'password';
+    btnToggleViewAdmin.textContent = isCurrentAdminKeyRevealed ? '🙈 Hide' : '👁️ View';
+  };
+}
 
-document.getElementById('menu-btn-rename').onclick = () => {
-  if (activeContextTrack) {
-    openRenameModal(activeContextTrack);
-  }
-  trackContextMenu.style.display = 'none';
-};
+const btnOpenUpdateAdmin = document.getElementById('btn-open-update-admin-key');
+if (btnOpenUpdateAdmin) {
+  btnOpenUpdateAdmin.onclick = async () => {
+    triggerHaptic(20);
+    const currentKey = await dbOps.getConfig('account_admin_key_plain');
+    const newKey = prompt('Enter new Admin Super-Key to replace the current key:', currentKey || '');
+    if (newKey !== null && newKey.trim() !== '') {
+      const h = await hashPasskey(newKey.trim());
+      await dbOps.setConfig('account_admin_key_hash', h);
+      await dbOps.setConfig('account_admin_key_plain', newKey.trim());
+      showNotification('Admin Super-Key updated successfully!');
+      refreshAdminKeyUI();
+    }
+  };
+}
 
-document.getElementById('menu-btn-add-to-pl').onclick = (e) => {
-  e.stopPropagation();
-  openAddToPlaylistSubmenu();
-};
+const btnRemoveAdminKey = document.getElementById('btn-remove-admin-key');
+if (btnRemoveAdminKey) {
+  btnRemoveAdminKey.onclick = async () => {
+    triggerHaptic(35);
+    if (confirm('Remove your account Admin Super-Key?')) {
+      await dbOps.setConfig('account_admin_key_hash', null);
+      await dbOps.setConfig('account_admin_key_plain', null);
+      showNotification('Admin Super-Key removed.');
+      refreshAdminKeyUI();
+    }
+  };
+}
 
-document.getElementById('menu-btn-remove-from-pl').onclick = () => {
-  if (activeContextTrack && activePlaylistId !== 'all') {
-    executeRemoveTrackFromCurrentPlaylist(activeContextTrack);
-  }
-  trackContextMenu.style.display = 'none';
-};
+// Track 3-Dots Menu
+const menuBtnTrackSelect = document.getElementById('menu-btn-track-select');
+if (menuBtnTrackSelect) {
+  menuBtnTrackSelect.onclick = () => {
+    if (activeContextTrack) {
+      triggerHaptic(30);
+      multiSelectMode = true;
+      selectedTrackIds.add(activeContextTrack.id);
+      const batchBar = document.getElementById('batch-action-bar');
+      if (batchBar) batchBar.style.display = 'flex';
+      renderFilteredTracks();
+    }
+    if (trackContextMenu) trackContextMenu.style.display = 'none';
+  };
+}
+
+const menuBtnPlayNext = document.getElementById('menu-btn-play-next');
+if (menuBtnPlayNext) {
+  menuBtnPlayNext.onclick = () => {
+    if (activeContextTrack) {
+      queueSongPlayNext(activeContextTrack);
+    }
+    if (trackContextMenu) trackContextMenu.style.display = 'none';
+  };
+}
+
+const menuBtnRename = document.getElementById('menu-btn-rename');
+if (menuBtnRename) {
+  menuBtnRename.onclick = () => {
+    if (activeContextTrack) {
+      openRenameModal(activeContextTrack);
+    }
+    if (trackContextMenu) trackContextMenu.style.display = 'none';
+  };
+}
+
+const menuBtnAddToPl = document.getElementById('menu-btn-add-to-pl');
+if (menuBtnAddToPl) {
+  menuBtnAddToPl.onclick = (e) => {
+    e.stopPropagation();
+    openAddToPlaylistSubmenu();
+  };
+}
+
+const menuBtnRemoveFromPl = document.getElementById('menu-btn-remove-from-pl');
+if (menuBtnRemoveFromPl) {
+  menuBtnRemoveFromPl.onclick = () => {
+    if (activeContextTrack && activePlaylistId !== 'all') {
+      executeRemoveTrackFromCurrentPlaylist(activeContextTrack);
+    }
+    if (trackContextMenu) trackContextMenu.style.display = 'none';
+  };
+}
 
 function openAddToPlaylistSubmenu() {
   const box = document.getElementById('add-to-playlist-options-box');
+  if (!box) return;
   box.innerHTML = '';
   const available = availablePlaylistList.filter(p => p.id !== 'all' && !p.id.startsWith('smart_'));
 
@@ -1583,57 +1730,68 @@ function openAddToPlaylistSubmenu() {
     box.appendChild(btn);
   });
 
-  const rect = trackContextMenu.getBoundingClientRect();
-  addToPlaylistSubmenu.style.top = `${rect.top}px`;
-  addToPlaylistSubmenu.style.left = `${Math.max(10, rect.left - 160)}px`;
-  addToPlaylistSubmenu.style.display = 'flex';
+  if (trackContextMenu && addToPlaylistSubmenu) {
+    const rect = trackContextMenu.getBoundingClientRect();
+    addToPlaylistSubmenu.style.top = `${rect.top}px`;
+    addToPlaylistSubmenu.style.left = `${Math.max(10, rect.left - 160)}px`;
+    addToPlaylistSubmenu.style.display = 'flex';
+  }
 }
 
-// Playlist 3-Dots Menu Listeners
-document.getElementById('pl-menu-btn-download-all').onclick = () => {
-  playlistContextMenu.style.display = 'none';
-  downloadEntirePlaylist();
-};
+// Playlist Context Menu
+const plBtnDownloadAll = document.getElementById('pl-menu-btn-download-all');
+if (plBtnDownloadAll) {
+  plBtnDownloadAll.onclick = () => {
+    if (playlistContextMenu) playlistContextMenu.style.display = 'none';
+    downloadEntirePlaylist();
+  };
+}
 
-document.getElementById('pl-menu-btn-edit').onclick = () => {
-  if (!activeContextPlaylist) return;
-  playlistContextMenu.style.display = 'none';
+const plBtnEdit = document.getElementById('pl-menu-btn-edit');
+if (plBtnEdit) {
+  plBtnEdit.onclick = () => {
+    if (!activeContextPlaylist) return;
+    if (playlistContextMenu) playlistContextMenu.style.display = 'none';
 
-  if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally && !activeContextPlaylist.isPermanentAdminUnlocked) {
-    promptGenericKeyAuth(
-      '🔒 Creator Passkey Required',
-      'This playlist is locked by its creator. Enter the passkey or Master Key to edit.',
-      [activeContextPlaylist.passkeyHash, activeContextPlaylist.masterKeyHash],
-      () => {
-        activeContextPlaylist.isUnlockedLocally = true;
-        dbOps.savePlaylist(activeContextPlaylist);
-        openEditPlaylistModal(activeContextPlaylist);
-      }
-    );
-  } else {
-    openEditPlaylistModal(activeContextPlaylist);
-  }
-};
+    if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally && !activeContextPlaylist.isPermanentAdminUnlocked) {
+      promptGenericKeyAuth(
+        '🔒 Creator Passkey Required',
+        'This playlist is locked by its creator. Enter the passkey or Master Key to edit.',
+        [activeContextPlaylist.passkeyHash, activeContextPlaylist.masterKeyHash],
+        () => {
+          activeContextPlaylist.isUnlockedLocally = true;
+          dbOps.savePlaylist(activeContextPlaylist);
+          openEditPlaylistModal(activeContextPlaylist);
+        }
+      );
+    } else {
+      openEditPlaylistModal(activeContextPlaylist);
+    }
+  };
+}
 
-document.getElementById('pl-menu-btn-delete').onclick = () => {
-  if (!activeContextPlaylist) return;
-  playlistContextMenu.style.display = 'none';
+const plBtnDelete = document.getElementById('pl-menu-btn-delete');
+if (plBtnDelete) {
+  plBtnDelete.onclick = () => {
+    if (!activeContextPlaylist) return;
+    if (playlistContextMenu) playlistContextMenu.style.display = 'none';
 
-  if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally && !activeContextPlaylist.isPermanentAdminUnlocked) {
-    promptGenericKeyAuth(
-      '🔒 Creator Passkey Required',
-      'Enter the passkey or Master Key to delete this protected playlist.',
-      [activeContextPlaylist.passkeyHash, activeContextPlaylist.masterKeyHash],
-      () => {
-        activeContextPlaylist.isUnlockedLocally = true;
-        dbOps.savePlaylist(activeContextPlaylist);
-        executePlaylistDeleteWithUndo(activeContextPlaylist);
-      }
-    );
-  } else {
-    executePlaylistDeleteWithUndo(activeContextPlaylist);
-  }
-};
+    if (activeContextPlaylist.isAuthorLocked && activeContextPlaylist.passkeyHash && !activeContextPlaylist.isUnlockedLocally && !activeContextPlaylist.isPermanentAdminUnlocked) {
+      promptGenericKeyAuth(
+        '🔒 Creator Passkey Required',
+        'Enter the passkey or Master Key to delete this protected playlist.',
+        [activeContextPlaylist.passkeyHash, activeContextPlaylist.masterKeyHash],
+        () => {
+          activeContextPlaylist.isUnlockedLocally = true;
+          dbOps.savePlaylist(activeContextPlaylist);
+          executePlaylistDeleteWithUndo(activeContextPlaylist);
+        }
+      );
+    } else {
+      executePlaylistDeleteWithUndo(activeContextPlaylist);
+    }
+  };
+}
 
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.context-menu-pop') && !e.target.closest('.btn-more-dots') && !e.target.closest('.chip-dots-btn') && !e.target.closest('#btn-main-settings-trigger') && !e.target.closest('#btn-sort-trigger')) {
@@ -1657,81 +1815,83 @@ function promptGenericKeyAuth(title, desc, acceptedHashes, onSuccess) {
 }
 
 // Edit Playlist Details Modal
-const editPlaylistModal = document.getElementById('edit-playlist-modal');
-const editPlaylistNameInput = document.getElementById('edit-playlist-name-input');
-const editPlaylistAuthorInput = document.getElementById('edit-playlist-author-input');
-const editPlaylistArtInput = document.getElementById('edit-playlist-art-input');
-const editPlaylistPreviewImg = document.getElementById('edit-playlist-preview-img');
-const editPlNameWarning = document.getElementById('edit-pl-name-warning');
-
 function openEditPlaylistModal(pl) {
-  editPlaylistNameInput.value = pl.localName || pl.name;
-  editPlaylistAuthorInput.value = (pl.localAuthor && pl.localAuthor.name) ? pl.localAuthor.name : (pl.author ? pl.author.name : userProfile.name);
-  editPlaylistPreviewImg.src = pl.localCover || pl.cover || currentAppLogo;
+  if (!editPlaylistModal) return;
+  if (editPlaylistNameInput) editPlaylistNameInput.value = pl.localName || pl.name;
+  if (editPlaylistAuthorInput) editPlaylistAuthorInput.value = (pl.localAuthor && pl.localAuthor.name) ? pl.localAuthor.name : (pl.author ? pl.author.name : userProfile.name);
+  if (editPlaylistPreviewImg) editPlaylistPreviewImg.src = pl.localCover || pl.cover || currentAppLogo;
   tempEditPlaylistArt = pl.localCover || pl.cover || currentAppLogo;
 
   if (pl.id === 'favorites') {
-    editPlaylistNameInput.disabled = true;
-    editPlNameWarning.style.display = 'block';
+    if (editPlaylistNameInput) editPlaylistNameInput.disabled = true;
+    if (editPlNameWarning) editPlNameWarning.style.display = 'block';
   } else {
-    editPlaylistNameInput.disabled = false;
-    editPlNameWarning.style.display = 'none';
+    if (editPlaylistNameInput) editPlaylistNameInput.disabled = false;
+    if (editPlNameWarning) editPlNameWarning.style.display = 'none';
   }
 
   editPlaylistModal.style.display = 'flex';
 }
 
-document.getElementById('btn-cancel-edit-playlist').onclick = () => {
-  editPlaylistModal.style.display = 'none';
-};
+const btnCancelEditPl = document.getElementById('btn-cancel-edit-playlist');
+if (btnCancelEditPl) {
+  btnCancelEditPl.onclick = () => {
+    if (editPlaylistModal) editPlaylistModal.style.display = 'none';
+  };
+}
 
-editPlaylistArtInput.onchange = async (e) => {
-  if (e.target.files && e.target.files[0]) {
-    tempEditPlaylistArt = await compressImageSafe(e.target.files[0]);
-    editPlaylistPreviewImg.src = tempEditPlaylistArt;
-  }
-};
-
-document.getElementById('btn-save-edit-playlist').onclick = async () => {
-  triggerHaptic(30);
-  if (!activeContextPlaylist) return;
-
-  const isPermAdmin = Boolean(activeContextPlaylist.isPermanentAdminUnlocked);
-
-  if (!activeContextPlaylist.originalName) {
-    activeContextPlaylist.originalName = activeContextPlaylist.name;
-    activeContextPlaylist.originalAuthor = activeContextPlaylist.author || userProfile;
-    activeContextPlaylist.originalCover = activeContextPlaylist.cover || currentAppLogo;
-  }
-
-  if (activeContextPlaylist.id !== 'favorites') {
-    const newName = editPlaylistNameInput.value.trim();
-    if (newName) {
-      if (isPermAdmin) activeContextPlaylist.name = newName;
-      activeContextPlaylist.localName = newName;
+if (editPlaylistArtInput) {
+  editPlaylistArtInput.onchange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      tempEditPlaylistArt = await compressImageSafe(e.target.files[0]);
+      if (editPlaylistPreviewImg) editPlaylistPreviewImg.src = tempEditPlaylistArt;
     }
-  }
+  };
+}
 
-  const newAuthorName = editPlaylistAuthorInput.value.trim();
-  if (newAuthorName) {
-    const newAuthObj = {
-      name: newAuthorName,
-      avatar: activeContextPlaylist.author ? activeContextPlaylist.author.avatar : userProfile.avatar
-    };
-    if (isPermAdmin) activeContextPlaylist.author = newAuthObj;
-    activeContextPlaylist.localAuthor = newAuthObj;
-  }
+const btnSaveEditPl = document.getElementById('btn-save-edit-playlist');
+if (btnSaveEditPl) {
+  btnSaveEditPl.onclick = async () => {
+    triggerHaptic(30);
+    if (!activeContextPlaylist) return;
 
-  if (tempEditPlaylistArt) {
-    if (isPermAdmin) activeContextPlaylist.cover = tempEditPlaylistArt;
-    activeContextPlaylist.localCover = tempEditPlaylistArt;
-  }
+    const isPermAdmin = Boolean(activeContextPlaylist.isPermanentAdminUnlocked);
 
-  await dbOps.savePlaylist(activeContextPlaylist);
-  editPlaylistModal.style.display = 'none';
-  showNotification(isPermAdmin ? 'Playlist credentials permanently updated!' : 'Playlist details updated locally!');
-  await loadPlaylists();
-};
+    if (!activeContextPlaylist.originalName) {
+      activeContextPlaylist.originalName = activeContextPlaylist.name;
+      activeContextPlaylist.originalAuthor = activeContextPlaylist.author || userProfile;
+      activeContextPlaylist.originalCover = activeContextPlaylist.cover || currentAppLogo;
+    }
+
+    if (activeContextPlaylist.id !== 'favorites') {
+      const newName = editPlaylistNameInput ? editPlaylistNameInput.value.trim() : '';
+      if (newName) {
+        if (isPermAdmin) activeContextPlaylist.name = newName;
+        activeContextPlaylist.localName = newName;
+      }
+    }
+
+    const newAuthorName = editPlaylistAuthorInput ? editPlaylistAuthorInput.value.trim() : '';
+    if (newAuthorName) {
+      const newAuthObj = {
+        name: newAuthorName,
+        avatar: activeContextPlaylist.author ? activeContextPlaylist.author.avatar : userProfile.avatar
+      };
+      if (isPermAdmin) activeContextPlaylist.author = newAuthObj;
+      activeContextPlaylist.localAuthor = newAuthObj;
+    }
+
+    if (tempEditPlaylistArt) {
+      if (isPermAdmin) activeContextPlaylist.cover = tempEditPlaylistArt;
+      activeContextPlaylist.localCover = tempEditPlaylistArt;
+    }
+
+    await dbOps.savePlaylist(activeContextPlaylist);
+    if (editPlaylistModal) editPlaylistModal.style.display = 'none';
+    showNotification(isPermAdmin ? 'Playlist credentials permanently updated!' : 'Playlist details updated locally!');
+    await loadPlaylists();
+  };
+}
 
 function executePlaylistDeleteWithUndo(pl) {
   if (pl.id === 'favorites' || pl.id === 'all' || pl.id.startsWith('smart_')) {
@@ -1757,115 +1917,133 @@ function executePlaylistDeleteWithUndo(pl) {
   loadPlaylists();
 }
 
-// -------------------------------------------------------------
-// STORAGE AUDITOR & DUPLICATE CLEANER ENGINE
-// -------------------------------------------------------------
-const storageAuditorModal = document.getElementById('storage-auditor-modal');
+// Storage Auditor
 let detectedDuplicateTrackIds = new Set();
 
 function openStorageAuditorModal() {
   triggerHaptic(20);
-  storageAuditorModal.style.display = 'flex';
+  if (storageAuditorModal) storageAuditorModal.style.display = 'flex';
 }
 
-document.getElementById('btn-close-storage-auditor').onclick = () => {
-  storageAuditorModal.style.display = 'none';
-};
+const btnCloseStorageAuditor = document.getElementById('btn-close-storage-auditor');
+if (btnCloseStorageAuditor) {
+  btnCloseStorageAuditor.onclick = () => {
+    if (storageAuditorModal) storageAuditorModal.style.display = 'none';
+  };
+}
 
-document.getElementById('btn-run-duplicate-scan').onclick = async () => {
-  triggerHaptic(30);
-  const listEl = document.getElementById('duplicate-tracks-list');
-  listEl.innerHTML = '<li style="padding:4px;">Scanning local audio blobs...</li>';
+const btnRunDupScan = document.getElementById('btn-run-duplicate-scan');
+if (btnRunDupScan) {
+  btnRunDupScan.onclick = async () => {
+    triggerHaptic(30);
+    const listEl = document.getElementById('duplicate-tracks-list');
+    if (listEl) listEl.innerHTML = '<li style="padding:4px;">Scanning local audio blobs...</li>';
 
-  const allTracks = await dbOps.getAllTracks();
-  let totalBytes = 0;
-  const chunkMap = new Map();
-  const duplicates = [];
+    const allTracks = await dbOps.getAllTracks();
+    let totalBytes = 0;
+    const chunkMap = new Map();
+    const duplicates = [];
 
-  detectedDuplicateTrackIds.clear();
+    detectedDuplicateTrackIds.clear();
 
-  for (const trk of allTracks) {
-    if (trk.blob && trk.blob.size > 0) {
-      totalBytes += trk.blob.size;
-      const signature = `${trk.name.trim().toLowerCase()}_${trk.blob.size}`;
-      if (chunkMap.has(signature)) {
-        duplicates.push(trk);
-        detectedDuplicateTrackIds.add(trk.id);
-      } else {
-        chunkMap.set(signature, trk.id);
+    for (const trk of allTracks) {
+      if (trk.blob && trk.blob.size > 0) {
+        totalBytes += trk.blob.size;
+        const signature = `${trk.name.trim().toLowerCase()}_${trk.blob.size}`;
+        if (chunkMap.has(signature)) {
+          duplicates.push(trk);
+          detectedDuplicateTrackIds.add(trk.id);
+        } else {
+          chunkMap.set(signature, trk.id);
+        }
       }
     }
-  }
 
-  document.getElementById('auditor-total-size').textContent = `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`;
-  document.getElementById('auditor-duplicate-count').textContent = duplicates.length;
+    const totalSizeEl = document.getElementById('auditor-total-size');
+    const dupCountEl = document.getElementById('auditor-duplicate-count');
+    const purgeBtn = document.getElementById('btn-purge-duplicates');
 
-  listEl.innerHTML = '';
-  if (!duplicates.length) {
-    listEl.innerHTML = '<li style="padding:4px;color:var(--accent-light);">✓ No duplicate tracks detected. Storage is clean!</li>';
-    document.getElementById('btn-purge-duplicates').disabled = true;
-  } else {
-    duplicates.forEach(d => {
-      const li = document.createElement('li');
-      li.innerHTML = `⚠️ <strong>${d.name}</strong> <span style="font-size:0.7rem;color:var(--text-muted);">(${(d.blob.size / (1024*1024)).toFixed(1)}MB)</span>`;
-      listEl.appendChild(li);
+    if (totalSizeEl) totalSizeEl.textContent = `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (dupCountEl) dupCountEl.textContent = duplicates.length;
+
+    if (listEl) {
+      listEl.innerHTML = '';
+      if (!duplicates.length) {
+        listEl.innerHTML = '<li style="padding:4px;color:var(--accent-light);">✓ No duplicate tracks detected. Storage is clean!</li>';
+        if (purgeBtn) purgeBtn.disabled = true;
+      } else {
+        duplicates.forEach(d => {
+          const li = document.createElement('li');
+          li.innerHTML = `⚠️ <strong>${d.name}</strong> <span style="font-size:0.7rem;color:var(--text-muted);">(${(d.blob.size / (1024*1024)).toFixed(1)}MB)</span>`;
+          listEl.appendChild(li);
+        });
+        if (purgeBtn) purgeBtn.disabled = false;
+      }
+    }
+  };
+}
+
+const btnPurgeDup = document.getElementById('btn-purge-duplicates');
+if (btnPurgeDup) {
+  btnPurgeDup.onclick = async () => {
+    triggerHaptic(35);
+    const count = detectedDuplicateTrackIds.size;
+    for (const id of detectedDuplicateTrackIds) {
+      await dbOps.deleteTrack(id);
+    }
+    showNotification(`Reclaimed space! Removed ${count} duplicate track(s).`);
+    if (storageAuditorModal) storageAuditorModal.style.display = 'none';
+    await loadPlaylists();
+  };
+}
+
+// Universal Bulk Handlers
+const btnUnivDownload = document.getElementById('btn-universal-download-all');
+if (btnUnivDownload) {
+  btnUnivDownload.onclick = async () => {
+    triggerHaptic(35);
+    const allTracks = await dbOps.getAllTracks();
+    const downloadable = allTracks.filter(t => t.blob && t.blob.size > 0 && !t.downloadRestricted);
+
+    if (!downloadable.length) {
+      return showNotification('No unrestricted audio files eligible for bulk download.');
+    }
+
+    showNotification(`Downloading ${downloadable.length} tracks to storage...`);
+    for (const trk of downloadable) {
+      downloadSingleTrack(trk, false);
+      await new Promise(r => setTimeout(r, 200));
+    }
+    showNotification('Bulk playlist download complete!');
+  };
+}
+
+const btnUnivDelete = document.getElementById('btn-universal-delete-all');
+if (btnUnivDelete) {
+  btnUnivDelete.onclick = async () => {
+    triggerHaptic(35);
+    const pls = await dbOps.getPlaylists();
+    const userPlaylists = pls.filter(p => p.id !== 'favorites' && p.id !== 'all' && !p.id.startsWith('smart_'));
+
+    if (!userPlaylists.length) {
+      return showNotification('No custom playlists to delete.');
+    }
+
+    showUndoToast(`Deleted ${userPlaylists.length} custom playlists`, async () => {
+      for (const pl of userPlaylists) await dbOps.savePlaylist(pl);
+      await loadPlaylists();
+    }, async () => {
+      for (const pl of userPlaylists) await dbOps.deletePlaylist(pl.id);
+      activePlaylistId = 'all';
+      await loadPlaylists();
     });
-    document.getElementById('btn-purge-duplicates').disabled = false;
-  }
-};
 
-document.getElementById('btn-purge-duplicates').onclick = async () => {
-  triggerHaptic(35);
-  const count = detectedDuplicateTrackIds.size;
-  for (const id of detectedDuplicateTrackIds) {
-    await dbOps.deleteTrack(id);
-  }
-  showNotification(`Reclaimed space! Removed ${count} duplicate track(s).`);
-  storageAuditorModal.style.display = 'none';
-  await loadPlaylists();
-};
-
-// Universal Actions
-document.getElementById('btn-universal-download-all').onclick = async () => {
-  triggerHaptic(35);
-  const allTracks = await dbOps.getAllTracks();
-  const downloadable = allTracks.filter(t => t.blob && t.blob.size > 0 && !t.downloadRestricted);
-
-  if (!downloadable.length) {
-    return showNotification('No unrestricted audio files eligible for bulk download.');
-  }
-
-  showNotification(`Downloading ${downloadable.length} tracks to storage...`);
-  for (const trk of downloadable) {
-    downloadSingleTrack(trk, false);
-    await new Promise(r => setTimeout(r, 200));
-  }
-  showNotification('Bulk playlist download complete!');
-};
-
-document.getElementById('btn-universal-delete-all').onclick = async () => {
-  triggerHaptic(35);
-  const pls = await dbOps.getPlaylists();
-  const userPlaylists = pls.filter(p => p.id !== 'favorites' && p.id !== 'all' && !p.id.startsWith('smart_'));
-
-  if (!userPlaylists.length) {
-    return showNotification('No custom playlists to delete.');
-  }
-
-  showUndoToast(`Deleted ${userPlaylists.length} custom playlists`, async () => {
-    for (const pl of userPlaylists) await dbOps.savePlaylist(pl);
-    await loadPlaylists();
-  }, async () => {
-    for (const pl of userPlaylists) await dbOps.deletePlaylist(pl.id);
+    availablePlaylistList = availablePlaylistList.filter(p => p.id === 'all' || p.id === 'favorites');
     activePlaylistId = 'all';
-    await loadPlaylists();
-  });
-
-  availablePlaylistList = availablePlaylistList.filter(p => p.id === 'all' || p.id === 'favorites');
-  activePlaylistId = 'all';
-  loadPlaylists();
-  settingsModal.style.display = 'none';
-};
+    loadPlaylists();
+    if (settingsModal) settingsModal.style.display = 'none';
+  };
+}
 
 // Onboarding
 async function checkOnboarding() {
@@ -1874,7 +2052,8 @@ async function checkOnboarding() {
     userProfile = saved;
     updateUserProfileLabels();
   } else {
-    document.getElementById('onboarding-modal').style.display = 'flex';
+    const obModal = document.getElementById('onboarding-modal');
+    if (obModal) obModal.style.display = 'flex';
   }
 }
 
@@ -1883,75 +2062,98 @@ function updateUserProfileLabels() {
   if (lbl) lbl.textContent = `Active listener: ${userProfile.name}`;
 }
 
-document.getElementById('onboarding-avatar').onchange = async (e) => {
-  if (e.target.files && e.target.files[0]) {
-    const b64 = await compressImageSafe(e.target.files[0]);
-    document.getElementById('onboarding-avatar-preview').src = b64;
-  }
-};
+const onbAvatar = document.getElementById('onboarding-avatar');
+if (onbAvatar) {
+  onbAvatar.onchange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const b64 = await compressImageSafe(e.target.files[0]);
+      const prev = document.getElementById('onboarding-avatar-preview');
+      if (prev) prev.src = b64;
+    }
+  };
+}
 
-document.getElementById('btn-complete-onboarding').onclick = async () => {
-  const name = document.getElementById('onboarding-name').value.trim() || 'Amarjeet Kumar';
-  const avatar = document.getElementById('onboarding-avatar-preview').src || 'my-icon.png';
-  userProfile = { name, avatar };
-  await dbOps.setUserProfile(userProfile);
-  updateUserProfileLabels();
-  document.getElementById('onboarding-modal').style.display = 'none';
-  ensureAudioPipeline();
-  showNotification(`Welcome to Ammu, ${name}!`);
-};
+const btnCompleteOnboarding = document.getElementById('btn-complete-onboarding');
+if (btnCompleteOnboarding) {
+  btnCompleteOnboarding.onclick = async () => {
+    const nameInput = document.getElementById('onboarding-name');
+    const prev = document.getElementById('onboarding-avatar-preview');
+    const name = (nameInput ? nameInput.value.trim() : '') || 'Amarjeet Kumar';
+    const avatar = (prev ? prev.src : '') || 'my-icon.png';
+    userProfile = { name, avatar };
+    await dbOps.setUserProfile(userProfile);
+    updateUserProfileLabels();
+    const obModal = document.getElementById('onboarding-modal');
+    if (obModal) obModal.style.display = 'none';
+    ensureAudioPipeline();
+    showNotification(`Welcome to Ammu, ${name}!`);
+  };
+}
 
-document.getElementById('onboarding-import-file').onchange = (e) => {
-  handleDirectImport(e.target.files[0], true);
-};
+const onbImportFile = document.getElementById('onboarding-import-file');
+if (onbImportFile) {
+  onbImportFile.onchange = (e) => {
+    handleDirectImport(e.target.files[0], true);
+  };
+}
 
-document.getElementById('playlist-modal-import-file').onchange = (e) => {
-  document.getElementById('playlist-create-modal').style.display = 'none';
-  handleDirectImport(e.target.files[0], false);
-};
+const plModalImportFile = document.getElementById('playlist-modal-import-file');
+if (plModalImportFile) {
+  plModalImportFile.onchange = (e) => {
+    const createModal = document.getElementById('playlist-create-modal');
+    if (createModal) createModal.style.display = 'none';
+    handleDirectImport(e.target.files[0], false);
+  };
+}
 
-// User Profile Edit Modal
-const userProfileModal = document.getElementById('user-profile-modal');
-const editUserNameInput = document.getElementById('edit-user-name');
-const editUserAvatarInput = document.getElementById('edit-user-avatar');
-const userEditAvatarPreview = document.getElementById('user-edit-avatar-preview');
+// User Profile Edit
+const btnOpenEditUserProfile = document.getElementById('btn-open-edit-user-profile');
+if (btnOpenEditUserProfile) {
+  btnOpenEditUserProfile.onclick = () => {
+    triggerHaptic(20);
+    if (editUserNameInput) editUserNameInput.value = userProfile.name;
+    if (userEditAvatarPreview) userEditAvatarPreview.src = userProfile.avatar || 'my-icon.png';
+    tempUserAvatarBase64 = userProfile.avatar;
+    if (settingsModal) settingsModal.style.display = 'none';
+    if (userProfileModal) userProfileModal.style.display = 'flex';
+  };
+}
 
-document.getElementById('btn-open-edit-user-profile').onclick = () => {
-  triggerHaptic(20);
-  editUserNameInput.value = userProfile.name;
-  userEditAvatarPreview.src = userProfile.avatar || 'my-icon.png';
-  tempUserAvatarBase64 = userProfile.avatar;
-  settingsModal.style.display = 'none';
-  userProfileModal.style.display = 'flex';
-};
+const btnCancelUserProfile = document.getElementById('btn-cancel-user-profile');
+if (btnCancelUserProfile) {
+  btnCancelUserProfile.onclick = () => {
+    if (userProfileModal) userProfileModal.style.display = 'none';
+    if (settingsModal) settingsModal.style.display = 'flex';
+  };
+}
 
-document.getElementById('btn-cancel-user-profile').onclick = () => {
-  userProfileModal.style.display = 'none';
-  settingsModal.style.display = 'flex';
-};
+if (editUserAvatarInput) {
+  editUserAvatarInput.onchange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      tempUserAvatarBase64 = await compressImageSafe(e.target.files[0]);
+      if (userEditAvatarPreview) userEditAvatarPreview.src = tempUserAvatarBase64;
+    }
+  };
+}
 
-editUserAvatarInput.onchange = async (e) => {
-  if (e.target.files && e.target.files[0]) {
-    tempUserAvatarBase64 = await compressImageSafe(e.target.files[0]);
-    userEditAvatarPreview.src = tempUserAvatarBase64;
-  }
-};
+const btnSaveUserProfile = document.getElementById('btn-save-user-profile');
+if (btnSaveUserProfile) {
+  btnSaveUserProfile.onclick = async () => {
+    triggerHaptic(30);
+    const n = editUserNameInput ? editUserNameInput.value.trim() : '';
+    if (n) userProfile.name = n;
+    if (tempUserAvatarBase64) userProfile.avatar = tempUserAvatarBase64;
 
-document.getElementById('btn-save-user-profile').onclick = async () => {
-  triggerHaptic(30);
-  const n = editUserNameInput.value.trim();
-  if (n) userProfile.name = n;
-  if (tempUserAvatarBase64) userProfile.avatar = tempUserAvatarBase64;
+    await dbOps.setUserProfile(userProfile);
+    updateUserProfileLabels();
+    if (userProfileModal) userProfileModal.style.display = 'none';
+    if (settingsModal) settingsModal.style.display = 'flex';
+    showNotification('Listener profile updated!');
+    await loadPlaylists();
+  };
+}
 
-  await dbOps.setUserProfile(userProfile);
-  updateUserProfileLabels();
-  userProfileModal.style.display = 'none';
-  settingsModal.style.display = 'flex';
-  showNotification('Listener profile updated!');
-  await loadPlaylists();
-};
-
-// Download Handlers
+// Downloads
 async function downloadEntirePlaylist() {
   triggerHaptic(35);
   const available = browsingTracks.filter(t => t.blob && t.blob.size > 0);
@@ -1990,10 +2192,14 @@ async function executeBulkPlaylistDownload(list) {
   showNotification(`Downloaded ${successCount} tracks to your device!`);
 }
 
-document.getElementById('btn-download-playlist-to-storage').onclick = async () => {
-  document.getElementById('author-modal').style.display = 'none';
-  await downloadEntirePlaylist();
-};
+const btnDlPlToStorage = document.getElementById('btn-download-playlist-to-storage');
+if (btnDlPlToStorage) {
+  btnDlPlToStorage.onclick = async () => {
+    const aModal = document.getElementById('author-modal');
+    if (aModal) aModal.style.display = 'none';
+    await downloadEntirePlaylist();
+  };
+}
 
 async function downloadSingleTrack(trk, notify = true, explicitAuthorName = '') {
   if (!trk.blob || trk.blob.size === 0) {
@@ -2035,79 +2241,81 @@ function executeSingleDownload(trk, notify, explicitAuthorName) {
   if (notify) showNotification(`Downloaded: ${finalFileName}`);
 }
 
-// Author Profile Modal
-document.getElementById('btn-view-playlist-author').onclick = () => {
-  triggerHaptic(20);
-  const author = currentPlaylist.localAuthor || currentPlaylist.author || userProfile;
-  document.getElementById('author-name-display').textContent = author.name;
-  document.getElementById('author-avatar-display').src = author.avatar || 'my-icon.png';
-  document.getElementById('author-pl-name').textContent = currentPlaylist.localName || currentPlaylist.name;
-  document.getElementById('author-track-count').textContent = browsingTracks.length;
-  document.getElementById('author-created-date').textContent = currentPlaylist.createdAt || 'Local Storage';
-  document.getElementById('author-status-tag').textContent = (currentPlaylist.isImported || currentPlaylist.isAuthorLocked) ? 'Original Curator' : 'Local Playlist Creator';
-  document.getElementById('author-modal').style.display = 'flex';
-};
+// Author Modal Triggers
+const btnViewPlAuthor = document.getElementById('btn-view-playlist-author');
+if (btnViewPlAuthor) {
+  btnViewPlAuthor.onclick = () => {
+    triggerHaptic(20);
+    const author = currentPlaylist.localAuthor || currentPlaylist.author || userProfile;
+    const nameEl = document.getElementById('author-name-display');
+    const avEl = document.getElementById('author-avatar-display');
+    const plNameEl = document.getElementById('author-pl-name');
+    const trkCountEl = document.getElementById('author-track-count');
+    const crDateEl = document.getElementById('author-created-date');
+    const tagEl = document.getElementById('author-status-tag');
+    const authModal = document.getElementById('author-modal');
 
-document.getElementById('card-queue-author-btn').onclick = () => {
-  document.getElementById('btn-view-playlist-author').click();
-};
+    if (nameEl) nameEl.textContent = author.name;
+    if (avEl) avEl.src = author.avatar || 'my-icon.png';
+    if (plNameEl) plNameEl.textContent = currentPlaylist.localName || currentPlaylist.name;
+    if (trkCountEl) trkCountEl.textContent = browsingTracks.length;
+    if (crDateEl) crDateEl.textContent = currentPlaylist.createdAt || 'Local Storage';
+    if (tagEl) tagEl.textContent = (currentPlaylist.isImported || currentPlaylist.isAuthorLocked) ? 'Original Curator' : 'Local Playlist Creator';
+    if (authModal) authModal.style.display = 'flex';
+  };
+}
 
-document.getElementById('btn-close-author').onclick = () => {
-  document.getElementById('author-modal').style.display = 'none';
-};
+const cardQueueAuthBtn = document.getElementById('card-queue-author-btn');
+if (cardQueueAuthBtn && btnViewPlAuthor) {
+  cardQueueAuthBtn.onclick = () => {
+    btnViewPlAuthor.click();
+  };
+}
 
-// Vinyl Disc Mode Toggle
-const artDisplayBox = document.getElementById('art-display-box');
+const btnCloseAuthModal = document.getElementById('btn-close-author');
+if (btnCloseAuthModal) {
+  btnCloseAuthModal.onclick = () => {
+    const authModal = document.getElementById('author-modal');
+    if (authModal) authModal.style.display = 'none';
+  };
+}
+
+// Vinyl Disc Interaction
 let lastTapTime = 0;
-const seekFeedbackOverlay = document.getElementById('art-seek-feedback');
-
-artDisplayBox.addEventListener('click', (e) => {
-  if (e.target.closest('.btn-edit-cover')) return;
-  const now = Date.now();
-  if (now - lastTapTime < 300) {
-    const rect = artDisplayBox.getBoundingClientRect();
-    const isRight = (e.clientX - rect.left) > (rect.width / 2);
-    if (isRight) {
-      triggerHaptic(25);
-      audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
-      showSeekFeedback('⏩ +10s');
+if (artDisplayBox) {
+  artDisplayBox.addEventListener('click', (e) => {
+    if (e.target.closest('.btn-edit-cover')) return;
+    const now = Date.now();
+    if (now - lastTapTime < 300) {
+      const rect = artDisplayBox.getBoundingClientRect();
+      const isRight = (e.clientX - rect.left) > (rect.width / 2);
+      if (isRight) {
+        triggerHaptic(25);
+        audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
+        showSeekFeedback('⏩ +10s');
+      } else {
+        triggerHaptic(25);
+        audio.currentTime = Math.max(0, audio.currentTime - 10);
+        showSeekFeedback('⏪ -10s');
+      }
     } else {
       triggerHaptic(25);
-      audio.currentTime = Math.max(0, audio.currentTime - 10);
-      showSeekFeedback('⏪ -10s');
+      isDiscEffectActive = !isDiscEffectActive;
+      artDisplayBox.className = `detail-art-container ${isDiscEffectActive ? 'mode-vinyl' : 'mode-standard'}`;
+      showNotification(isDiscEffectActive ? 'Disc Vinyl Mode: Active' : 'Artwork View: Restored');
     }
-  } else {
-    triggerHaptic(25);
-    isDiscEffectActive = !isDiscEffectActive;
-    artDisplayBox.className = `detail-art-container ${isDiscEffectActive ? 'mode-vinyl' : 'mode-standard'}`;
-    showNotification(isDiscEffectActive ? 'Disc Vinyl Mode: Active' : 'Artwork View: Restored');
-  }
-  lastTapTime = now;
-});
+    lastTapTime = now;
+  });
+}
 
 function showSeekFeedback(text) {
+  if (!seekFeedbackOverlay) return;
   seekFeedbackOverlay.textContent = text;
   seekFeedbackOverlay.style.opacity = '1';
   setTimeout(() => { seekFeedbackOverlay.style.opacity = '0'; }, 500);
 }
 
 // Developer Profile
-const devModal = document.getElementById('dev-modal');
-const devAvatarImg = document.getElementById('dev-avatar-img');
-const devNameDisplay = document.getElementById('dev-name-display');
-const devTitleDisplay = document.getElementById('dev-title-display');
-const devBioDisplay = document.getElementById('dev-bio-display');
-const devLocationDisplay = document.getElementById('dev-location-display');
-const devEmailDisplay = document.getElementById('dev-email-display');
-
-const editDevName = document.getElementById('edit-dev-name');
-const editDevTitle = document.getElementById('edit-dev-title');
-const editDevBio = document.getElementById('edit-dev-bio');
-const editDevLocation = document.getElementById('edit-dev-location');
-const editDevEmail = document.getElementById('edit-dev-email');
-const editDevAvatar = document.getElementById('edit-dev-avatar');
-let tempDevAvatarBase64 = null;
-
 let devData = {
   name: 'Amarjeet Kumar',
   title: 'Lead Audio Architect & Engineer',
@@ -2124,48 +2332,60 @@ async function loadDevProfile() {
 }
 
 function applyDevProfileUI() {
-  devNameDisplay.textContent = devData.name;
-  devTitleDisplay.textContent = devData.title;
-  devBioDisplay.textContent = devData.bio;
-  devLocationDisplay.textContent = devData.location;
-  devEmailDisplay.textContent = devData.email;
-  devAvatarImg.src = devData.avatar || 'my-icon.png';
+  if (devNameDisplay) devNameDisplay.textContent = devData.name;
+  if (devTitleDisplay) devTitleDisplay.textContent = devData.title;
+  if (devBioDisplay) devBioDisplay.textContent = devData.bio;
+  if (devLocationDisplay) devLocationDisplay.textContent = devData.location;
+  if (devEmailDisplay) devEmailDisplay.textContent = devData.email;
+  if (devAvatarImg) devAvatarImg.src = devData.avatar || 'my-icon.png';
 
-  editDevName.value = devData.name;
-  editDevTitle.value = devData.title;
-  editDevBio.value = devData.bio;
-  editDevLocation.value = devData.location;
-  editDevEmail.value = devData.email;
+  if (editDevName) editDevName.value = devData.name;
+  if (editDevTitle) editDevTitle.value = devData.title;
+  if (editDevBio) editDevBio.value = devData.bio;
+  if (editDevLocation) editDevLocation.value = devData.location;
+  if (editDevEmail) editDevEmail.value = devData.email;
 }
 
 function openDevModal() {
   triggerHaptic(20);
-  devModal.style.display = 'flex';
+  if (devModal) devModal.style.display = 'flex';
 }
 
-document.getElementById('footer-dev-trigger').onclick = openDevModal;
-document.getElementById('btn-close-dev').onclick = () => { devModal.style.display = 'none'; };
+const footerDevTrig = document.getElementById('footer-dev-trigger');
+if (footerDevTrig) footerDevTrig.onclick = openDevModal;
 
-editDevAvatar.onchange = async (e) => {
-  if (e.target.files && e.target.files[0]) {
-    tempDevAvatarBase64 = await compressImageSafe(e.target.files[0]);
-    devAvatarImg.src = tempDevAvatarBase64;
-  }
-};
+const btnCloseDev = document.getElementById('btn-close-dev');
+if (btnCloseDev) {
+  btnCloseDev.onclick = () => {
+    if (devModal) devModal.style.display = 'none';
+  };
+}
 
-document.getElementById('btn-save-dev-profile').onclick = async () => {
-  triggerHaptic(30);
-  devData.name = editDevName.value.trim() || devData.name;
-  devData.title = editDevTitle.value.trim() || devData.title;
-  devData.bio = editDevBio.value.trim() || devData.bio;
-  devData.location = editDevLocation.value.trim() || devData.location;
-  devData.email = editDevEmail.value.trim() || devData.email;
-  if (tempDevAvatarBase64) devData.avatar = tempDevAvatarBase64;
+if (editDevAvatar) {
+  editDevAvatar.onchange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      tempDevAvatarBase64 = await compressImageSafe(e.target.files[0]);
+      if (devAvatarImg) devAvatarImg.src = tempDevAvatarBase64;
+    }
+  };
+}
 
-  await dbOps.setDevProfile(devData);
-  applyDevProfileUI();
-  showNotification('Developer profile updated!');
-};
+const btnSaveDev = document.getElementById('btn-save-dev-profile');
+if (btnSaveDev) {
+  btnSaveDev.onclick = async () => {
+    triggerHaptic(30);
+    if (editDevName) devData.name = editDevName.value.trim() || devData.name;
+    if (editDevTitle) devData.title = editDevTitle.value.trim() || devData.title;
+    if (editDevBio) devData.bio = editDevBio.value.trim() || devData.bio;
+    if (editDevLocation) devData.location = editDevLocation.value.trim() || devData.location;
+    if (editDevEmail) devData.email = editDevEmail.value.trim() || devData.email;
+    if (tempDevAvatarBase64) devData.avatar = tempDevAvatarBase64;
+
+    await dbOps.setDevProfile(devData);
+    applyDevProfileUI();
+    showNotification('Developer profile updated!');
+  };
+}
 
 // Analytics Dashboard
 async function renderListeningDashboard() {
@@ -2197,10 +2417,15 @@ async function renderListeningDashboard() {
     }
   });
 
-  document.getElementById('stat-time-today').textContent = formatHoursMins(todaySecs);
-  document.getElementById('stat-time-week').textContent = formatHoursMins(weekSecs);
-  document.getElementById('stat-time-month').textContent = formatHoursMins(monthSecs);
-  document.getElementById('stat-time-all').textContent = formatHoursMins(allTimeSecs);
+  const tDay = document.getElementById('stat-time-today');
+  const tWk = document.getElementById('stat-time-week');
+  const tMo = document.getElementById('stat-time-month');
+  const tAll = document.getElementById('stat-time-all');
+
+  if (tDay) tDay.textContent = formatHoursMins(todaySecs);
+  if (tWk) tWk.textContent = formatHoursMins(weekSecs);
+  if (tMo) tMo.textContent = formatHoursMins(monthSecs);
+  if (tAll) tAll.textContent = formatHoursMins(allTimeSecs);
 
   let peakHour = 0;
   let maxSecs = -1;
@@ -2212,23 +2437,26 @@ async function renderListeningDashboard() {
   else if (peakHour >= 6 && peakHour < 12) peakPeriod = 'Morning (6 AM - 12 PM)';
   else if (peakHour >= 12 && peakHour < 18) peakPeriod = 'Afternoon (12 PM - 6 PM)';
   else peakPeriod = 'Evening / Night (6 PM - 12 AM)';
-  document.getElementById('stat-peak-hour-lbl').textContent = maxSecs > 0 ? `Peak Routine: ${peakPeriod}` : 'Peak Routine: Calculating...';
+  const pkLbl = document.getElementById('stat-peak-hour-lbl');
+  if (pkLbl) pkLbl.textContent = maxSecs > 0 ? `Peak Routine: ${peakPeriod}` : 'Peak Routine: Calculating...';
 
   renderMilestones(allTimeSecs);
 
   const allStats = await dbOps.getAllStats();
   allStats.sort((a, b) => b.count - a.count);
   const topListEl = document.getElementById('stats-top-songs-list');
-  topListEl.innerHTML = '';
-  if (!allStats.length) {
-    topListEl.innerHTML = '<li style="padding:4px;">No track replays logged yet.</li>';
-  } else {
-    allStats.slice(0, 5).forEach((item, idx) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<strong>#${idx + 1}</strong> ${item.songKey} <span style="float:right;color:var(--accent-light);">${item.count} plays</span>`;
-      li.onclick = () => playSongByNameGlobally(item.songKey);
-      topListEl.appendChild(li);
-    });
+  if (topListEl) {
+    topListEl.innerHTML = '';
+    if (!allStats.length) {
+      topListEl.innerHTML = '<li style="padding:4px;">No track replays logged yet.</li>';
+    } else {
+      allStats.slice(0, 5).forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>#${idx + 1}</strong> ${item.songKey} <span style="float:right;color:var(--accent-light);">${item.count} plays</span>`;
+        li.onclick = () => playSongByNameGlobally(item.songKey);
+        topListEl.appendChild(li);
+      });
+    }
   }
 
   renderPlaybackHistoryTimeline();
@@ -2236,7 +2464,8 @@ async function renderListeningDashboard() {
 
 async function playSongByNameGlobally(songName) {
   triggerHaptic(20);
-  document.getElementById('stats-modal').style.display = 'none';
+  const stModal = document.getElementById('stats-modal');
+  if (stModal) stModal.style.display = 'none';
 
   let sIdx = browsingTracks.findIndex(t => t.name.trim().toLowerCase() === songName.trim().toLowerCase());
   if (sIdx !== -1) {
@@ -2264,6 +2493,7 @@ function formatHoursMins(secs) {
 
 function renderMilestones(totalSeconds) {
   const badgesBox = document.getElementById('milestone-badges-row');
+  if (!badgesBox) return;
   badgesBox.innerHTML = '';
 
   const badges = [
@@ -2283,6 +2513,7 @@ function renderMilestones(totalSeconds) {
 
 async function renderPlaybackHistoryTimeline() {
   const historyListEl = document.getElementById('stats-history-list');
+  if (!historyListEl) return;
   historyListEl.innerHTML = '';
   const history = await dbOps.getPlaybackHistory();
   if (!history.length) {
@@ -2297,17 +2528,20 @@ async function renderPlaybackHistoryTimeline() {
   });
 }
 
-document.getElementById('btn-clear-play-history').onclick = async () => {
-  const previous = await dbOps.getPlaybackHistory();
-  await dbOps.clearPlaybackHistory();
-  renderPlaybackHistoryTimeline();
-  showUndoToast('Cleared playback timeline history', async () => {
-    for (const h of previous) {
-      await dbOps.addPlaybackHistory(h.name, h.playlist);
-    }
+const btnClearHist = document.getElementById('btn-clear-play-history');
+if (btnClearHist) {
+  btnClearHist.onclick = async () => {
+    const previous = await dbOps.getPlaybackHistory();
+    await dbOps.clearPlaybackHistory();
     renderPlaybackHistoryTimeline();
-  });
-};
+    showUndoToast('Cleared playback timeline history', async () => {
+      for (const h of previous) {
+        await dbOps.addPlaybackHistory(h.name, h.playlist);
+      }
+      renderPlaybackHistoryTimeline();
+    });
+  };
+}
 
 function startListeningTimeTracking() {
   if (activePlayTimer) clearInterval(activePlayTimer);
@@ -2318,17 +2552,7 @@ function startListeningTimeTracking() {
   }, 1000);
 }
 
-// Settings Modal Hub
-const settingsModal = document.getElementById('settings-modal');
-const customAppNameInput = document.getElementById('custom-app-name');
-const customAppLogoInput = document.getElementById('custom-app-logo');
-const settingsLogoPreview = document.getElementById('settings-logo-preview');
-const headerAppLogo = document.getElementById('header-app-logo');
-const displayAppName = document.getElementById('display-app-name');
-const htmlTitle = document.getElementById('html-title');
-const appFavicon = document.getElementById('app-favicon');
-let tempNewLogoBase64 = null;
-
+// Settings Branding
 async function loadAppBranding() {
   const savedName = await dbOps.getConfig('app_name');
   const savedLogo = await dbOps.getConfig('app_logo');
@@ -2341,11 +2565,13 @@ async function loadAppBranding() {
   if (savedTheme) setAppTheme(savedTheme);
   if (savedAmoled) {
     document.body.classList.toggle('amoled-mode', savedAmoled);
-    document.getElementById('chk-amoled-mode').checked = savedAmoled;
+    const chkAmoled = document.getElementById('chk-amoled-mode');
+    if (chkAmoled) chkAmoled.checked = savedAmoled;
   }
   if (savedCrossfade !== null) {
     currentCrossfadeDuration = parseInt(savedCrossfade, 10);
-    document.getElementById('select-crossfade-sec').value = currentCrossfadeDuration.toString();
+    const selCrossfade = document.getElementById('select-crossfade-sec');
+    if (selCrossfade) selCrossfade.value = currentCrossfadeDuration.toString();
   }
 
   applyBrandingUI();
@@ -2366,47 +2592,54 @@ document.querySelectorAll('.theme-circle-btn').forEach((btn) => {
   };
 });
 
-document.getElementById('chk-amoled-mode').onchange = async (e) => {
-  triggerHaptic(25);
-  document.body.classList.toggle('amoled-mode', e.target.checked);
-  await dbOps.setConfig('app_amoled', e.target.checked);
-};
+const chkAmoledMode = document.getElementById('chk-amoled-mode');
+if (chkAmoledMode) {
+  chkAmoledMode.onchange = async (e) => {
+    triggerHaptic(25);
+    document.body.classList.toggle('amoled-mode', e.target.checked);
+    await dbOps.setConfig('app_amoled', e.target.checked);
+  };
+}
 
 function applyBrandingUI() {
-  displayAppName.textContent = currentAppName;
-  htmlTitle.textContent = currentAppName;
-  headerAppLogo.src = currentAppLogo;
-  appFavicon.href = currentAppLogo;
-  settingsLogoPreview.src = currentAppLogo;
+  if (displayAppName) displayAppName.textContent = currentAppName;
+  if (htmlTitle) htmlTitle.textContent = currentAppName;
+  if (headerAppLogo) headerAppLogo.src = currentAppLogo;
+  if (appFavicon) appFavicon.href = currentAppLogo;
+  if (settingsLogoPreview) settingsLogoPreview.src = currentAppLogo;
 }
 
 async function openSettingsModal() {
   triggerHaptic(20);
-  customAppNameInput.value = currentAppName;
-  settingsLogoPreview.src = currentAppLogo;
+  if (customAppNameInput) customAppNameInput.value = currentAppName;
+  if (settingsLogoPreview) settingsLogoPreview.src = currentAppLogo;
   tempNewLogoBase64 = currentAppLogo;
   updateUserProfileLabels();
   refreshAdminKeyUI();
 
   const plChecklist = document.getElementById('export-playlist-checklist');
-  plChecklist.innerHTML = '';
-  const pls = await dbOps.getPlaylists();
-  pls.forEach(p => {
-    const label = document.createElement('label');
-    label.className = 'checkbox-label';
-    label.innerHTML = `<input type="checkbox" data-pl-id="${p.id}" checked /> ${p.localName || p.name}`;
-    plChecklist.appendChild(label);
-  });
+  if (plChecklist) {
+    plChecklist.innerHTML = '';
+    const pls = await dbOps.getPlaylists();
+    pls.forEach(p => {
+      const label = document.createElement('label');
+      label.className = 'checkbox-label';
+      label.innerHTML = `<input type="checkbox" data-pl-id="${p.id}" checked /> ${p.localName || p.name}`;
+      plChecklist.appendChild(label);
+    });
+  }
 
   renderExportTrackPermissionMatrix();
   renderAuditLogs();
-  settingsModal.style.display = 'flex';
+  if (settingsModal) settingsModal.style.display = 'flex';
 }
 
 async function renderExportTrackPermissionMatrix() {
   const box = document.getElementById('export-tracks-permission-checklist');
+  if (!box) return;
   box.innerHTML = '';
-  const q = document.getElementById('export-track-filter-input').value.trim().toLowerCase();
+  const filterInput = document.getElementById('export-track-filter-input');
+  const q = filterInput ? filterInput.value.trim().toLowerCase() : '';
   const allTracks = await dbOps.getAllTracks();
   
   const filtered = allTracks.filter(t => t.name.toLowerCase().includes(q));
@@ -2421,18 +2654,26 @@ async function renderExportTrackPermissionMatrix() {
   });
 }
 
-document.getElementById('export-track-filter-input').addEventListener('input', renderExportTrackPermissionMatrix);
+const expTrkFilter = document.getElementById('export-track-filter-input');
+if (expTrkFilter) expTrkFilter.addEventListener('input', renderExportTrackPermissionMatrix);
 
-document.getElementById('btn-export-allow-all-dl').onclick = () => {
-  document.querySelectorAll('.export-dl-allow-cb').forEach(cb => cb.checked = true);
-};
+const btnExpAllowAll = document.getElementById('btn-export-allow-all-dl');
+if (btnExpAllowAll) {
+  btnExpAllowAll.onclick = () => {
+    document.querySelectorAll('.export-dl-allow-cb').forEach(cb => cb.checked = true);
+  };
+}
 
-document.getElementById('btn-export-restrict-all-dl').onclick = () => {
-  document.querySelectorAll('.export-dl-allow-cb').forEach(cb => cb.checked = false);
-};
+const btnExpRestrictAll = document.getElementById('btn-export-restrict-all-dl');
+if (btnExpRestrictAll) {
+  btnExpRestrictAll.onclick = () => {
+    document.querySelectorAll('.export-dl-allow-cb').forEach(cb => cb.checked = false);
+  };
+}
 
 async function renderAuditLogs() {
   const listEl = document.getElementById('audit-history-list');
+  if (!listEl) return;
   listEl.innerHTML = '';
   const logs = await dbOps.getAuditLogs();
   if (!logs.length) {
@@ -2446,38 +2687,51 @@ async function renderAuditLogs() {
   });
 }
 
-document.getElementById('btn-clear-history').onclick = async () => {
-  await dbOps.clearAuditLogs();
-  renderAuditLogs();
-  showNotification('Audit history cleared');
-};
+const btnClrHist = document.getElementById('btn-clear-history');
+if (btnClrHist) {
+  btnClrHist.onclick = async () => {
+    await dbOps.clearAuditLogs();
+    renderAuditLogs();
+    showNotification('Audit history cleared');
+  };
+}
 
-document.getElementById('brand-edit-trigger').onclick = openSettingsModal;
-document.getElementById('btn-cancel-settings').onclick = () => {
-  settingsModal.style.display = 'none';
-};
+const brandEditTrig = document.getElementById('brand-edit-trigger');
+if (brandEditTrig) brandEditTrig.onclick = openSettingsModal;
 
-customAppLogoInput.onchange = async (e) => {
-  if (e.target.files && e.target.files[0]) {
-    tempNewLogoBase64 = await compressImageSafe(e.target.files[0]);
-    settingsLogoPreview.src = tempNewLogoBase64;
-  }
-};
+const btnCancelSettings = document.getElementById('btn-cancel-settings');
+if (btnCancelSettings) {
+  btnCancelSettings.onclick = () => {
+    if (settingsModal) settingsModal.style.display = 'none';
+  };
+}
 
-document.getElementById('btn-save-settings').onclick = async () => {
-  triggerHaptic(30);
-  const newName = customAppNameInput.value.trim();
-  if (newName) currentAppName = newName;
-  if (tempNewLogoBase64) currentAppLogo = tempNewLogoBase64;
+if (customAppLogoInput) {
+  customAppLogoInput.onchange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      tempNewLogoBase64 = await compressImageSafe(e.target.files[0]);
+      if (settingsLogoPreview) settingsLogoPreview.src = tempNewLogoBase64;
+    }
+  };
+}
 
-  await dbOps.setConfig('app_name', currentAppName);
-  await dbOps.setConfig('app_logo', currentAppLogo);
+const btnSaveSettings = document.getElementById('btn-save-settings');
+if (btnSaveSettings) {
+  btnSaveSettings.onclick = async () => {
+    triggerHaptic(30);
+    const newName = customAppNameInput ? customAppNameInput.value.trim() : '';
+    if (newName) currentAppName = newName;
+    if (tempNewLogoBase64) currentAppLogo = tempNewLogoBase64;
 
-  applyBrandingUI();
-  settingsModal.style.display = 'none';
-  showNotification(`Settings saved successfully!`);
-  updateMediaSession();
-};
+    await dbOps.setConfig('app_name', currentAppName);
+    await dbOps.setConfig('app_logo', currentAppLogo);
+
+    applyBrandingUI();
+    if (settingsModal) settingsModal.style.display = 'none';
+    showNotification(`Settings saved successfully!`);
+    updateMediaSession();
+  };
+}
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -2500,33 +2754,47 @@ function base64ToBlob(base64) {
   return new Blob([uInt8Array], { type: contentType });
 }
 
-document.getElementById('btn-export-full-profile').onclick = async () => {
-  triggerHaptic(35);
-  showNotification('Packaging full profile & media backup...');
-  await executeUniversalExport(true, true, true, true, null);
-};
+const btnExpFull = document.getElementById('btn-export-full-profile');
+if (btnExpFull) {
+  btnExpFull.onclick = async () => {
+    triggerHaptic(35);
+    showNotification('Packaging full profile & media backup...');
+    await executeUniversalExport(true, true, true, true, null);
+  };
+}
 
-document.getElementById('btn-export-meta-profile').onclick = async () => {
-  triggerHaptic(35);
-  showNotification('Packaging lightweight metadata backup...');
-  await executeUniversalExport(false, true, true, false, null);
-};
+const btnExpMeta = document.getElementById('btn-export-meta-profile');
+if (btnExpMeta) {
+  btnExpMeta.onclick = async () => {
+    triggerHaptic(35);
+    showNotification('Packaging lightweight metadata backup...');
+    await executeUniversalExport(false, true, true, false, null);
+  };
+}
 
-document.getElementById('btn-export-backup').onclick = async () => {
-  triggerHaptic(35);
-  const includeAudio = document.getElementById('chk-export-audio').checked;
-  const includeClips = document.getElementById('chk-export-trimmed-clips').checked;
-  const includeMarkers = document.getElementById('chk-export-timestamps').checked;
-  const includeImages = document.getElementById('chk-export-images').checked;
+const btnExpBackup = document.getElementById('btn-export-backup');
+if (btnExpBackup) {
+  btnExpBackup.onclick = async () => {
+    triggerHaptic(35);
+    const chkAudio = document.getElementById('chk-export-audio');
+    const chkClips = document.getElementById('chk-export-trimmed-clips');
+    const chkMarkers = document.getElementById('chk-export-timestamps');
+    const chkImages = document.getElementById('chk-export-images');
 
-  const selectedPlIds = new Set(
-    Array.from(document.querySelectorAll('#export-playlist-checklist input:checked'))
-      .map(cb => cb.dataset.plId)
-  );
+    const includeAudio = chkAudio ? chkAudio.checked : true;
+    const includeClips = chkClips ? chkClips.checked : true;
+    const includeMarkers = chkMarkers ? chkMarkers.checked : true;
+    const includeImages = chkImages ? chkImages.checked : true;
 
-  showNotification('Packaging backup data...');
-  await executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds);
-};
+    const selectedPlIds = new Set(
+      Array.from(document.querySelectorAll('#export-playlist-checklist input:checked'))
+        .map(cb => cb.dataset.plId)
+    );
+
+    showNotification('Packaging backup data...');
+    await executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds);
+  };
+}
 
 // Export Pipeline
 async function executeUniversalExport(includeAudio, includeMarkers, includeImages, includeClips, selectedPlIds) {
@@ -2534,10 +2802,15 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   const allPlaylists = await dbOps.getPlaylists();
   const devProfile = await dbOps.getDevProfile();
 
-  const masterKey = document.getElementById('export-master-key-input').value.trim();
-  const encryptionKey = document.getElementById('export-encryption-key-input').value.trim();
-  const plainPasskey = document.getElementById('export-passkey-input').value.trim();
-  const downloadKey = document.getElementById('export-download-key-input').value.trim();
+  const inMaster = document.getElementById('export-master-key-input');
+  const inEnc = document.getElementById('export-encryption-key-input');
+  const inPass = document.getElementById('export-passkey-input');
+  const inDl = document.getElementById('export-download-key-input');
+
+  const masterKey = inMaster ? inMaster.value.trim() : '';
+  const encryptionKey = inEnc ? inEnc.value.trim() : '';
+  const plainPasskey = inPass ? inPass.value.trim() : '';
+  const downloadKey = inDl ? inDl.value.trim() : '';
 
   const masterKeyHash = masterKey ? await hashPasskey(masterKey) : '';
   const passkeyHash = plainPasskey ? await hashPasskey(plainPasskey) : '';
@@ -2610,7 +2883,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   }
 
   const payload = {
-    version: '14.0',
+    version: '15.0',
     exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
@@ -2664,9 +2937,12 @@ let rawEncryptedDataToDecrypt = null;
 let parsedDecryptedPayload = null;
 let currentImportBypassOnboarding = false;
 
-document.getElementById('import-backup-file').onchange = (e) => {
-  handleDirectImport(e.target.files[0], false);
-};
+const importBackupFile = document.getElementById('import-backup-file');
+if (importBackupFile) {
+  importBackupFile.onchange = (e) => {
+    handleDirectImport(e.target.files[0], false);
+  };
+}
 
 async function handleDirectImport(file, bypassOnboarding) {
   if (!file) return;
@@ -2679,8 +2955,10 @@ async function handleDirectImport(file, bypassOnboarding) {
 
       if (parsed.encrypted && parsed.cipherData) {
         rawEncryptedDataToDecrypt = parsed;
-        document.getElementById('decryption-key-input').value = '';
-        document.getElementById('decryption-auth-modal').style.display = 'flex';
+        const keyInput = document.getElementById('decryption-key-input');
+        if (keyInput) keyInput.value = '';
+        const decModal = document.getElementById('decryption-auth-modal');
+        if (decModal) decModal.style.display = 'flex';
         return;
       }
 
@@ -2692,42 +2970,59 @@ async function handleDirectImport(file, bypassOnboarding) {
   reader.readAsText(file);
 }
 
-document.getElementById('btn-cancel-decryption').onclick = () => {
-  document.getElementById('decryption-auth-modal').style.display = 'none';
-  rawEncryptedDataToDecrypt = null;
-};
-
-document.getElementById('btn-confirm-decryption').onclick = async () => {
-  const enteredKey = document.getElementById('decryption-key-input').value.trim();
-  if (!enteredKey) return showNotification('Please enter the decryption key.');
-
-  try {
-    const decryptedStr = await decryptPayloadAES(rawEncryptedDataToDecrypt, enteredKey);
-    const decryptedPayload = JSON.parse(decryptedStr);
-    document.getElementById('decryption-auth-modal').style.display = 'none';
+const btnCancelDec = document.getElementById('btn-cancel-decryption');
+if (btnCancelDec) {
+  btnCancelDec.onclick = () => {
+    const decModal = document.getElementById('decryption-auth-modal');
+    if (decModal) decModal.style.display = 'none';
     rawEncryptedDataToDecrypt = null;
-    showNotification('File decrypted successfully!');
-    evaluateSecondaryKeysPhase(decryptedPayload);
-  } catch (err) {
-    alert('Decryption Failed: Incorrect key or corrupted payload.');
-  }
-};
+  };
+}
+
+const btnConfirmDec = document.getElementById('btn-confirm-decryption');
+if (btnConfirmDec) {
+  btnConfirmDec.onclick = async () => {
+    const keyInput = document.getElementById('decryption-key-input');
+    const enteredKey = keyInput ? keyInput.value.trim() : '';
+    if (!enteredKey) return showNotification('Please enter the decryption key.');
+
+    try {
+      const decryptedStr = await decryptPayloadAES(rawEncryptedDataToDecrypt, enteredKey);
+      const decryptedPayload = JSON.parse(decryptedStr);
+      const decModal = document.getElementById('decryption-auth-modal');
+      if (decModal) decModal.style.display = 'none';
+      rawEncryptedDataToDecrypt = null;
+      showNotification('File decrypted successfully!');
+      evaluateSecondaryKeysPhase(decryptedPayload);
+    } catch (err) {
+      alert('Decryption Failed: Incorrect key or corrupted payload.');
+    }
+  };
+}
 
 // "Forgot Key?" Guard
-document.getElementById('btn-forgot-decryption-key').onclick = () => {
-  attemptAdminSuperKeyAccess(() => {
-    showNotification('Admin Super-Key Verified: Bypassing file lock.');
-    document.getElementById('decryption-auth-modal').style.display = 'none';
-  });
-};
+const btnForgotDecKey = document.getElementById('btn-forgot-decryption-key');
+if (btnForgotDecKey) {
+  btnForgotDecKey.onclick = () => {
+    attemptAdminSuperKeyAccess(() => {
+      showNotification('Admin Super-Key Verified: Bypassing file lock.');
+      const decModal = document.getElementById('decryption-auth-modal');
+      if (decModal) decModal.style.display = 'none';
+    });
+  };
+}
 
-document.getElementById('btn-forgot-secondary-keys').onclick = () => {
-  attemptAdminSuperKeyAccess(() => {
-    document.getElementById('secondary-keys-modal').style.display = 'none';
-    showNotification('Admin Super-Key Verified: Permanent Author & Download Access Granted!');
-    proceedToStorageMatcherScreen(true, true, true, true);
-  });
-};
+const btnForgotSecKeys = document.getElementById('btn-forgot-secondary-keys');
+if (btnForgotSecKeys) {
+  btnForgotSecKeys.onclick = () => {
+    attemptAdminSuperKeyAccess(() => {
+      const secModal = document.getElementById('secondary-keys-modal');
+      if (secModal) secModal.style.display = 'none';
+      showNotification('Admin Super-Key Verified: Permanent Author & Download Access Granted!');
+      proceedToStorageMatcherScreen(true, true, true, true);
+    });
+  };
+}
 
 async function attemptAdminSuperKeyAccess(onSuccess) {
   const savedHash = await dbOps.getConfig('account_admin_key_hash');
@@ -2739,27 +3034,33 @@ async function attemptAdminSuperKeyAccess(onSuccess) {
 
   const modal = document.getElementById('admin-auth-modal');
   const input = document.getElementById('admin-auth-input');
-  input.value = '';
-  modal.style.display = 'flex';
+  if (input) input.value = '';
+  if (modal) modal.style.display = 'flex';
 
-  document.getElementById('btn-cancel-admin-auth').onclick = () => {
-    modal.style.display = 'none';
-  };
+  const btnCancelAdmin = document.getElementById('btn-cancel-admin-auth');
+  if (btnCancelAdmin) {
+    btnCancelAdmin.onclick = () => {
+      if (modal) modal.style.display = 'none';
+    };
+  }
 
-  document.getElementById('btn-confirm-admin-auth').onclick = async () => {
-    const entered = input.value.trim();
-    if (!entered) return showNotification('Please enter Admin Key');
-    const enteredHash = await hashPasskey(entered);
+  const btnConfirmAdmin = document.getElementById('btn-confirm-admin-auth');
+  if (btnConfirmAdmin) {
+    btnConfirmAdmin.onclick = async () => {
+      const entered = input ? input.value.trim() : '';
+      if (!entered) return showNotification('Please enter Admin Key');
+      const enteredHash = await hashPasskey(entered);
 
-    if (enteredHash === savedHash) {
-      triggerHaptic(35);
-      modal.style.display = 'none';
-      onSuccess();
-    } else {
-      triggerHaptic(45);
-      alert('Invalid Admin Key. Access denied.');
-    }
-  };
+      if (enteredHash === savedHash) {
+        triggerHaptic(35);
+        if (modal) modal.style.display = 'none';
+        onSuccess();
+      } else {
+        triggerHaptic(45);
+        alert('Invalid Admin Key. Access denied.');
+      }
+    };
+  }
 }
 
 function evaluateSecondaryKeysPhase(payload) {
@@ -2789,103 +3090,123 @@ function evaluateSecondaryKeysPhase(payload) {
 
   const secondaryGroup = document.getElementById('secondary-individual-keys-group');
 
-  chkMaster.checked = false;
-  boxMaster.style.display = 'none';
-  inMaster.value = '';
-
-  chkDownload.checked = false;
-  boxDownload.style.display = 'none';
-  inDownload.value = '';
-
-  chkAuthor.checked = false;
-  boxAuthor.style.display = 'none';
-  inAuthor.value = '';
-
-  secondaryGroup.style.display = 'block';
-
-  chkMaster.onchange = () => {
-    if (chkMaster.checked) {
-      boxMaster.style.display = 'block';
-      secondaryGroup.style.display = 'none';
-      chkDownload.checked = false;
-      chkAuthor.checked = false;
-      boxDownload.style.display = 'none';
-      boxAuthor.style.display = 'none';
-      inDownload.value = '';
-      inAuthor.value = '';
-    } else {
-      boxMaster.style.display = 'none';
-      inMaster.value = '';
-      secondaryGroup.style.display = 'block';
-    }
-  };
-
-  chkDownload.onchange = () => {
-    boxDownload.style.display = chkDownload.checked ? 'block' : 'none';
-    if (!chkDownload.checked) inDownload.value = '';
-  };
-
-  chkAuthor.onchange = () => {
-    boxAuthor.style.display = chkAuthor.checked ? 'block' : 'none';
-    if (!chkAuthor.checked) inAuthor.value = '';
-  };
-
-  modal.style.display = 'flex';
-}
-
-document.getElementById('btn-cancel-secondary-keys').onclick = () => {
-  document.getElementById('secondary-keys-modal').style.display = 'none';
-  parsedDecryptedPayload = null;
-};
-
-document.getElementById('btn-confirm-secondary-keys').onclick = async () => {
-  const payload = parsedDecryptedPayload;
-  let isMasterUnlocked = false;
-  let isDownloadUnlocked = false;
-  let isAuthorUnlocked = false;
-
-  const chkMaster = document.getElementById('chk-enter-master-key').checked;
-  const inMaster = document.getElementById('in-master-key').value.trim();
-
-  if (chkMaster && inMaster) {
-    const h = await hashPasskey(inMaster);
-    if (h === payload.masterKeyHash) {
-      isMasterUnlocked = true;
-      isDownloadUnlocked = true;
-      isAuthorUnlocked = true;
-      showNotification('Master Key Verified: Full Local Access Granted!');
-    } else {
-      alert('Master Key did not match creator records.');
-    }
-  } else {
-    const chkDownload = document.getElementById('chk-enter-download-key').checked;
-    const inDownload = document.getElementById('in-download-key').value.trim();
-    if (chkDownload && inDownload) {
-      const h = await hashPasskey(inDownload);
-      if (h === payload.downloadKeyHash || h === payload.masterKeyHash) {
-        isDownloadUnlocked = true;
-        showNotification('Download Key Verified: Song Downloads Unlocked!');
-      } else {
-        alert('Download Key did not match creator records.');
-      }
-    }
-
-    const chkAuthor = document.getElementById('chk-enter-author-key').checked;
-    const inAuthor = document.getElementById('in-author-key').value.trim();
-    if (chkAuthor && inAuthor) {
-      const h = await hashPasskey(inAuthor);
-      if (h === payload.passkeyHash || h === payload.masterKeyHash) {
-        isAuthorUnlocked = true;
-        showNotification('Author Key Verified: Local Playlist Editing Unlocked!');
-      } else {
-        alert('Author Key did not match creator records.');
-      }
-    }
+  if (chkMaster) {
+    chkMaster.checked = false;
+    if (boxMaster) boxMaster.style.display = 'none';
+    if (inMaster) inMaster.value = '';
   }
 
-  document.getElementById('secondary-keys-modal').style.display = 'none';
-  proceedToStorageMatcherScreen(isMasterUnlocked, isDownloadUnlocked, isAuthorUnlocked, false);
-};
+  if (chkDownload) {
+    chkDownload.checked = false;
+    if (boxDownload) boxDownload.style.display = 'none';
+    if (inDownload) inDownload.value = '';
+  }
+
+  if (chkAuthor) {
+    chkAuthor.checked = false;
+    if (boxAuthor) boxAuthor.style.display = 'none';
+    if (inAuthor) inAuthor.value = '';
+  }
+
+  if (secondaryGroup) secondaryGroup.style.display = 'block';
+
+  if (chkMaster) {
+    chkMaster.onchange = () => {
+      if (chkMaster.checked) {
+        if (boxMaster) boxMaster.style.display = 'block';
+        if (secondaryGroup) secondaryGroup.style.display = 'none';
+        if (chkDownload) chkDownload.checked = false;
+        if (chkAuthor) chkAuthor.checked = false;
+        if (boxDownload) boxDownload.style.display = 'none';
+        if (boxAuthor) boxAuthor.style.display = 'none';
+        if (inDownload) inDownload.value = '';
+        if (inAuthor) inAuthor.value = '';
+      } else {
+        if (boxMaster) boxMaster.style.display = 'none';
+        if (inMaster) inMaster.value = '';
+        if (secondaryGroup) secondaryGroup.style.display = 'block';
+      }
+    };
+  }
+
+  if (chkDownload) {
+    chkDownload.onchange = () => {
+      if (boxDownload) boxDownload.style.display = chkDownload.checked ? 'block' : 'none';
+      if (!chkDownload.checked && inDownload) inDownload.value = '';
+    };
+  }
+
+  if (chkAuthor) {
+    chkAuthor.onchange = () => {
+      if (boxAuthor) boxAuthor.style.display = chkAuthor.checked ? 'block' : 'none';
+      if (!chkAuthor.checked && inAuthor) inAuthor.value = '';
+    };
+  }
+
+  if (modal) modal.style.display = 'flex';
+}
+
+const btnCancelSecKeys = document.getElementById('btn-cancel-secondary-keys');
+if (btnCancelSecKeys) {
+  btnCancelSecKeys.onclick = () => {
+    const modal = document.getElementById('secondary-keys-modal');
+    if (modal) modal.style.display = 'none';
+    parsedDecryptedPayload = null;
+  };
+}
+
+const btnConfirmSecKeys = document.getElementById('btn-confirm-secondary-keys');
+if (btnConfirmSecKeys) {
+  btnConfirmSecKeys.onclick = async () => {
+    const payload = parsedDecryptedPayload;
+    let isMasterUnlocked = false;
+    let isDownloadUnlocked = false;
+    let isAuthorUnlocked = false;
+
+    const chkMaster = document.getElementById('chk-enter-master-key');
+    const inMaster = document.getElementById('in-master-key');
+
+    if (chkMaster && chkMaster.checked && inMaster && inMaster.value.trim()) {
+      const h = await hashPasskey(inMaster.value.trim());
+      if (h === payload.masterKeyHash) {
+        isMasterUnlocked = true;
+        isDownloadUnlocked = true;
+        isAuthorUnlocked = true;
+        showNotification('Master Key Verified: Full Local Access Granted!');
+      } else {
+        alert('Master Key did not match creator records.');
+      }
+    } else {
+      const chkDownload = document.getElementById('chk-enter-download-key');
+      const inDownload = document.getElementById('in-download-key');
+      if (chkDownload && chkDownload.checked && inDownload && inDownload.value.trim()) {
+        const h = await hashPasskey(inDownload.value.trim());
+        if (h === payload.downloadKeyHash || h === payload.masterKeyHash) {
+          isDownloadUnlocked = true;
+          showNotification('Download Key Verified: Song Downloads Unlocked!');
+        } else {
+          alert('Download Key did not match creator records.');
+        }
+      }
+
+      const chkAuthor = document.getElementById('chk-enter-author-key');
+      const inAuthor = document.getElementById('in-author-key');
+      if (chkAuthor && chkAuthor.checked && inAuthor && inAuthor.value.trim()) {
+        const h = await hashPasskey(inAuthor.value.trim());
+        if (h === payload.passkeyHash || h === payload.masterKeyHash) {
+          isAuthorUnlocked = true;
+          showNotification('Author Key Verified: Local Playlist Editing Unlocked!');
+        } else {
+          alert('Author Key did not match creator records.');
+        }
+      }
+    }
+
+    const modal = document.getElementById('secondary-keys-modal');
+    if (modal) modal.style.display = 'none';
+    proceedToStorageMatcherScreen(isMasterUnlocked, isDownloadUnlocked, isAuthorUnlocked, false);
+  };
+}
 
 let pendingImportPermissions = { isMasterUnlocked: false, isDownloadUnlocked: false, isAuthorUnlocked: false, isPermanentAdmin: false };
 
@@ -2897,13 +3218,18 @@ function proceedToStorageMatcherScreen(isMaster, isDownload, isAuthor, isPermane
     userProfile = data.author;
     dbOps.setUserProfile(userProfile);
     updateUserProfileLabels();
-    document.getElementById('onboarding-modal').style.display = 'none';
+    const obModal = document.getElementById('onboarding-modal');
+    if (obModal) obModal.style.display = 'none';
   }
 
   const author = data.author || { name: 'External Creator', avatar: 'my-icon.png' };
-  document.getElementById('pre-import-author-name').textContent = `Curated by: ${author.name} (Protected)`;
-  document.getElementById('pre-import-avatar').src = author.avatar || 'my-icon.png';
-  document.getElementById('pre-import-file-meta').textContent = `Tracks: ${data.tracks.length} • Playlists: ${data.playlists.length}`;
+  const authNameEl = document.getElementById('pre-import-author-name');
+  const authAvEl = document.getElementById('pre-import-avatar');
+  const metaEl = document.getElementById('pre-import-file-meta');
+
+  if (authNameEl) authNameEl.textContent = `Curated by: ${author.name} (Protected)`;
+  if (authAvEl) authAvEl.src = author.avatar || 'my-icon.png';
+  if (metaEl) metaEl.textContent = `Tracks: ${data.tracks.length} • Playlists: ${data.playlists.length}`;
 
   dbOps.getAllTracks().then(localAll => {
     const localNamesSet = new Set(localAll.filter(t => t.blob && t.blob.size > 0).map(t => t.name.trim().toLowerCase()));
@@ -2911,7 +3237,7 @@ function proceedToStorageMatcherScreen(isMaster, isDownload, isAuthor, isPermane
     let missingCount = 0;
 
     const auditBox = document.getElementById('pre-import-audit-checklist');
-    auditBox.innerHTML = '';
+    if (auditBox) auditBox.innerHTML = '';
 
     data.tracks.forEach(trk => {
       const cleanName = trk.name.trim().toLowerCase();
@@ -2922,162 +3248,191 @@ function proceedToStorageMatcherScreen(isMaster, isDownload, isAuthor, isPermane
       if (isAvailable) availableCount++;
       else missingCount++;
 
-      const row = document.createElement('div');
-      row.style.padding = '4px 6px';
-      row.style.fontSize = '0.75rem';
-      row.style.borderBottom = '1px solid #1f2937';
-      row.style.color = isAvailable ? 'var(--accent-light)' : '#f85149';
-      row.innerHTML = `${isAvailable ? '✓ [Available]' : '✕ [Missing from Storage]'} <strong>${trk.name}</strong>`;
-      auditBox.appendChild(row);
+      if (auditBox) {
+        const row = document.createElement('div');
+        row.style.padding = '4px 6px';
+        row.style.fontSize = '0.75rem';
+        row.style.borderBottom = '1px solid #1f2937';
+        row.style.color = isAvailable ? 'var(--accent-light)' : '#f85149';
+        row.innerHTML = `${isAvailable ? '✓ [Available]' : '✕ [Missing from Storage]'} <strong>${trk.name}</strong>`;
+        auditBox.appendChild(row);
+      }
     });
 
-    document.getElementById('audit-badge-available').textContent = `✓ ${availableCount} Available`;
-    document.getElementById('audit-badge-missing').textContent = `✕ ${missingCount} Not in Storage`;
+    const bAvail = document.getElementById('audit-badge-available');
+    const bMiss = document.getElementById('audit-badge-missing');
+    if (bAvail) bAvail.textContent = `✓ ${availableCount} Available`;
+    if (bMiss) bMiss.textContent = `✕ ${missingCount} Not in Storage`;
 
     const plBox = document.getElementById('pre-import-playlist-list');
-    plBox.innerHTML = '';
-    data.playlists.forEach(p => {
-      const label = document.createElement('label');
-      label.className = 'checkbox-label';
-      label.innerHTML = `<input type="checkbox" data-import-pl="${p.id}" checked /> ${p.name}`;
-      plBox.appendChild(label);
-    });
+    if (plBox) {
+      plBox.innerHTML = '';
+      data.playlists.forEach(p => {
+        const label = document.createElement('label');
+        label.className = 'checkbox-label';
+        label.innerHTML = `<input type="checkbox" data-import-pl="${p.id}" checked /> ${p.name}`;
+        plBox.appendChild(label);
+      });
+    }
 
-    document.getElementById('pre-import-modal').style.display = 'flex';
+    const preModal = document.getElementById('pre-import-modal');
+    if (preModal) preModal.style.display = 'flex';
   });
 }
 
-document.getElementById('btn-cancel-pre-import').onclick = () => {
-  document.getElementById('pre-import-modal').style.display = 'none';
-  parsedDecryptedPayload = null;
-};
+const btnCancelPreImport = document.getElementById('btn-cancel-pre-import');
+if (btnCancelPreImport) {
+  btnCancelPreImport.onclick = () => {
+    const preModal = document.getElementById('pre-import-modal');
+    if (preModal) preModal.style.display = 'none';
+    parsedDecryptedPayload = null;
+  };
+}
 
-document.getElementById('btn-confirm-final-import').onclick = async () => {
-  if (!parsedDecryptedPayload) return;
-  triggerHaptic(40);
+const btnConfirmFinalImport = document.getElementById('btn-confirm-final-import');
+if (btnConfirmFinalImport) {
+  btnConfirmFinalImport.onclick = async () => {
+    if (!parsedDecryptedPayload) return;
+    triggerHaptic(40);
 
-  const selectedPlIds = new Set(
-    Array.from(document.querySelectorAll('#pre-import-playlist-list input:checked'))
-      .map(cb => cb.dataset.importPl)
-  );
+    const selectedPlIds = new Set(
+      Array.from(document.querySelectorAll('#pre-import-playlist-list input:checked'))
+        .map(cb => cb.dataset.importPl)
+    );
 
-  const importMarkers = document.getElementById('chk-import-markers').checked;
-  const importLyrics = document.getElementById('chk-import-lyrics').checked;
-  const importClips = document.getElementById('chk-import-clips').checked;
-  const author = parsedDecryptedPayload.author || { name: 'External Creator', avatar: 'my-icon.png' };
+    const chkMarkers = document.getElementById('chk-import-markers');
+    const chkLyrics = document.getElementById('chk-import-lyrics');
+    const chkClips = document.getElementById('chk-import-clips');
 
-  const { isDownloadUnlocked, isAuthorUnlocked, isPermanentAdmin } = pendingImportPermissions;
+    const importMarkers = chkMarkers ? chkMarkers.checked : true;
+    const importLyrics = chkLyrics ? chkLyrics.checked : true;
+    const importClips = chkClips ? chkClips.checked : true;
+    const author = parsedDecryptedPayload.author || { name: 'External Creator', avatar: 'my-icon.png' };
 
-  for (const p of parsedDecryptedPayload.playlists) {
-    if (selectedPlIds.has(p.id)) {
-      await dbOps.savePlaylist({
-        ...p,
-        originalName: p.name,
-        originalAuthor: p.author || author,
-        originalCover: p.cover || 'my-icon.png',
-        author: p.author || author,
-        isImported: true,
-        isAuthorLocked: (!isAuthorUnlocked && !isPermanentAdmin),
-        isUnlockedLocally: isAuthorUnlocked,
-        isPermanentAdminUnlocked: isPermanentAdmin,
-        passkeyHash: parsedDecryptedPayload.passkeyHash || '',
-        masterKeyHash: parsedDecryptedPayload.masterKeyHash || '',
-        downloadKeyHash: parsedDecryptedPayload.downloadKeyHash || '',
-        downloadRestricted: (p.downloadRestricted && !isDownloadUnlocked && !isPermanentAdmin),
-        isDownloadUnlocked: (isDownloadUnlocked || isPermanentAdmin)
-      });
-    }
-  }
+    const { isDownloadUnlocked, isAuthorUnlocked, isPermanentAdmin } = pendingImportPermissions;
 
-  const localAll = await dbOps.getAllTracks();
-  const localMap = new Map();
-  localAll.forEach(t => {
-    if (t.blob && t.blob.size > 0) localMap.set(t.name.trim().toLowerCase(), t.blob);
-  });
-
-  let importedSongs = [];
-  let availableSongsCount = 0;
-  let missingSongsCount = 0;
-
-  for (const trk of parsedDecryptedPayload.tracks) {
-    if (!selectedPlIds.has(trk.playlistId) && trk.playlistId !== 'all') continue;
-    
-    let blob = null;
-    if (trk.audioBase64) {
-      blob = base64ToBlob(trk.audioBase64);
-    } else {
-      const cleanName = trk.name.trim().toLowerCase();
-      if (localMap.has(cleanName)) {
-        blob = localMap.get(cleanName);
-      }
-    }
-
-    const hasAudio = Boolean(blob && blob.size > 0);
-    if (hasAudio) availableSongsCount++;
-    else missingSongsCount++;
-
-    await dbOps.saveTrack({
-      playlistId: trk.playlistId || 'favorites',
-      name: trk.name,
-      blob: blob || new Blob([], { type: 'audio/mp3' }),
-      isMissing: !hasAudio,
-      order: trk.order || Date.now(),
-      downloadRestricted: (trk.downloadRestricted && !isDownloadUnlocked && !isPermanentAdmin),
-      downloadKeyHash: trk.downloadKeyHash || '',
-      masterKeyHash: trk.masterKeyHash || ''
-    });
-
-    if (importLyrics && trk.lyrics) await dbOps.setLyrics(trk.name, trk.lyrics);
-    if (importMarkers && trk.markers) await dbOps.saveTimestamps(trk.name, trk.markers);
-    if (trk.isFavorite) await dbOps.setFavorite(trk.name, true);
-
-    importedSongs.push({ name: trk.name, isAvailable: hasAudio });
-  }
-
-  if (importClips && parsedDecryptedPayload.trimmedClips) {
-    for (const c of parsedDecryptedPayload.trimmedClips) {
-      if (c.clipBase64) {
-        const clipBlob = base64ToBlob(c.clipBase64);
-        await dbOps.saveTrimmedClip({
-          songName: c.songName,
-          clipName: c.clipName,
-          blob: clipBlob,
-          duration: c.duration,
-          createdAt: c.createdAt
+    for (const p of parsedDecryptedPayload.playlists) {
+      if (selectedPlIds.has(p.id)) {
+        await dbOps.savePlaylist({
+          ...p,
+          originalName: p.name,
+          originalAuthor: p.author || author,
+          originalCover: p.cover || 'my-icon.png',
+          author: p.author || author,
+          isImported: true,
+          isAuthorLocked: (!isAuthorUnlocked && !isPermanentAdmin),
+          isUnlockedLocally: isAuthorUnlocked,
+          isPermanentAdminUnlocked: isPermanentAdmin,
+          passkeyHash: parsedDecryptedPayload.passkeyHash || '',
+          masterKeyHash: parsedDecryptedPayload.masterKeyHash || '',
+          downloadKeyHash: parsedDecryptedPayload.downloadKeyHash || '',
+          downloadRestricted: (p.downloadRestricted && !isDownloadUnlocked && !isPermanentAdmin),
+          isDownloadUnlocked: (isDownloadUnlocked || isPermanentAdmin)
         });
       }
     }
-  }
 
-  await dbOps.addAuditLog({
-    type: 'IMPORT',
-    desc: `Imported ${importedSongs.length} tracks (${availableSongsCount} ready, ${missingSongsCount} missing)`,
-    keysDetail: `Permissions: [Downloads: ${isDownloadUnlocked || isPermanentAdmin ? 'Unlocked' : 'Restricted'}] | [Authoring: ${isAuthorUnlocked || isPermanentAdmin ? 'Unlocked' : 'Locked'}] | [Admin Super-Access: ${isPermanentAdmin ? 'Yes' : 'No'}]`
-  });
+    const localAll = await dbOps.getAllTracks();
+    const localMap = new Map();
+    localAll.forEach(t => {
+      if (t.blob && t.blob.size > 0) localMap.set(t.name.trim().toLowerCase(), t.blob);
+    });
 
-  document.getElementById('pre-import-modal').style.display = 'none';
-  await loadPlaylists();
+    let importedSongs = [];
+    let availableSongsCount = 0;
+    let missingSongsCount = 0;
 
-  document.getElementById('success-author-avatar').src = author.avatar || 'my-icon.png';
-  document.getElementById('success-author-label').textContent = `Curated by ${author.name} • ${availableSongsCount} Ready, ${missingSongsCount} Missing`;
-  
-  const summaryBox = document.getElementById('success-songs-summary');
-  summaryBox.innerHTML = importedSongs.map((s, i) => `
-    <div style="color:${s.isAvailable ? 'var(--accent-light)' : '#f85149'};">
-      ${i + 1}. ${s.name} ${s.isAvailable ? '✓' : '⚠️ [Not in storage]'}
-    </div>
-  `).join('');
+    for (const trk of parsedDecryptedPayload.tracks) {
+      if (!selectedPlIds.has(trk.playlistId) && trk.playlistId !== 'all') continue;
+      
+      let blob = null;
+      if (trk.audioBase64) {
+        blob = base64ToBlob(trk.audioBase64);
+      } else {
+        const cleanName = trk.name.trim().toLowerCase();
+        if (localMap.has(cleanName)) {
+          blob = localMap.get(cleanName);
+        }
+      }
 
-  document.getElementById('import-success-modal').style.display = 'flex';
-};
+      const hasAudio = Boolean(blob && blob.size > 0);
+      if (hasAudio) availableSongsCount++;
+      else missingSongsCount++;
 
-document.getElementById('btn-close-success-summary').onclick = () => {
-  document.getElementById('import-success-modal').style.display = 'none';
-};
+      await dbOps.saveTrack({
+        playlistId: trk.playlistId || 'favorites',
+        name: trk.name,
+        blob: blob || new Blob([], { type: 'audio/mp3' }),
+        isMissing: !hasAudio,
+        order: trk.order || Date.now(),
+        downloadRestricted: (trk.downloadRestricted && !isDownloadUnlocked && !isPermanentAdmin),
+        downloadKeyHash: trk.downloadKeyHash || '',
+        masterKeyHash: trk.masterKeyHash || ''
+      });
 
-// -------------------------------------------------------------
-// PLAYLISTS & BROWSING LISTING (WITH SMART PLAYLISTS)
-// -------------------------------------------------------------
+      if (importLyrics && trk.lyrics) await dbOps.setLyrics(trk.name, trk.lyrics);
+      if (importMarkers && trk.markers) await dbOps.saveTimestamps(trk.name, trk.markers);
+      if (trk.isFavorite) await dbOps.setFavorite(trk.name, true);
+
+      importedSongs.push({ name: trk.name, isAvailable: hasAudio });
+    }
+
+    if (importClips && parsedDecryptedPayload.trimmedClips) {
+      for (const c of parsedDecryptedPayload.trimmedClips) {
+        if (c.clipBase64) {
+          const clipBlob = base64ToBlob(c.clipBase64);
+          await dbOps.saveTrimmedClip({
+            songName: c.songName,
+            clipName: c.clipName,
+            blob: clipBlob,
+            duration: c.duration,
+            createdAt: c.createdAt
+          });
+        }
+      }
+    }
+
+    await dbOps.addAuditLog({
+      type: 'IMPORT',
+      desc: `Imported ${importedSongs.length} tracks (${availableSongsCount} ready, ${missingSongsCount} missing)`,
+      keysDetail: `Permissions: [Downloads: ${isDownloadUnlocked || isPermanentAdmin ? 'Unlocked' : 'Restricted'}] | [Authoring: ${isAuthorUnlocked || isPermanentAdmin ? 'Unlocked' : 'Locked'}] | [Admin Super-Access: ${isPermanentAdmin ? 'Yes' : 'No'}]`
+    });
+
+    const preModal = document.getElementById('pre-import-modal');
+    if (preModal) preModal.style.display = 'none';
+    await loadPlaylists();
+
+    const succAvatar = document.getElementById('success-author-avatar');
+    const succLbl = document.getElementById('success-author-label');
+    const summaryBox = document.getElementById('success-songs-summary');
+    const succModal = document.getElementById('import-success-modal');
+
+    if (succAvatar) succAvatar.src = author.avatar || 'my-icon.png';
+    if (succLbl) succLbl.textContent = `Curated by ${author.name} • ${availableSongsCount} Ready, ${missingSongsCount} Missing`;
+    
+    if (summaryBox) {
+      summaryBox.innerHTML = importedSongs.map((s, i) => `
+        <div style="color:${s.isAvailable ? 'var(--accent-light)' : '#f85149'};">
+          ${i + 1}. ${s.name} ${s.isAvailable ? '✓' : '⚠️ [Not in storage]'}
+        </div>
+      `).join('');
+    }
+
+    if (succModal) succModal.style.display = 'flex';
+  };
+}
+
+const btnCloseSuccessSummary = document.getElementById('btn-close-success-summary');
+if (btnCloseSuccessSummary) {
+  btnCloseSuccessSummary.onclick = () => {
+    const succModal = document.getElementById('import-success-modal');
+    if (succModal) succModal.style.display = 'none';
+  };
+}
+
+// =============================================================
+// PLAYLISTS & BROWSING LISTING
+// =============================================================
 async function loadPlaylists() {
   let list = await dbOps.getPlaylists();
   if (!list.length) {
@@ -3088,7 +3443,6 @@ async function loadPlaylists() {
 
   const allCategory = { id: 'all', name: 'All', cover: currentAppLogo, author: userProfile };
   
-  // Dynamic Smart Playlists
   const smartRotation = { id: 'smart_rotation', name: '🔥 Heavy Rotation', cover: currentAppLogo, author: userProfile, isSmart: true };
   const smartRecent = { id: 'smart_recent', name: '🕒 Recently Added', cover: currentAppLogo, author: userProfile, isSmart: true };
   const smartUnplayed = { id: 'smart_unplayed', name: '💤 Unplayed', cover: currentAppLogo, author: userProfile, isSmart: true };
@@ -3096,61 +3450,73 @@ async function loadPlaylists() {
   const combined = [allCategory, smartRotation, smartRecent, smartUnplayed, ...list];
   availablePlaylistList = combined;
 
-  playlistTabs.innerHTML = '';
+  if (playlistTabs) {
+    playlistTabs.innerHTML = '';
 
-  const newPlChip = document.createElement('div');
-  newPlChip.className = 'chip';
-  newPlChip.style.border = '1px dashed var(--accent-light)';
-  newPlChip.innerHTML = `<span>➕ New</span>`;
-  newPlChip.onclick = () => {
-    triggerHaptic(20);
-    document.getElementById('new-playlist-name').value = '';
-    document.getElementById('new-playlist-img').value = '';
-    document.getElementById('preview-art-tag').src = currentAppLogo;
-    document.getElementById('preview-status-text').textContent = 'Default art selected';
-    document.getElementById('playlist-create-modal').style.display = 'flex';
-  };
-  playlistTabs.appendChild(newPlChip);
-
-  combined.forEach((p) => {
-    const chip = document.createElement('div');
-    chip.className = `chip ${p.id === activePlaylistId ? 'active' : ''} ${p.isSmart ? 'smart-chip' : ''}`;
-    
-    const dotsBtn = (p.id !== 'all' && !p.isSmart) 
-      ? `<button class="chip-dots-btn" data-pl-id="${p.id}" title="Playlist Options">⋮</button>` 
-      : '';
-
-    chip.innerHTML = `
-      <img src="${p.localCover || p.cover || currentAppLogo}" class="chip-img" />
-      <span>${p.localName || p.name}</span>
-      ${dotsBtn}
-    `;
-
-    chip.onclick = (e) => {
-      if (e.target.closest('.chip-dots-btn')) return;
+    const newPlChip = document.createElement('div');
+    newPlChip.className = 'chip';
+    newPlChip.style.border = '1px dashed var(--accent-light)';
+    newPlChip.innerHTML = `<span>➕ New</span>`;
+    newPlChip.onclick = () => {
       triggerHaptic(20);
-      activePlaylistId = p.id;
-      loadPlaylists();
+      const nPlName = document.getElementById('new-playlist-name');
+      const nPlImg = document.getElementById('new-playlist-img');
+      const prevArt = document.getElementById('preview-art-tag');
+      const prevStatus = document.getElementById('preview-status-text');
+      const plCreateModal = document.getElementById('playlist-create-modal');
+
+      if (nPlName) nPlName.value = '';
+      if (nPlImg) nPlImg.value = '';
+      if (prevArt) prevArt.src = currentAppLogo;
+      if (prevStatus) prevStatus.textContent = 'Default art selected';
+      if (plCreateModal) plCreateModal.style.display = 'flex';
     };
+    playlistTabs.appendChild(newPlChip);
 
-    if (p.id !== 'all' && !p.isSmart) {
-      const dBtn = chip.querySelector('.chip-dots-btn');
-      dBtn.onclick = (e) => {
-        e.stopPropagation();
+    combined.forEach((p) => {
+      const chip = document.createElement('div');
+      chip.className = `chip ${p.id === activePlaylistId ? 'active' : ''} ${p.isSmart ? 'smart-chip' : ''}`;
+      
+      const dotsBtn = (p.id !== 'all' && !p.isSmart) 
+        ? `<button class="chip-dots-btn" data-pl-id="${p.id}" title="Playlist Options">⋮</button>` 
+        : '';
+
+      chip.innerHTML = `
+        <img src="${p.localCover || p.cover || currentAppLogo}" class="chip-img" />
+        <span>${p.localName || p.name}</span>
+        ${dotsBtn}
+      `;
+
+      chip.onclick = (e) => {
+        if (e.target.closest('.chip-dots-btn')) return;
         triggerHaptic(20);
-        activeContextPlaylist = p;
-        const rect = dBtn.getBoundingClientRect();
-        playlistContextMenu.style.top = `${rect.bottom + window.scrollY + 4}px`;
-        playlistContextMenu.style.left = `${Math.max(10, rect.left - 100)}px`;
-        playlistContextMenu.style.display = 'flex';
+        activePlaylistId = p.id;
+        loadPlaylists();
       };
-    }
 
-    playlistTabs.appendChild(chip);
-  });
+      if (p.id !== 'all' && !p.isSmart) {
+        const dBtn = chip.querySelector('.chip-dots-btn');
+        if (dBtn) {
+          dBtn.onclick = (e) => {
+            e.stopPropagation();
+            triggerHaptic(20);
+            activeContextPlaylist = p;
+            const rect = dBtn.getBoundingClientRect();
+            if (playlistContextMenu) {
+              playlistContextMenu.style.top = `${rect.bottom + window.scrollY + 4}px`;
+              playlistContextMenu.style.left = `${Math.max(10, rect.left - 100)}px`;
+              playlistContextMenu.style.display = 'flex';
+            }
+          };
+        }
+      }
+
+      playlistTabs.appendChild(chip);
+    });
+  }
 
   currentPlaylist = combined.find((p) => p.id === activePlaylistId) || allCategory;
-  viewPlaylistName.textContent = currentPlaylist.localName || currentPlaylist.name;
+  if (viewPlaylistName) viewPlaylistName.textContent = currentPlaylist.localName || currentPlaylist.name;
   loadTracks();
 }
 
@@ -3161,10 +3527,10 @@ async function loadTracks() {
 }
 
 function renderFilteredTracks() {
-  const currentScrollTop = upperContentViewport.scrollTop;
+  const currentScrollTop = upperContentViewport ? upperContentViewport.scrollTop : 0;
 
-  const q = librarySearchInput.value.trim().toLowerCase();
-  btnClearSearch.style.display = q ? 'block' : 'none';
+  const q = librarySearchInput ? librarySearchInput.value.trim().toLowerCase() : '';
+  if (btnClearSearch) btnClearSearch.style.display = q ? 'block' : 'none';
 
   let filtered = allTracksRaw.filter(t => t.name.toLowerCase().includes(q));
 
@@ -3184,8 +3550,9 @@ function renderFilteredTracks() {
   let hrs = Math.floor(totalSecs / 3600);
   let mins = Math.floor((totalSecs % 3600) / 60);
   let durStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-  trackCountLabel.textContent = `${browsingTracks.length} song${browsingTracks.length === 1 ? '' : 's'} • ~${durStr}`;
+  if (trackCountLabel) trackCountLabel.textContent = `${browsingTracks.length} song${browsingTracks.length === 1 ? '' : 's'} • ~${durStr}`;
 
+  if (!songList) return;
   songList.innerHTML = '';
   if (!browsingTracks.length) {
     songList.innerHTML = '<li style="color:var(--text-muted);text-align:center;padding:24px 0;">No songs found.</li>';
@@ -3238,7 +3605,8 @@ function renderFilteredTracks() {
         triggerHaptic(50);
         multiSelectMode = true;
         selectedTrackIds.add(trk.id);
-        document.getElementById('batch-action-bar').style.display = 'flex';
+        const batchBar = document.getElementById('batch-action-bar');
+        if (batchBar) batchBar.style.display = 'flex';
         renderFilteredTracks();
       }, 500);
     }, { passive: true });
@@ -3306,9 +3674,11 @@ function renderFilteredTracks() {
       }
 
       const rect = btnMore.getBoundingClientRect();
-      trackContextMenu.style.top = `${rect.bottom + window.scrollY - 10}px`;
-      trackContextMenu.style.left = `${Math.max(10, rect.left - 150)}px`;
-      trackContextMenu.style.display = 'flex';
+      if (trackContextMenu) {
+        trackContextMenu.style.top = `${rect.bottom + window.scrollY - 10}px`;
+        trackContextMenu.style.left = `${Math.max(10, rect.left - 150)}px`;
+        trackContextMenu.style.display = 'flex';
+      }
     };
 
     actions.append(btnDownload, btnLike, btnDelete, btnMore);
@@ -3318,7 +3688,7 @@ function renderFilteredTracks() {
     songList.appendChild(li);
   });
 
-  upperContentViewport.scrollTop = currentScrollTop;
+  if (upperContentViewport) upperContentViewport.scrollTop = currentScrollTop;
 
   if (currentPlayingTrack) {
     dbOps.isFavorite(currentPlayingTrack.name).then(updateLikeButtonsUI);
@@ -3352,10 +3722,10 @@ function stopPlayingTrackImmediately() {
   wasPlayingBeforeInterruption = false;
   isManualPause = true;
 
-  miniTitle.textContent = 'No track playing';
-  miniSub.textContent = 'Playlist: All';
-  boxTitle.textContent = 'Song Title';
-  boxPlaylist.textContent = 'Playlist: All';
+  if (miniTitle) miniTitle.textContent = 'No track playing';
+  if (miniSub) miniSub.textContent = 'Playlist: All';
+  if (boxTitle) boxTitle.textContent = 'Song Title';
+  if (boxPlaylist) boxPlaylist.textContent = 'Playlist: All';
   syncButtons(false);
   updateLikeButtonsUI(false);
   syncGlobalEqualizerBars(false);
@@ -3435,160 +3805,195 @@ function bindSongRowSwipeGestures(rowEl, trk) {
   }, { passive: true });
 }
 
-document.getElementById('btn-batch-select-all').onclick = () => {
-  triggerHaptic(20);
-  if (selectedTrackIds.size === browsingTracks.length) {
-    selectedTrackIds.clear();
-    document.getElementById('btn-batch-select-all').textContent = 'Select All';
-  } else {
-    selectedTrackIds = new Set(browsingTracks.map(t => t.id));
-    document.getElementById('btn-batch-select-all').textContent = 'Deselect All';
-  }
-  document.getElementById('batch-count-label').textContent = `${selectedTrackIds.size} Selected`;
-  
-  document.querySelectorAll('.multi-chk').forEach(cb => {
-    const trkId = parseInt(cb.dataset.trkId, 10);
-    cb.checked = selectedTrackIds.has(trkId);
-  });
-};
+const btnBatchSelectAll = document.getElementById('btn-batch-select-all');
+if (btnBatchSelectAll) {
+  btnBatchSelectAll.onclick = () => {
+    triggerHaptic(20);
+    const countLbl = document.getElementById('batch-count-label');
+    if (selectedTrackIds.size === browsingTracks.length) {
+      selectedTrackIds.clear();
+      btnBatchSelectAll.textContent = 'Select All';
+    } else {
+      selectedTrackIds = new Set(browsingTracks.map(t => t.id));
+      btnBatchSelectAll.textContent = 'Deselect All';
+    }
+    if (countLbl) countLbl.textContent = `${selectedTrackIds.size} Selected`;
+    
+    document.querySelectorAll('.multi-chk').forEach(cb => {
+      const trkId = parseInt(cb.dataset.trkId, 10);
+      cb.checked = selectedTrackIds.has(trkId);
+    });
+  };
+}
 
 function toggleSelectTrack(id) {
   triggerHaptic(15);
   if (selectedTrackIds.has(id)) selectedTrackIds.delete(id);
   else selectedTrackIds.add(id);
   
-  document.getElementById('batch-count-label').textContent = `${selectedTrackIds.size} Selected`;
-  document.getElementById('btn-batch-select-all').textContent = (selectedTrackIds.size === browsingTracks.length) ? 'Deselect All' : 'Select All';
+  const countLbl = document.getElementById('batch-count-label');
+  const btnBatchSelectAll = document.getElementById('btn-batch-select-all');
+  if (countLbl) countLbl.textContent = `${selectedTrackIds.size} Selected`;
+  if (btnBatchSelectAll) btnBatchSelectAll.textContent = (selectedTrackIds.size === browsingTracks.length) ? 'Deselect All' : 'Select All';
 
   const cb = document.querySelector(`.multi-chk[data-trk-id="${id}"]`);
   if (cb) cb.checked = selectedTrackIds.has(id);
 }
 
-document.getElementById('btn-batch-cancel').onclick = () => {
-  multiSelectMode = false;
-  selectedTrackIds.clear();
-  document.getElementById('batch-action-bar').style.display = 'none';
-  renderFilteredTracks();
-};
-
-document.getElementById('btn-batch-delete').onclick = () => {
-  triggerHaptic(35);
-  const idsToDelete = new Set(selectedTrackIds);
-  const deletedTracks = allTracksRaw.filter(t => idsToDelete.has(t.id));
-  const count = idsToDelete.size;
-
-  const isPlayingDeleted = (currentPlayingTrack && idsToDelete.has(currentPlayingTrack.id));
-  if (isPlayingDeleted) {
-    stopPlayingTrackImmediately();
-  }
-
-  allTracksRaw = allTracksRaw.filter(t => !idsToDelete.has(t.id));
-  multiSelectMode = false;
-  selectedTrackIds.clear();
-  document.getElementById('batch-action-bar').style.display = 'none';
-  renderFilteredTracks();
-
-  showUndoToast(`Deleted ${count} selected songs`, () => {
-    allTracksRaw.push(...deletedTracks);
+const btnBatchCancel = document.getElementById('btn-batch-cancel');
+if (btnBatchCancel) {
+  btnBatchCancel.onclick = () => {
+    multiSelectMode = false;
+    selectedTrackIds.clear();
+    const batchBar = document.getElementById('batch-action-bar');
+    if (batchBar) batchBar.style.display = 'none';
     renderFilteredTracks();
-  }, async () => {
-    for (const id of idsToDelete) {
-      await dbOps.deleteTrack(id);
+  };
+}
+
+const btnBatchDelete = document.getElementById('btn-batch-delete');
+if (btnBatchDelete) {
+  btnBatchDelete.onclick = () => {
+    triggerHaptic(35);
+    const idsToDelete = new Set(selectedTrackIds);
+    const deletedTracks = allTracksRaw.filter(t => idsToDelete.has(t.id));
+    const count = idsToDelete.size;
+
+    const isPlayingDeleted = (currentPlayingTrack && idsToDelete.has(currentPlayingTrack.id));
+    if (isPlayingDeleted) {
+      stopPlayingTrackImmediately();
     }
-  });
-};
 
-document.getElementById('btn-batch-add-playlist').onclick = () => {
-  if (!selectedTrackIds.size) return;
-  const available = availablePlaylistList.filter(p => p.id !== 'all' && !p.id.startsWith('smart_'));
-  const box = document.getElementById('add-to-playlist-options-box');
-  box.innerHTML = '';
+    allTracksRaw = allTracksRaw.filter(t => !idsToDelete.has(t.id));
+    multiSelectMode = false;
+    selectedTrackIds.clear();
+    const batchBar = document.getElementById('batch-action-bar');
+    if (batchBar) batchBar.style.display = 'none';
+    renderFilteredTracks();
 
-  available.forEach(p => {
-    const btn = document.createElement('button');
-    btn.className = 'menu-pop-item';
-    btn.textContent = `📁 ${p.localName || p.name}`;
-    btn.onclick = async () => {
-      triggerHaptic(30);
-      const selectedTracks = allTracksRaw.filter(t => selectedTrackIds.has(t.id));
-      for (const t of selectedTracks) {
-        await dbOps.saveTrack({
-          playlistId: p.id,
-          name: t.name,
-          blob: t.blob,
-          isMissing: t.isMissing,
-          order: Date.now()
-        });
-      }
-      showNotification(`Added ${selectedTracks.length} tracks to ${p.localName || p.name}!`);
-      multiSelectMode = false;
-      selectedTrackIds.clear();
-      document.getElementById('batch-action-bar').style.display = 'none';
-      dismissAllMenus();
+    showUndoToast(`Deleted ${count} selected songs`, () => {
+      allTracksRaw.push(...deletedTracks);
       renderFilteredTracks();
-    };
-    box.appendChild(btn);
-  });
+    }, async () => {
+      for (const id of idsToDelete) {
+        await dbOps.deleteTrack(id);
+      }
+    });
+  };
+}
 
-  const rect = document.getElementById('btn-batch-add-playlist').getBoundingClientRect();
-  addToPlaylistSubmenu.style.top = `${rect.bottom + window.scrollY + 4}px`;
-  addToPlaylistSubmenu.style.left = `${Math.max(10, rect.left - 50)}px`;
-  addToPlaylistSubmenu.style.display = 'flex';
-};
+const btnBatchAddPl = document.getElementById('btn-batch-add-playlist');
+if (btnBatchAddPl) {
+  btnBatchAddPl.onclick = () => {
+    if (!selectedTrackIds.size) return;
+    const available = availablePlaylistList.filter(p => p.id !== 'all' && !p.id.startsWith('smart_'));
+    const box = document.getElementById('add-to-playlist-options-box');
+    if (!box) return;
+    box.innerHTML = '';
 
-librarySearchInput.addEventListener('input', renderFilteredTracks);
-btnClearSearch.onclick = () => {
-  librarySearchInput.value = '';
-  renderFilteredTracks();
-};
+    available.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'menu-pop-item';
+      btn.textContent = `📁 ${p.localName || p.name}`;
+      btn.onclick = async () => {
+        triggerHaptic(30);
+        const selectedTracks = allTracksRaw.filter(t => selectedTrackIds.has(t.id));
+        for (const t of selectedTracks) {
+          await dbOps.saveTrack({
+            playlistId: p.id,
+            name: t.name,
+            blob: t.blob,
+            isMissing: t.isMissing,
+            order: Date.now()
+          });
+        }
+        showNotification(`Added ${selectedTracks.length} tracks to ${p.localName || p.name}!`);
+        multiSelectMode = false;
+        selectedTrackIds.clear();
+        const batchBar = document.getElementById('batch-action-bar');
+        if (batchBar) batchBar.style.display = 'none';
+        dismissAllMenus();
+        renderFilteredTracks();
+      };
+      box.appendChild(btn);
+    });
 
-document.getElementById('btn-clean-names').onclick = async () => {
-  triggerHaptic(30);
-  if (!allTracksRaw.length) return;
-  let cleanedCount = 0;
-  for (const trk of allTracksRaw) {
-    let clean = trk.name
-      .replace(/\.(mp3|wav|flac|m4a|aac|ogg|opus)$/i, '')
-      .replace(/\[.*?\]|\(.*?\)|_|-/g, ' ')
-      .replace(/\b(128kbps|320kbps|download|pagalworld|songs|audio|mp3)\b/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (clean && clean !== trk.name) {
-      trk.name = clean;
-      await dbOps.updateTrack(trk);
-      cleanedCount++;
+    const rect = btnBatchAddPl.getBoundingClientRect();
+    if (addToPlaylistSubmenu) {
+      addToPlaylistSubmenu.style.top = `${rect.bottom + window.scrollY + 4}px`;
+      addToPlaylistSubmenu.style.left = `${Math.max(10, rect.left - 50)}px`;
+      addToPlaylistSubmenu.style.display = 'flex';
     }
-  }
-  showNotification(`Cleaned ${cleanedCount} song name(s)!`);
-  loadTracks();
-};
+  };
+}
 
-// Rename Track Modal
-const renameModal = document.getElementById('rename-modal');
-const renameInput = document.getElementById('rename-input');
+if (librarySearchInput) librarySearchInput.addEventListener('input', renderFilteredTracks);
+if (btnClearSearch) {
+  btnClearSearch.onclick = () => {
+    if (librarySearchInput) librarySearchInput.value = '';
+    renderFilteredTracks();
+  };
+}
+
+const btnCleanNames = document.getElementById('btn-clean-names');
+if (btnCleanNames) {
+  btnCleanNames.onclick = async () => {
+    triggerHaptic(30);
+    if (!allTracksRaw.length) return;
+    let cleanedCount = 0;
+    for (const trk of allTracksRaw) {
+      let clean = trk.name
+        .replace(/\.(mp3|wav|flac|m4a|aac|ogg|opus)$/i, '')
+        .replace(/\[.*?\]|\(.*?\)|_|-/g, ' ')
+        .replace(/\b(128kbps|320kbps|download|pagalworld|songs|audio|mp3)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (clean && clean !== trk.name) {
+        trk.name = clean;
+        await dbOps.updateTrack(trk);
+        cleanedCount++;
+      }
+    }
+    showNotification(`Cleaned ${cleanedCount} song name(s)!`);
+    loadTracks();
+  };
+}
+
+// Rename Modal
 function openRenameModal(trk) {
   trackToRename = trk;
-  renameInput.value = trk.name;
-  renameModal.style.display = 'flex';
+  if (renameInput) renameInput.value = trk.name;
+  if (renameModal) renameModal.style.display = 'flex';
 }
-document.getElementById('btn-cancel-rename').onclick = () => { renameModal.style.display = 'none'; };
-document.getElementById('btn-confirm-rename').onclick = async () => {
-  const newTitle = renameInput.value.trim();
-  if (newTitle && trackToRename) {
-    trackToRename.name = newTitle;
-    await dbOps.updateTrack(trackToRename);
-    renameModal.style.display = 'none';
-    showNotification('Track renamed successfully');
-    loadTracks();
-    if (currentPlayingTrack && currentPlayingTrack.id === trackToRename.id) {
-      miniTitle.textContent = newTitle;
-      boxTitle.textContent = newTitle;
-      updateMediaSession();
-    }
-  }
-};
 
+const btnCancelRename = document.getElementById('btn-cancel-rename');
+if (btnCancelRename) {
+  btnCancelRename.onclick = () => {
+    if (renameModal) renameModal.style.display = 'none';
+  };
+}
+
+const btnConfirmRename = document.getElementById('btn-confirm-rename');
+if (btnConfirmRename) {
+  btnConfirmRename.onclick = async () => {
+    const newTitle = renameInput ? renameInput.value.trim() : '';
+    if (newTitle && trackToRename) {
+      trackToRename.name = newTitle;
+      await dbOps.updateTrack(trackToRename);
+      if (renameModal) renameModal.style.display = 'none';
+      showNotification('Track renamed successfully');
+      loadTracks();
+      if (currentPlayingTrack && currentPlayingTrack.id === trackToRename.id) {
+        if (miniTitle) miniTitle.textContent = newTitle;
+        if (boxTitle) boxTitle.textContent = newTitle;
+        updateMediaSession();
+      }
+    }
+  };
+}
+
+// Favorite Toggle
 async function toggleFavorite(trk) {
   triggerHaptic(25);
   const songKey = trk.name;
@@ -3632,8 +4037,8 @@ function syncHeartsEverywhere(songName, isLiked) {
 
 function updateLikeButtonsUI(isLiked) {
   const heart = isLiked ? '❤️' : '💛';
-  barBtnLike.textContent = heart;
-  modalBtnLike.textContent = heart;
+  if (barBtnLike) barBtnLike.textContent = heart;
+  if (modalBtnLike) modalBtnLike.textContent = heart;
 }
 
 function compressImageSafe(file) {
@@ -3667,103 +4072,117 @@ function compressImageSafe(file) {
 }
 
 const editCoverInput = document.getElementById('edit-cover-input');
-document.getElementById('btn-edit-art').onclick = () => editCoverInput.click();
-editCoverInput.onchange = async (e) => {
-  if (e.target.files && e.target.files[0]) {
-    const newArt = await compressImageSafe(e.target.files[0]);
-    miniCover.src = newArt;
-    boxCover.src = newArt;
-    if (currentPlaylist && currentPlaylist.id !== 'all' && !currentPlaylist.id.startsWith('smart_')) {
-      currentPlaylist.localCover = newArt;
-      await dbOps.savePlaylist(currentPlaylist);
+const btnEditArt = document.getElementById('btn-edit-art');
+if (btnEditArt && editCoverInput) btnEditArt.onclick = () => editCoverInput.click();
+if (editCoverInput) {
+  editCoverInput.onchange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const newArt = await compressImageSafe(e.target.files[0]);
+      if (miniCover) miniCover.src = newArt;
+      if (boxCover) boxCover.src = newArt;
+      if (currentPlaylist && currentPlaylist.id !== 'all' && !currentPlaylist.id.startsWith('smart_')) {
+        currentPlaylist.localCover = newArt;
+        await dbOps.savePlaylist(currentPlaylist);
+      }
+      updateAmbientGlow(boxCover);
+      showNotification('Cover image updated!');
+      updateMediaSession();
     }
-    updateAmbientGlow(boxCover);
-    showNotification('Cover image updated!');
-    updateMediaSession();
-  }
-};
+  };
+}
 
+// Create Playlist Modal
 const createModal = document.getElementById('playlist-create-modal');
 const newPlaylistName = document.getElementById('new-playlist-name');
 const newPlaylistImg = document.getElementById('new-playlist-img');
 const previewArt = document.getElementById('preview-art-tag');
 const previewStatus = document.getElementById('preview-status-text');
 const btnConfirmPlaylist = document.getElementById('btn-confirm-playlist');
+const btnCancelPl = document.getElementById('btn-cancel-playlist');
 let newBase64Cover = null;
 
-document.getElementById('btn-cancel-playlist').onclick = () => { createModal.style.display = 'none'; };
-
-newPlaylistImg.onchange = async (e) => {
-  if (e.target.files && e.target.files[0]) {
-    previewStatus.textContent = 'Processing image...';
-    newBase64Cover = await compressImageSafe(e.target.files[0]);
-    previewArt.src = newBase64Cover;
-    previewStatus.textContent = 'Image ready';
-  }
-};
-
-btnConfirmPlaylist.onclick = async () => {
-  const name = newPlaylistName.value.trim();
-  if (!name) return showNotification('Please enter a playlist name!');
-  const pl = {
-    id: 'pl_' + Date.now(),
-    name,
-    cover: newBase64Cover || currentAppLogo,
-    author: userProfile,
-    createdAt: getIndianStandardDateOnly()
+if (btnCancelPl) {
+  btnCancelPl.onclick = () => {
+    if (createModal) createModal.style.display = 'none';
   };
-  await dbOps.savePlaylist(pl);
-  createModal.style.display = 'none';
-  activePlaylistId = pl.id;
-  await loadPlaylists();
-  showNotification(`Playlist "${name}" created!`);
-};
+}
 
-document.getElementById('file-picker').onchange = async (e) => {
-  const files = Array.from(e.target.files);
-  if (!files.length) return;
-  const targetId = (activePlaylistId === 'all' || activePlaylistId.startsWith('smart_')) ? 'favorites' : activePlaylistId;
-  const existingTracks = await dbOps.getTracks(targetId);
-  const existingNames = new Set(existingTracks.map(t => t.name.trim().toLowerCase()));
+if (newPlaylistImg) {
+  newPlaylistImg.onchange = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      if (previewStatus) previewStatus.textContent = 'Processing image...';
+      newBase64Cover = await compressImageSafe(e.target.files[0]);
+      if (previewArt) previewArt.src = newBase64Cover;
+      if (previewStatus) previewStatus.textContent = 'Image ready';
+    }
+  };
+}
 
-  let addedCount = 0;
-  let skippedCount = 0;
+if (btnConfirmPlaylist) {
+  btnConfirmPlaylist.onclick = async () => {
+    const name = newPlaylistName ? newPlaylistName.value.trim() : '';
+    if (!name) return showNotification('Please enter a playlist name!');
+    const pl = {
+      id: 'pl_' + Date.now(),
+      name,
+      cover: newBase64Cover || currentAppLogo,
+      author: userProfile,
+      createdAt: getIndianStandardDateOnly()
+    };
+    await dbOps.savePlaylist(pl);
+    if (createModal) createModal.style.display = 'none';
+    activePlaylistId = pl.id;
+    await loadPlaylists();
+    showNotification(`Playlist "${name}" created!`);
+  };
+}
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const cleanName = file.name.trim().toLowerCase();
+const filePicker = document.getElementById('file-picker');
+if (filePicker) {
+  filePicker.onchange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const targetId = (activePlaylistId === 'all' || activePlaylistId.startsWith('smart_')) ? 'favorites' : activePlaylistId;
+    const existingTracks = await dbOps.getTracks(targetId);
+    const existingNames = new Set(existingTracks.map(t => t.name.trim().toLowerCase()));
 
-    const matchedGhost = existingTracks.find(t => t.name.trim().toLowerCase() === cleanName && (!t.blob || t.blob.size === 0));
-    if (matchedGhost) {
-      matchedGhost.blob = file;
-      matchedGhost.isMissing = false;
-      await dbOps.updateTrack(matchedGhost);
+    let addedCount = 0;
+    let skippedCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const cleanName = file.name.trim().toLowerCase();
+
+      const matchedGhost = existingTracks.find(t => t.name.trim().toLowerCase() === cleanName && (!t.blob || t.blob.size === 0));
+      if (matchedGhost) {
+        matchedGhost.blob = file;
+        matchedGhost.isMissing = false;
+        await dbOps.updateTrack(matchedGhost);
+        addedCount++;
+        continue;
+      }
+
+      if (existingNames.has(cleanName)) {
+        skippedCount++;
+        continue;
+      }
+
+      await dbOps.saveTrack({
+        playlistId: targetId,
+        name: file.name,
+        blob: file,
+        isMissing: false,
+        order: browsingTracks.length + i
+      });
       addedCount++;
-      continue;
     }
 
-    if (existingNames.has(cleanName)) {
-      skippedCount++;
-      continue;
-    }
+    showNotification(`Added ${addedCount} song(s)${skippedCount ? ` (${skippedCount} duplicates skipped)` : ''}!`);
+    loadTracks();
+  };
+}
 
-    await dbOps.saveTrack({
-      playlistId: targetId,
-      name: file.name,
-      blob: file,
-      isMissing: false,
-      order: browsingTracks.length + i
-    });
-    addedCount++;
-  }
-
-  showNotification(`Added ${addedCount} song(s)${skippedCount ? ` (${skippedCount} duplicates skipped)` : ''}!`);
-  loadTracks();
-};
-
-// ==========================================
-// INDEPENDENT NOW PLAYING QUEUE LOGIC
-// ==========================================
+// Queue Playback Logic
 function playTrackFromBrowsing(idx) {
   if (idx < 0 || idx >= browsingTracks.length) return;
   playingQueue = [...browsingTracks];
@@ -3797,12 +4216,12 @@ async function playTrackDirect(trk) {
     updateMediaSession();
   }).catch(() => {});
 
-  miniTitle.textContent = trk.name;
-  miniSub.textContent = `Playlist: ${currentPlaylist.localName || currentPlaylist.name}`;
-  boxTitle.textContent = trk.name;
-  boxPlaylist.textContent = `Playlist: ${currentPlaylist.localName || currentPlaylist.name}`;
-  miniCover.src = currentPlaylist.localCover || currentPlaylist.cover || currentAppLogo;
-  boxCover.src = currentPlaylist.localCover || currentPlaylist.cover || currentAppLogo;
+  if (miniTitle) miniTitle.textContent = trk.name;
+  if (miniSub) miniSub.textContent = `Playlist: ${currentPlaylist.localName || currentPlaylist.name}`;
+  if (boxTitle) boxTitle.textContent = trk.name;
+  if (boxPlaylist) boxPlaylist.textContent = `Playlist: ${currentPlaylist.localName || currentPlaylist.name}`;
+  if (miniCover) miniCover.src = currentPlaylist.localCover || currentPlaylist.cover || currentAppLogo;
+  if (boxCover) boxCover.src = currentPlaylist.localCover || currentPlaylist.cover || currentAppLogo;
 
   const isFav = await dbOps.isFavorite(trk.name);
   updateLikeButtonsUI(isFav);
@@ -3825,8 +4244,8 @@ async function playTrackDirect(trk) {
 }
 
 function syncButtons(isPlaying) {
-  barBtnPlay.textContent = isPlaying ? '⏸' : '▶';
-  boxBtnPlay.textContent = isPlaying ? '⏸' : '▶';
+  if (barBtnPlay) barBtnPlay.textContent = isPlaying ? '⏸' : '▶';
+  if (boxBtnPlay) boxBtnPlay.textContent = isPlaying ? '⏸' : '▶';
   if (artDisplayBox) {
     artDisplayBox.classList.toggle('paused', !isPlaying);
   }
@@ -3889,33 +4308,39 @@ function loopNext() {
   });
 }
 
-barBtnPlay.onclick = (e) => { e.stopPropagation(); togglePlay(); };
-boxBtnPlay.onclick = togglePlay;
-boxBtnPrev.onclick = () => {
-  triggerHaptic(20);
-  executeCrossfadeTransition(() => {
-    if (!playingQueue.length) return;
-    let curIdx = playingQueue.findIndex(t => t.name === (currentPlayingTrack && currentPlayingTrack.name));
-    let prev = curIdx;
-    let attempts = 0;
-    do {
-      prev = prev > 0 ? prev - 1 : playingQueue.length - 1;
-      attempts++;
-    } while (playingQueue[prev] && (playingQueue[prev].isMissing || !playingQueue[prev].blob || playingQueue[prev].blob.size === 0) && attempts < playingQueue.length);
+if (barBtnPlay) barBtnPlay.onclick = (e) => { e.stopPropagation(); togglePlay(); };
+if (boxBtnPlay) boxBtnPlay.onclick = togglePlay;
+if (boxBtnPrev) {
+  boxBtnPrev.onclick = () => {
+    triggerHaptic(20);
+    executeCrossfadeTransition(() => {
+      if (!playingQueue.length) return;
+      let curIdx = playingQueue.findIndex(t => t.name === (currentPlayingTrack && currentPlayingTrack.name));
+      let prev = curIdx;
+      let attempts = 0;
+      do {
+        prev = prev > 0 ? prev - 1 : playingQueue.length - 1;
+        attempts++;
+      } while (playingQueue[prev] && (playingQueue[prev].isMissing || !playingQueue[prev].blob || playingQueue[prev].blob.size === 0) && attempts < playingQueue.length);
 
-    playTrackDirect(playingQueue[prev]);
-  });
-};
-boxBtnNext.onclick = () => { triggerHaptic(20); loopNext(); };
+      playTrackDirect(playingQueue[prev]);
+    });
+  };
+}
+if (boxBtnNext) boxBtnNext.onclick = () => { triggerHaptic(20); loopNext(); };
 audio.onended = loopNext;
 
-barBtnLike.onclick = (e) => {
-  e.stopPropagation();
-  if (currentPlayingTrack) toggleFavorite(currentPlayingTrack);
-};
-modalBtnLike.onclick = () => {
-  if (currentPlayingTrack) toggleFavorite(currentPlayingTrack);
-};
+if (barBtnLike) {
+  barBtnLike.onclick = (e) => {
+    e.stopPropagation();
+    if (currentPlayingTrack) toggleFavorite(currentPlayingTrack);
+  };
+}
+if (modalBtnLike) {
+  modalBtnLike.onclick = () => {
+    if (currentPlayingTrack) toggleFavorite(currentPlayingTrack);
+  };
+}
 
 function updateMediaSession() {
   if (!('mediaSession' in navigator) || !currentPlayingTrack) return;
@@ -3932,7 +4357,6 @@ function updateMediaSession() {
 
   navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
 
-  // Expanded Lock-Screen MediaSession Position State Scrubbing
   if ('setPositionState' in navigator.mediaSession && audio.duration) {
     try {
       navigator.mediaSession.setPositionState({
@@ -3963,7 +4387,7 @@ function updateMediaSession() {
 
   navigator.mediaSession.setActionHandler('nexttrack', loopNext);
   navigator.mediaSession.setActionHandler('previoustrack', () => {
-    boxBtnPrev.click();
+    if (boxBtnPrev) boxBtnPrev.click();
   });
 
   navigator.mediaSession.setActionHandler('seekto', (details) => {
@@ -3973,148 +4397,186 @@ function updateMediaSession() {
   });
 }
 
-document.getElementById('open-box-trigger').onclick = () => { 
-  playerBoxModal.style.display = 'flex'; 
-  renderSeekTicks();
-  renderCardReorderList();
-  calculateAndRenderQueueDuration();
-  updateAmbientGlow(boxCover);
-};
-document.getElementById('btn-close-box').onclick = () => { playerBoxModal.style.display = 'none'; };
+const openBoxTrig = document.getElementById('open-box-trigger');
+if (openBoxTrig) {
+  openBoxTrig.onclick = () => { 
+    if (playerBoxModal) playerBoxModal.style.display = 'flex'; 
+    renderSeekTicks();
+    renderCardReorderList();
+    calculateAndRenderQueueDuration();
+    updateAmbientGlow(boxCover);
+  };
+}
 
-document.getElementById('btn-skip-backward').onclick = () => { triggerHaptic(20); audio.currentTime = Math.max(0, audio.currentTime - 10); };
-document.getElementById('btn-skip-forward').onclick = () => { triggerHaptic(20); audio.currentTime = Math.min(audio.duration, audio.currentTime + 10); };
+const btnCloseBox = document.getElementById('btn-close-box');
+if (btnCloseBox) {
+  btnCloseBox.onclick = () => {
+    if (playerBoxModal) playerBoxModal.style.display = 'none';
+  };
+}
+
+const btnSkipBwd = document.getElementById('btn-skip-backward');
+if (btnSkipBwd) {
+  btnSkipBwd.onclick = () => {
+    triggerHaptic(20);
+    audio.currentTime = Math.max(0, audio.currentTime - 10);
+  };
+}
+
+const btnSkipFwd = document.getElementById('btn-skip-forward');
+if (btnSkipFwd) {
+  btnSkipFwd.onclick = () => {
+    triggerHaptic(20);
+    audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+  };
+}
 
 const btnSpeedToggle = document.getElementById('btn-speed-toggle');
-btnSpeedToggle.onclick = () => {
-  triggerHaptic(20);
-  currentSpeedIndex = (currentSpeedIndex + 1) % speedList.length;
-  const spd = speedList[currentSpeedIndex];
-  audio.playbackRate = spd;
-  btnSpeedToggle.textContent = `${spd}x`;
-  showNotification(`Speed: ${spd}x`);
-};
+if (btnSpeedToggle) {
+  btnSpeedToggle.onclick = () => {
+    triggerHaptic(20);
+    currentSpeedIndex = (currentSpeedIndex + 1) % speedList.length;
+    const spd = speedList[currentSpeedIndex];
+    audio.playbackRate = spd;
+    btnSpeedToggle.textContent = `${spd}x`;
+    showNotification(`Speed: ${spd}x`);
+  };
+}
 
 const btnModeShuffle = document.getElementById('btn-mode-shuffle');
 const btnModeRepeat = document.getElementById('btn-mode-repeat');
 
-btnModeShuffle.onclick = () => {
-  triggerHaptic(25);
-  if (playMode !== 'shuffle') {
-    playMode = 'shuffle';
-    btnModeShuffle.classList.add('active');
-    btnModeShuffle.textContent = '🔀 On';
-    showNotification('Shuffle: Active');
-  } else {
-    playMode = 'all';
-    btnModeShuffle.classList.remove('active');
-    btnModeShuffle.textContent = '🔀 Off';
-    showNotification('Shuffle: Off');
-  }
-};
+if (btnModeShuffle) {
+  btnModeShuffle.onclick = () => {
+    triggerHaptic(25);
+    if (playMode !== 'shuffle') {
+      playMode = 'shuffle';
+      btnModeShuffle.classList.add('active');
+      btnModeShuffle.textContent = '🔀 On';
+      showNotification('Shuffle: Active');
+    } else {
+      playMode = 'all';
+      btnModeShuffle.classList.remove('active');
+      btnModeShuffle.textContent = '🔀 Off';
+      showNotification('Shuffle: Off');
+    }
+  };
+}
 
-btnModeRepeat.onclick = () => {
-  triggerHaptic(25);
-  if (playMode === 'all') {
-    playMode = 'one';
-    btnModeRepeat.textContent = '🔂 One';
-    showNotification('Repeat: Current Song');
-  } else {
-    playMode = 'all';
-    btnModeRepeat.textContent = '🔁 All';
-    showNotification('Repeat: Entire List');
-  }
-};
+if (btnModeRepeat) {
+  btnModeRepeat.onclick = () => {
+    triggerHaptic(25);
+    if (playMode === 'all') {
+      playMode = 'one';
+      btnModeRepeat.textContent = '🔂 One';
+      showNotification('Repeat: Current Song');
+    } else {
+      playMode = 'all';
+      btnModeRepeat.textContent = '🔁 All';
+      showNotification('Repeat: Entire List');
+    }
+  };
+}
 
 const btnSleepTimer = document.getElementById('btn-sleep-timer');
 const sleepTimes = [0, 15, 30, 45, 60];
 let sleepIndex = 0;
-btnSleepTimer.onclick = () => {
-  triggerHaptic(20);
-  sleepIndex = (sleepIndex + 1) % sleepTimes.length;
-  const mins = sleepTimes[sleepIndex];
-  if (sleepTimerId) clearTimeout(sleepTimerId);
+if (btnSleepTimer) {
+  btnSleepTimer.onclick = () => {
+    triggerHaptic(20);
+    sleepIndex = (sleepIndex + 1) % sleepTimes.length;
+    const mins = sleepTimes[sleepIndex];
+    if (sleepTimerId) clearTimeout(sleepTimerId);
 
-  if (mins === 0) {
-    btnSleepTimer.textContent = '⏱️ Off';
-    showNotification('Sleep Timer: Disabled');
-  } else {
-    btnSleepTimer.textContent = `⏱️ ${mins}m`;
-    showNotification(`Sleep Timer set for ${mins} minutes`);
-    sleepTimerId = setTimeout(() => {
-      if (masterGainNode && audioCtx) {
-        masterGainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 5);
-      }
-      setTimeout(() => {
-        isManualPause = true;
-        wasPlayingBeforeInterruption = false;
-        audio.pause();
-        syncButtons(false);
-        syncGlobalEqualizerBars(false);
-        setVolume(100);
-        btnSleepTimer.textContent = '⏱️ Off';
-        sleepIndex = 0;
-        showNotification('Sleep timer ended. Goodnight!');
-      }, 5000);
-    }, mins * 60 * 1000);
-  }
-};
+    if (mins === 0) {
+      btnSleepTimer.textContent = '⏱️ Off';
+      showNotification('Sleep Timer: Disabled');
+    } else {
+      btnSleepTimer.textContent = `⏱️ ${mins}m`;
+      showNotification(`Sleep Timer set for ${mins} minutes`);
+      sleepTimerId = setTimeout(() => {
+        if (masterGainNode && audioCtx) {
+          masterGainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 5);
+        }
+        setTimeout(() => {
+          isManualPause = true;
+          wasPlayingBeforeInterruption = false;
+          audio.pause();
+          syncButtons(false);
+          syncGlobalEqualizerBars(false);
+          setVolume(100);
+          btnSleepTimer.textContent = '⏱️ Off';
+          sleepIndex = 0;
+          showNotification('Sleep timer ended. Goodnight!');
+        }, 5000);
+      }, mins * 60 * 1000);
+    }
+  };
+}
 
-// Touch Gestures on Main Viewport
-const mainViewport = document.getElementById('main-swipe-viewport');
+// Main Viewport Swipe
 let mainTouchStartX = 0;
 let mainTouchStartY = 0;
 
-mainViewport.addEventListener('touchstart', (e) => {
-  mainTouchStartX = e.touches[0].clientX;
-  mainTouchStartY = e.touches[0].clientY;
-}, { passive: true });
+if (mainViewport) {
+  mainViewport.addEventListener('touchstart', (e) => {
+    mainTouchStartX = e.touches[0].clientX;
+    mainTouchStartY = e.touches[0].clientY;
+  }, { passive: true });
 
-mainViewport.addEventListener('touchend', (e) => {
-  if (playerBoxModal.style.display === 'flex') return;
-  const diffX = e.changedTouches[0].clientX - mainTouchStartX;
-  const diffY = e.changedTouches[0].clientY - mainTouchStartY;
+  mainViewport.addEventListener('touchend', (e) => {
+    if (playerBoxModal && playerBoxModal.style.display === 'flex') return;
+    const diffX = e.changedTouches[0].clientX - mainTouchStartX;
+    const diffY = e.changedTouches[0].clientY - mainTouchStartY;
 
-  if (Math.abs(diffX) > 100 && Math.abs(diffY) < 60) {
-    if (!availablePlaylistList.length) return;
-    let plIdx = availablePlaylistList.findIndex(p => p.id === activePlaylistId);
-    if (plIdx === -1) plIdx = 0;
+    if (Math.abs(diffX) > 100 && Math.abs(diffY) < 60) {
+      if (!availablePlaylistList.length) return;
+      let plIdx = availablePlaylistList.findIndex(p => p.id === activePlaylistId);
+      if (plIdx === -1) plIdx = 0;
 
-    if (diffX < 0) {
-      plIdx = (plIdx + 1) % availablePlaylistList.length;
-    } else {
-      plIdx = (plIdx - 1 + availablePlaylistList.length) % availablePlaylistList.length;
+      if (diffX < 0) {
+        plIdx = (plIdx + 1) % availablePlaylistList.length;
+      } else {
+        plIdx = (plIdx - 1 + availablePlaylistList.length) % availablePlaylistList.length;
+      }
+
+      triggerHaptic(30);
+      activePlaylistId = availablePlaylistList[plIdx].id;
+      loadPlaylists();
     }
-
-    triggerHaptic(30);
-    activePlaylistId = availablePlaylistList[plIdx].id;
-    loadPlaylists();
-  }
-}, { passive: true });
+  }, { passive: true });
+}
 
 // A-B Looper
 const btnSetA = document.getElementById('btn-set-point-a');
 const btnSetB = document.getElementById('btn-set-point-b');
 const labelPointA = document.getElementById('label-point-a');
 const labelPointB = document.getElementById('label-point-b');
+const btnClearLoop = document.getElementById('btn-clear-loop');
 
-btnSetA.onclick = () => {
-  pointA = audio.currentTime;
-  labelPointA.textContent = formatSecs(pointA);
-  showNotification(`Loop Point A set at ${formatSecs(pointA)}`);
-};
-btnSetB.onclick = () => {
-  if (pointA === null) return showNotification('Set Point A first!');
-  pointB = audio.currentTime;
-  labelPointB.textContent = formatSecs(pointB);
-  showNotification(`Looping from ${formatSecs(pointA)} to ${formatSecs(pointB)}`);
-};
-document.getElementById('btn-clear-loop').onclick = () => {
-  pointA = null; pointB = null;
-  labelPointA.textContent = '--:--';
-  labelPointB.textContent = '--:--';
-  showNotification('A-B Loop cleared');
-};
+if (btnSetA) {
+  btnSetA.onclick = () => {
+    pointA = audio.currentTime;
+    if (labelPointA) labelPointA.textContent = formatSecs(pointA);
+    showNotification(`Loop Point A set at ${formatSecs(pointA)}`);
+  };
+}
+if (btnSetB) {
+  btnSetB.onclick = () => {
+    if (pointA === null) return showNotification('Set Point A first!');
+    pointB = audio.currentTime;
+    if (labelPointB) labelPointB.textContent = formatSecs(pointB);
+    showNotification(`Looping from ${formatSecs(pointA)} to ${formatSecs(pointB)}`);
+  };
+}
+if (btnClearLoop) {
+  btnClearLoop.onclick = () => {
+    pointA = null; pointB = null;
+    if (labelPointA) labelPointA.textContent = '--:--';
+    if (labelPointB) labelPointB.textContent = '--:--';
+    showNotification('A-B Loop cleared');
+  };
+}
 
 function formatSecs(s) {
   const m = Math.floor(s / 60) || 0;
@@ -4122,97 +4584,116 @@ function formatSecs(s) {
   return `${m}:${sec < 10 ? '0' : ''}${sec}`;
 }
 
-// Audio Trimmer (.mp3)
-const trimmerModal = document.getElementById('trimmer-modal');
+// Trimmer
 const trimStartRange = document.getElementById('trim-start-range');
 const trimEndRange = document.getElementById('trim-end-range');
 const lblTrimStart = document.getElementById('lbl-trim-start');
 const lblTrimEnd = document.getElementById('lbl-trim-end');
 
-document.getElementById('btn-open-trim-dialog').onclick = () => {
-  if (!currentPlayingTrack) return showNotification('Play a song to trim!');
-  document.getElementById('trimmer-track-name').textContent = currentPlayingTrack.name;
-  const dur = audio.duration || 100;
-  trimStartRange.max = dur;
-  trimEndRange.max = dur;
-  trimStartRange.value = 0;
-  trimEndRange.value = Math.min(30, dur);
-  lblTrimStart.textContent = '0.0s';
-  lblTrimEnd.textContent = `${Math.min(30, dur).toFixed(1)}s`;
-  trimmerModal.style.display = 'flex';
-};
-
-document.getElementById('btn-cancel-trimmer').onclick = () => { trimmerModal.style.display = 'none'; };
-
-trimStartRange.oninput = (e) => {
-  let s = parseFloat(e.target.value);
-  let end = parseFloat(trimEndRange.value);
-  if (s >= end) {
-    s = Math.max(0, end - 1);
-    trimStartRange.value = s;
-  }
-  lblTrimStart.textContent = `${s.toFixed(1)}s`;
-};
-
-trimEndRange.oninput = (e) => {
-  let end = parseFloat(e.target.value);
-  let s = parseFloat(trimStartRange.value);
-  if (end <= s) {
-    end = Math.min(parseFloat(trimEndRange.max), s + 1);
-    trimEndRange.value = end;
-  }
-  lblTrimEnd.textContent = `${end.toFixed(1)}s`;
-};
-
-document.getElementById('btn-save-ringtone').onclick = async () => {
-  if (!currentPlayingTrack) return;
-  triggerHaptic(35);
-  const trk = currentPlayingTrack;
-  const startSec = parseFloat(trimStartRange.value);
-  const endSec = parseFloat(trimEndRange.value);
-
-  showNotification('Encoding compressed offline MP3 clip...');
-
-  try {
-    const arrayBuf = await trk.blob.arrayBuffer();
-    const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const decodedAudio = await tempCtx.decodeAudioData(arrayBuf);
-
-    const sampleRate = decodedAudio.sampleRate;
-    const startSample = Math.floor(startSec * sampleRate);
-    const endSample = Math.floor(endSec * sampleRate);
-    const frameCount = endSample - startSample;
-
-    const slicedBuffer = tempCtx.createBuffer(
-      decodedAudio.numberOfChannels,
-      frameCount,
-      sampleRate
-    );
-
-    for (let channel = 0; channel < decodedAudio.numberOfChannels; channel++) {
-      const channelData = decodedAudio.getChannelData(channel);
-      slicedBuffer.copyToChannel(channelData.subarray(startSample, endSample), channel, 0);
+const btnOpenTrim = document.getElementById('btn-open-trim-dialog');
+if (btnOpenTrim) {
+  btnOpenTrim.onclick = () => {
+    if (!currentPlayingTrack) return showNotification('Play a song to trim!');
+    const trkNameEl = document.getElementById('trimmer-track-name');
+    if (trkNameEl) trkNameEl.textContent = currentPlayingTrack.name;
+    const dur = audio.duration || 100;
+    if (trimStartRange) {
+      trimStartRange.max = dur;
+      trimStartRange.value = 0;
     }
+    if (trimEndRange) {
+      trimEndRange.max = dur;
+      trimEndRange.value = Math.min(30, dur);
+    }
+    if (lblTrimStart) lblTrimStart.textContent = '0.0s';
+    if (lblTrimEnd) lblTrimEnd.textContent = `${Math.min(30, dur).toFixed(1)}s`;
+    if (trimmerModal) trimmerModal.style.display = 'flex';
+  };
+}
 
-    const mp3Blob = encodeAudioBufferToMp3(slicedBuffer);
-    const clipName = `${trk.name.replace(/\.[^/.]+$/, "")}_clip_${formatSecs(startSec)}-${formatSecs(endSec)}.mp3`;
+const btnCancelTrim = document.getElementById('btn-cancel-trimmer');
+if (btnCancelTrim) {
+  btnCancelTrim.onclick = () => {
+    if (trimmerModal) trimmerModal.style.display = 'none';
+  };
+}
 
-    await dbOps.saveTrimmedClip({
-      songName: trk.name,
-      clipName: clipName,
-      blob: mp3Blob,
-      duration: (endSec - startSec).toFixed(1),
-      createdAt: getIndianStandardTime()
-    });
+if (trimStartRange) {
+  trimStartRange.oninput = (e) => {
+    let s = parseFloat(e.target.value);
+    let end = trimEndRange ? parseFloat(trimEndRange.value) : 30;
+    if (s >= end) {
+      s = Math.max(0, end - 1);
+      trimStartRange.value = s;
+    }
+    if (lblTrimStart) lblTrimStart.textContent = `${s.toFixed(1)}s`;
+  };
+}
 
-    trimmerModal.style.display = 'none';
-    showNotification(`MP3 Clip "${clipName}" created!`);
-    renderTrimmedClipsForCurrent();
-  } catch (err) {
-    console.error(err);
-    showNotification('Error slicing audio file.');
-  }
-};
+if (trimEndRange) {
+  trimEndRange.oninput = (e) => {
+    let end = parseFloat(e.target.value);
+    let s = trimStartRange ? parseFloat(trimStartRange.value) : 0;
+    if (end <= s) {
+      end = Math.min(parseFloat(trimEndRange.max), s + 1);
+      trimEndRange.value = end;
+    }
+    if (lblTrimEnd) lblTrimEnd.textContent = `${end.toFixed(1)}s`;
+  };
+}
+
+const btnSaveRingtone = document.getElementById('btn-save-ringtone');
+if (btnSaveRingtone) {
+  btnSaveRingtone.onclick = async () => {
+    if (!currentPlayingTrack) return;
+    triggerHaptic(35);
+    const trk = currentPlayingTrack;
+    const startSec = trimStartRange ? parseFloat(trimStartRange.value) : 0;
+    const endSec = trimEndRange ? parseFloat(trimEndRange.value) : 30;
+
+    showNotification('Encoding compressed offline MP3 clip...');
+
+    try {
+      const arrayBuf = await trk.blob.arrayBuffer();
+      const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const decodedAudio = await tempCtx.decodeAudioData(arrayBuf);
+
+      const sampleRate = decodedAudio.sampleRate;
+      const startSample = Math.floor(startSec * sampleRate);
+      const endSample = Math.floor(endSec * sampleRate);
+      const frameCount = endSample - startSample;
+
+      const slicedBuffer = tempCtx.createBuffer(
+        decodedAudio.numberOfChannels,
+        frameCount,
+        sampleRate
+      );
+
+      for (let channel = 0; channel < decodedAudio.numberOfChannels; channel++) {
+        const channelData = decodedAudio.getChannelData(channel);
+        slicedBuffer.copyToChannel(channelData.subarray(startSample, endSample), channel, 0);
+      }
+
+      const mp3Blob = encodeAudioBufferToMp3(slicedBuffer);
+      const clipName = `${trk.name.replace(/\.[^/.]+$/, "")}_clip_${formatSecs(startSec)}-${formatSecs(endSec)}.mp3`;
+
+      await dbOps.saveTrimmedClip({
+        songName: trk.name,
+        clipName: clipName,
+        blob: mp3Blob,
+        duration: (endSec - startSec).toFixed(1),
+        createdAt: getIndianStandardTime()
+      });
+
+      if (trimmerModal) trimmerModal.style.display = 'none';
+      showNotification(`MP3 Clip "${clipName}" created!`);
+      renderTrimmedClipsForCurrent();
+    } catch (err) {
+      console.error(err);
+      showNotification('Error slicing audio file.');
+    }
+  };
+}
 
 function encodeAudioBufferToMp3(buffer) {
   const numChannels = buffer.numberOfChannels;
@@ -4248,6 +4729,7 @@ function encodeAudioBufferToMp3(buffer) {
 
 async function renderTrimmedClipsForCurrent() {
   const list = document.getElementById('trimmed-clips-list');
+  if (!list) return;
   list.innerHTML = '';
 
   if (!currentPlayingTrack) {
@@ -4279,37 +4761,45 @@ async function renderTrimmedClipsForCurrent() {
     const clipAudio = new Audio(URL.createObjectURL(c.blob));
     const btnPlay = li.querySelector('.btn-play-clip');
 
-    btnPlay.onclick = () => {
-      triggerHaptic(20);
-      if (clipAudio.paused) {
-        clipAudio.play();
-        btnPlay.textContent = '⏸';
-      } else {
-        clipAudio.pause();
-        btnPlay.textContent = '▶';
-      }
-    };
-    clipAudio.onended = () => { btnPlay.textContent = '▶'; };
+    if (btnPlay) {
+      btnPlay.onclick = () => {
+        triggerHaptic(20);
+        if (clipAudio.paused) {
+          clipAudio.play();
+          btnPlay.textContent = '⏸';
+        } else {
+          clipAudio.pause();
+          btnPlay.textContent = '▶';
+        }
+      };
+    }
+    clipAudio.onended = () => { if (btnPlay) btnPlay.textContent = '▶'; };
 
-    li.querySelector('.btn-dl-clip').onclick = () => {
-      triggerHaptic(20);
-      const url = URL.createObjectURL(c.blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = c.clipName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      showNotification(`Downloaded: ${c.clipName}`);
-    };
+    const btnDl = li.querySelector('.btn-dl-clip');
+    if (btnDl) {
+      btnDl.onclick = () => {
+        triggerHaptic(20);
+        const url = URL.createObjectURL(c.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = c.clipName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showNotification(`Downloaded: ${c.clipName}`);
+      };
+    }
 
-    li.querySelector('.btn-del-clip').onclick = async () => {
-      triggerHaptic(25);
-      await dbOps.deleteTrimmedClip(c.id);
-      renderTrimmedClipsForCurrent();
-      showNotification('Clip deleted');
-    };
+    const btnDel = li.querySelector('.btn-del-clip');
+    if (btnDel) {
+      btnDel.onclick = async () => {
+        triggerHaptic(25);
+        await dbOps.deleteTrimmedClip(c.id);
+        renderTrimmedClipsForCurrent();
+        showNotification('Clip deleted');
+      };
+    }
 
     list.appendChild(li);
   });
@@ -4339,14 +4829,15 @@ const btns = {
 function togglePanel(key) {
   triggerHaptic(20);
   const target = panels[key];
+  if (!target) return;
   const isHidden = target.style.display === 'none' || !target.style.display;
   
-  Object.values(panels).forEach(p => p.style.display = 'none');
-  Object.values(btns).forEach(b => b.classList.remove('active'));
+  Object.values(panels).forEach(p => { if (p) p.style.display = 'none'; });
+  Object.values(btns).forEach(b => { if (b) b.classList.remove('active'); });
 
   if (isHidden) {
     target.style.display = 'block';
-    btns[key].classList.add('active');
+    if (btns[key]) btns[key].classList.add('active');
 
     if (key === 'playlist') {
       renderCardReorderList();
@@ -4362,38 +4853,39 @@ function togglePanel(key) {
   }
 }
 
-btns.vol.onclick = () => togglePanel('vol');
-btns.eq.onclick = () => togglePanel('eq');
-btns.timestamps.onclick = () => togglePanel('timestamps');
-btns.looper.onclick = () => togglePanel('looper');
-btns.lyrics.onclick = () => togglePanel('lyrics');
-btns.playlist.onclick = () => togglePanel('playlist');
-btns.trimmer.onclick = () => togglePanel('trimmer');
+if (btns.vol) btns.vol.onclick = () => togglePanel('vol');
+if (btns.eq) btns.eq.onclick = () => togglePanel('eq');
+if (btns.timestamps) btns.timestamps.onclick = () => togglePanel('timestamps');
+if (btns.looper) btns.looper.onclick = () => togglePanel('looper');
+if (btns.lyrics) btns.lyrics.onclick = () => togglePanel('lyrics');
+if (btns.playlist) btns.playlist.onclick = () => togglePanel('playlist');
+if (btns.trimmer) btns.trimmer.onclick = () => togglePanel('trimmer');
 
-document.getElementById('card-vol-slider').addEventListener('input', (e) => {
-  triggerHaptic(10);
-  setVolume(e.target.value);
-});
+const cardVolSlider = document.getElementById('card-vol-slider');
+if (cardVolSlider) {
+  cardVolSlider.addEventListener('input', (e) => {
+    triggerHaptic(10);
+    setVolume(e.target.value);
+  });
+}
 
-const lyricsTextarea = document.getElementById('lyrics-textarea');
 async function loadLyricsForCurrent() {
-  if (!currentPlayingTrack) return;
+  if (!currentPlayingTrack || !lyricsTextarea) return;
   const text = await dbOps.getLyrics(currentPlayingTrack.name);
   lyricsTextarea.value = text;
 }
-document.getElementById('btn-save-lyrics').onclick = async () => {
-  triggerHaptic(25);
-  if (!currentPlayingTrack) return;
-  await dbOps.setLyrics(currentPlayingTrack.name, lyricsTextarea.value);
-  showNotification('Lyrics saved offline!');
-};
+
+const btnSaveLyrics = document.getElementById('btn-save-lyrics');
+if (btnSaveLyrics) {
+  btnSaveLyrics.onclick = async () => {
+    triggerHaptic(25);
+    if (!currentPlayingTrack || !lyricsTextarea) return;
+    await dbOps.setLyrics(currentPlayingTrack.name, lyricsTextarea.value);
+    showNotification('Lyrics saved offline!');
+  };
+}
 
 // Timestamps
-const timestampModal = document.getElementById('timestamp-modal');
-const timestampNameInput = document.getElementById('timestamp-name-input');
-const timestampTimePreview = document.getElementById('timestamp-time-preview');
-const timestampMarkersList = document.getElementById('timestamp-markers-list');
-
 async function loadTimestampsForCurrent() {
   if (!currentPlayingTrack) {
     currentSongTimestamps = [];
@@ -4405,6 +4897,7 @@ async function loadTimestampsForCurrent() {
 }
 
 function renderSeekTicks() {
+  if (!seekTicksLayer) return;
   seekTicksLayer.innerHTML = '';
   if (!audio.duration || !currentSongTimestamps.length) return;
   currentSongTimestamps.forEach(ts => {
@@ -4420,6 +4913,7 @@ function renderSeekTicks() {
 }
 
 function renderTimestampsDrawerList() {
+  if (!timestampMarkersList) return;
   timestampMarkersList.innerHTML = '';
   if (!currentSongTimestamps.length) {
     timestampMarkersList.innerHTML = '<li style="color:var(--text-muted);text-align:center;font-size:0.8rem;padding:12px 0;">No timestamps saved yet.</li>';
@@ -4460,55 +4954,72 @@ function renderTimestampsDrawerList() {
       renderTimestampsDrawerList();
     };
 
-    li.querySelector('.btn-del').onclick = (e) => {
-      e.stopPropagation();
-      triggerHaptic(25);
-      const targetTs = ts;
-      currentSongTimestamps = currentSongTimestamps.filter(item => item.id !== ts.id);
-      renderTimestampsDrawerList();
-      renderSeekTicks();
-
-      showUndoToast(`Deleted marker "${targetTs.name}"`, () => {
-        currentSongTimestamps.push(targetTs);
-        currentSongTimestamps.sort((a, b) => a.time - b.time);
+    const delBtn = li.querySelector('.btn-del');
+    if (delBtn) {
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        triggerHaptic(25);
+        const targetTs = ts;
+        currentSongTimestamps = currentSongTimestamps.filter(item => item.id !== ts.id);
         renderTimestampsDrawerList();
         renderSeekTicks();
-      }, async () => {
-        await dbOps.saveTimestamps(currentPlayingTrack.name, currentSongTimestamps);
-      });
-    };
+
+        showUndoToast(`Deleted marker "${targetTs.name}"`, () => {
+          currentSongTimestamps.push(targetTs);
+          currentSongTimestamps.sort((a, b) => a.time - b.time);
+          renderTimestampsDrawerList();
+          renderSeekTicks();
+        }, async () => {
+          await dbOps.saveTimestamps(currentPlayingTrack.name, currentSongTimestamps);
+        });
+      };
+    }
 
     timestampMarkersList.appendChild(li);
   });
 }
 
-document.getElementById('btn-add-timestamp').onclick = () => {
-  triggerHaptic(20);
-  if (!currentPlayingTrack) {
-    return showNotification('Play a song to bookmark a timestamp!');
-  }
-  pendingTimestampTime = audio.currentTime;
-  timestampTimePreview.textContent = `At timestamp: ${formatSecs(pendingTimestampTime)}`;
-  timestampNameInput.value = '';
-  timestampModal.style.display = 'flex';
-  timestampNameInput.focus();
-};
+const btnAddTimestamp = document.getElementById('btn-add-timestamp');
+if (btnAddTimestamp) {
+  btnAddTimestamp.onclick = () => {
+    triggerHaptic(20);
+    if (!currentPlayingTrack) {
+      return showNotification('Play a song to bookmark a timestamp!');
+    }
+    pendingTimestampTime = audio.currentTime;
+    if (timestampTimePreview) timestampTimePreview.textContent = `At timestamp: ${formatSecs(pendingTimestampTime)}`;
+    if (timestampNameInput) {
+      timestampNameInput.value = '';
+      timestampNameInput.focus();
+    }
+    if (timestampModal) timestampModal.style.display = 'flex';
+  };
+}
 
-document.getElementById('btn-cancel-timestamp').onclick = () => { timestampModal.style.display = 'none'; };
+const btnCancelTimestamp = document.getElementById('btn-cancel-timestamp');
+if (btnCancelTimestamp) {
+  btnCancelTimestamp.onclick = () => {
+    if (timestampModal) timestampModal.style.display = 'none';
+  };
+}
 
-document.getElementById('btn-confirm-timestamp').onclick = async () => {
-  triggerHaptic(30);
-  const name = timestampNameInput.value.trim() || `Marker at ${formatSecs(pendingTimestampTime)}`;
-  currentSongTimestamps.push({ id: 'ts_' + Date.now(), time: pendingTimestampTime, name });
-  currentSongTimestamps.sort((a, b) => a.time - b.time);
-  await dbOps.saveTimestamps(currentPlayingTrack.name, currentSongTimestamps);
-  timestampModal.style.display = 'none';
-  showNotification(`Marker "${name}" saved!`);
-  renderTimestampsDrawerList();
-  renderSeekTicks();
-};
+const btnConfirmTimestamp = document.getElementById('btn-confirm-timestamp');
+if (btnConfirmTimestamp) {
+  btnConfirmTimestamp.onclick = async () => {
+    triggerHaptic(30);
+    const name = (timestampNameInput ? timestampNameInput.value.trim() : '') || `Marker at ${formatSecs(pendingTimestampTime)}`;
+    currentSongTimestamps.push({ id: 'ts_' + Date.now(), time: pendingTimestampTime, name });
+    currentSongTimestamps.sort((a, b) => a.time - b.time);
+    await dbOps.saveTimestamps(currentPlayingTrack.name, currentSongTimestamps);
+    if (timestampModal) timestampModal.style.display = 'none';
+    showNotification(`Marker "${name}" saved!`);
+    renderTimestampsDrawerList();
+    renderSeekTicks();
+  };
+}
 
 function updateActiveTimestampBadge() {
+  if (!activeMarkerPill || !activeMarkerName) return;
   if (!currentSongTimestamps.length) {
     activeMarkerPill.style.display = 'none';
     return;
@@ -4541,25 +5052,32 @@ function checkResumeSession() {
   const lastTime = parseFloat(localStorage.getItem('ammu_last_time') || '0');
   if (lastSong && lastTime > 5) {
     const chip = document.getElementById('resume-playback-chip');
-    document.getElementById('resume-chip-text').textContent = `Resume "${lastSong.substring(0, 15)}..." at ${formatSecs(lastTime)}?`;
-    chip.style.display = 'flex';
+    const chipText = document.getElementById('resume-chip-text');
+    if (chipText) chipText.textContent = `Resume "${lastSong.substring(0, 15)}..." at ${formatSecs(lastTime)}?`;
+    if (chip) chip.style.display = 'flex';
 
-    document.getElementById('btn-resume-session').onclick = async () => {
-      chip.style.display = 'none';
-      const plId = localStorage.getItem('ammu_last_pl') || 'all';
-      const songListTarget = await dbOps.getTracks(plId);
-      const targetTrk = songListTarget.find(t => t.name === lastSong);
-      if (targetTrk && (!targetTrk.isMissing && targetTrk.blob && targetTrk.blob.size > 0)) {
-        playingQueue = [...songListTarget];
-        await playTrackDirect(targetTrk);
-        audio.currentTime = lastTime;
-      }
-    };
+    const btnResume = document.getElementById('btn-resume-session');
+    if (btnResume) {
+      btnResume.onclick = async () => {
+        if (chip) chip.style.display = 'none';
+        const plId = localStorage.getItem('ammu_last_pl') || 'all';
+        const songListTarget = await dbOps.getTracks(plId);
+        const targetTrk = songListTarget.find(t => t.name === lastSong);
+        if (targetTrk && (!targetTrk.isMissing && targetTrk.blob && targetTrk.blob.size > 0)) {
+          playingQueue = [...songListTarget];
+          await playTrackDirect(targetTrk);
+          audio.currentTime = lastTime;
+        }
+      };
+    }
 
-    document.getElementById('btn-dismiss-resume').onclick = () => {
-      chip.style.display = 'none';
-      localStorage.removeItem('ammu_last_song');
-    };
+    const btnDismissResume = document.getElementById('btn-dismiss-resume');
+    if (btnDismissResume) {
+      btnDismissResume.onclick = () => {
+        if (chip) chip.style.display = 'none';
+        localStorage.removeItem('ammu_last_song');
+      };
+    }
   }
 }
 
@@ -4568,13 +5086,12 @@ audio.ontimeupdate = () => {
   if (pointA !== null && pointB !== null && pointB > pointA) {
     if (audio.currentTime >= pointB) audio.currentTime = pointA;
   }
-  seekBar.value = (audio.currentTime / audio.duration) * 100;
-  currTime.textContent = formatSecs(audio.currentTime);
-  durTime.textContent = formatSecs(audio.duration);
+  if (seekBar) seekBar.value = (audio.currentTime / audio.duration) * 100;
+  if (currTime) currTime.textContent = formatSecs(audio.currentTime);
+  if (durTime) durTime.textContent = formatSecs(audio.duration);
   updateActiveTimestampBadge();
   saveCurrentSessionState();
 
-  // Keep lockscreen scrub bar in sync
   if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
     try {
       navigator.mediaSession.setPositionState({
@@ -4586,13 +5103,13 @@ audio.ontimeupdate = () => {
   }
 };
 
-seekBar.oninput = () => {
-  if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
-};
+if (seekBar) {
+  seekBar.oninput = () => {
+    if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
+  };
+}
 
-// =============================================================
-// IN-CARD QUEUE: SCROLL-FREEZE, AUTO-SCROLL, DRAG PREVIEW & RED GUIDE
-// =============================================================
+// In-Card Queue Management
 function calculateAndRenderQueueDuration() {
   const badge = document.getElementById('card-queue-duration-badge');
   if (!badge) return;
@@ -4618,6 +5135,7 @@ let activeMoveHandler = null;
 let activeUpHandler = null;
 
 function renderCardReorderList() {
+  if (!cardReorderList) return;
   cardReorderList.innerHTML = '';
   const dropIndicator = document.getElementById('queue-drop-indicator');
   const dragPreview = document.getElementById('queue-drag-preview');
@@ -4644,19 +5162,25 @@ function renderCardReorderList() {
         <button class="btn-del" title="Remove from queue">✕</button>
       `;
 
-      qLi.querySelector('.song-name').onclick = () => {
-        triggerHaptic(25);
-        playNextQueue.splice(qIdx, 1);
-        playTrackDirect(queuedTrk);
-      };
+      const sName = qLi.querySelector('.song-name');
+      if (sName) {
+        sName.onclick = () => {
+          triggerHaptic(25);
+          playNextQueue.splice(qIdx, 1);
+          playTrackDirect(queuedTrk);
+        };
+      }
 
-      qLi.querySelector('.btn-del').onclick = (e) => {
-        e.stopPropagation();
-        triggerHaptic(20);
-        playNextQueue.splice(qIdx, 1);
-        renderCardReorderList();
-        calculateAndRenderQueueDuration();
-      };
+      const delBtn = qLi.querySelector('.btn-del');
+      if (delBtn) {
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          triggerHaptic(20);
+          playNextQueue.splice(qIdx, 1);
+          renderCardReorderList();
+          calculateAndRenderQueueDuration();
+        };
+      }
 
       cardReorderList.appendChild(qLi);
     });
@@ -4693,15 +5217,17 @@ function renderCardReorderList() {
       </div>
     `;
 
-    li.querySelector('.song-name').onclick = () => {
-      if (isMissing) {
-        showNotification(`"${trk.name}" is not in device storage.`);
-        return;
-      }
-      playTrackDirect(trk);
-    };
+    const sName = li.querySelector('.song-name');
+    if (sName) {
+      sName.onclick = () => {
+        if (isMissing) {
+          showNotification(`"${trk.name}" is not in device storage.`);
+          return;
+        }
+        playTrackDirect(trk);
+      };
+    }
 
-    // Long-Press Scroll-Freeze Drag Engine
     let pressTimer = null;
     let isDraggingThis = false;
 
@@ -4738,11 +5264,12 @@ function renderCardReorderList() {
         ev.preventDefault();
 
         const touchY = ev.touches[0].clientY;
-        const panelRect = document.getElementById('card-playlist-panel').getBoundingClientRect();
+        const panel = document.getElementById('card-playlist-panel');
+        if (!panel) return;
+        const panelRect = panel.getBoundingClientRect();
 
         updateDragPreviewPosition(touchY);
 
-        // Boundary Auto-Scroll
         const scrollZone = 44;
         if (touchY < panelRect.top + scrollZone) {
           startBoundaryAutoScroll(-6);
@@ -4752,7 +5279,6 @@ function renderCardReorderList() {
           stopBoundaryAutoScroll();
         }
 
-        // Midpoint calculations
         const rows = Array.from(cardReorderList.querySelectorAll('.drawer-track-row:not(.dragging)'));
         let calculatedLineY = null;
         let chosenTargetIndex = rows.length;
@@ -4821,7 +5347,7 @@ function renderCardReorderList() {
 function updateDragPreviewPosition(touchY) {
   const dragPreview = document.getElementById('queue-drag-preview');
   const panel = document.getElementById('card-playlist-panel');
-  if (!dragPreview || !panel) return;
+  if (!dragPreview || !panel || !cardReorderList) return;
   const pRect = panel.getBoundingClientRect();
   const relY = touchY - pRect.top - 20;
   const clampedY = Math.max(cardReorderList.offsetTop, Math.min(cardReorderList.offsetTop + cardReorderList.offsetHeight - 48, relY));
@@ -4829,7 +5355,7 @@ function updateDragPreviewPosition(touchY) {
 }
 
 function startBoundaryAutoScroll(speed) {
-  if (autoScrollInterval) return;
+  if (autoScrollInterval || !cardReorderList) return;
   autoScrollInterval = setInterval(() => {
     cardReorderList.scrollTop += speed;
   }, 16);
@@ -4862,12 +5388,16 @@ window.removeTrackFromQueue = (idx) => {
 };
 
 // VLC Equalizer Controls
-document.getElementById('slider-bass-boost').oninput = (e) => {
-  triggerHaptic(10);
-  const val = parseFloat(e.target.value);
-  document.getElementById('val-bass-boost').textContent = `${val}dB`;
-  if (bassFilterNode) bassFilterNode.gain.value = val;
-};
+const sliderBassBoost = document.getElementById('slider-bass-boost');
+if (sliderBassBoost) {
+  sliderBassBoost.oninput = (e) => {
+    triggerHaptic(10);
+    const val = parseFloat(e.target.value);
+    const valLbl = document.getElementById('val-bass-boost');
+    if (valLbl) valLbl.textContent = `${val}dB`;
+    if (bassFilterNode) bassFilterNode.gain.value = val;
+  };
+}
 
 document.querySelectorAll('[data-vlc-band]').forEach((s) => {
   s.oninput = (e) => {
@@ -4875,50 +5405,66 @@ document.querySelectorAll('[data-vlc-band]').forEach((s) => {
     const b = parseInt(e.target.dataset.vlcBand, 10);
     const val = parseFloat(e.target.value);
     if (vlcFilters[b]) vlcFilters[b].gain.value = val;
-    document.getElementById(`val-${vlcBands[b]}`).textContent = `${val}dB`;
+    const valLbl = document.getElementById(`val-${vlcBands[b]}`);
+    if (valLbl) valLbl.textContent = `${val}dB`;
   };
 });
 
-document.getElementById('eq-preamp').oninput = (e) => {
-  triggerHaptic(10);
-  const val = parseFloat(e.target.value);
-  document.getElementById('val-preamp').textContent = `${val}dB`;
-  if (preampGain) preampGain.gain.setValueAtTime(Math.pow(10, val / 20) * 0.35, audioCtx.currentTime);
-};
+const eqPreamp = document.getElementById('eq-preamp');
+if (eqPreamp) {
+  eqPreamp.oninput = (e) => {
+    triggerHaptic(10);
+    const val = parseFloat(e.target.value);
+    const valLbl = document.getElementById('val-preamp');
+    if (valLbl) valLbl.textContent = `${val}dB`;
+    if (preampGain && audioCtx) preampGain.gain.setValueAtTime(Math.pow(10, val / 20) * 0.35, audioCtx.currentTime);
+  };
+}
 
-document.getElementById('card-eq-enable').onchange = (e) => {
-  triggerHaptic(20);
-  applyDSPState(e.target.checked);
-};
+const cardEqEnable = document.getElementById('card-eq-enable');
+if (cardEqEnable) {
+  cardEqEnable.onchange = (e) => {
+    triggerHaptic(20);
+    applyDSPState(e.target.checked);
+  };
+}
 
-document.getElementById('btn-reset-eq-card').onclick = () => {
-  triggerHaptic(25);
-  document.getElementById('eq-preamp').value = 14.1;
-  document.getElementById('val-preamp').textContent = '14.1dB';
-  if (preampGain && audioCtx) preampGain.gain.setValueAtTime(Math.pow(10, 14.1 / 20) * 0.35, audioCtx.currentTime);
-  defaultVlcGains.forEach((g, i) => {
-    const slider = document.querySelector(`[data-vlc-band="${i}"]`);
-    if (slider) slider.value = g;
-    const label = document.getElementById(`val-${vlcBands[i]}`);
-    if (label) label.textContent = `${g}dB`;
-    if (vlcFilters[i]) vlcFilters[i].gain.value = g;
-  });
-  applyVivoPreset('close');
-  showNotification('Equalizer reset to default');
-};
+const btnResetEqCard = document.getElementById('btn-reset-eq-card');
+if (btnResetEqCard) {
+  btnResetEqCard.onclick = () => {
+    triggerHaptic(25);
+    if (eqPreamp) eqPreamp.value = 14.1;
+    const valPre = document.getElementById('val-preamp');
+    if (valPre) valPre.textContent = '14.1dB';
+    if (preampGain && audioCtx) preampGain.gain.setValueAtTime(Math.pow(10, 14.1 / 20) * 0.35, audioCtx.currentTime);
+    defaultVlcGains.forEach((g, i) => {
+      const slider = document.querySelector(`[data-vlc-band="${i}"]`);
+      if (slider) slider.value = g;
+      const label = document.getElementById(`val-${vlcBands[i]}`);
+      if (label) label.textContent = `${g}dB`;
+      if (vlcFilters[i]) vlcFilters[i].gain.value = g;
+    });
+    applyVivoPreset('close');
+    showNotification('Equalizer reset to default');
+  };
+}
 
-// ==========================================
-// SYSTEM BOOT (100% VOLUME & FLAT DSP OFF)
-// ==========================================
+// =============================================================
+// SYSTEM BOOT (SAFE EXECUTION WITH ERROR CATCHING)
+// =============================================================
 initDB().then(async () => {
-  await checkOnboarding();
-  await loadAppBranding();
-  await loadDevProfile();
-  await loadPlaylists();
-  checkResumeSession();
-  
-  applyDSPState(false);
-  setVolume(100);
-  drawVivoSplineCurve();
-  loadCustomEqCarousel();
+  try {
+    await checkOnboarding();
+    await loadAppBranding();
+    await loadDevProfile();
+    await loadPlaylists();
+    checkResumeSession();
+    
+    applyDSPState(false);
+    setVolume(100);
+    drawVivoSplineCurve();
+    loadCustomEqCarousel();
+  } catch (err) {
+    console.error('Safe Boot Interception:', err);
+  }
 });
