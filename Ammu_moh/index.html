@@ -16,7 +16,7 @@
   <div id="toast-container" class="toast-container"></div>
   <div id="heart-burst-overlay" class="heart-burst-overlay" style="display:none;"></div>
 
-  <!-- Big Floating Emotional Overlay & Messages -->
+  <!-- Big Floating Emotional Banner with Isolated Emoji -->
   <div id="emotional-floating-container" class="emotional-floating-wrapper" style="display:none;">
     <div id="emotional-big-emoji" class="emotional-big-emoji">🥹</div>
     <div class="emotional-card">
@@ -25,7 +25,7 @@
     </div>
   </div>
 
-  <!-- Single Settings Hub Dropdown -->
+  <!-- Header Settings Hub Menu -->
   <div id="header-settings-menu" class="context-menu-pop" style="display:none; right:16px; top:54px;">
     <button id="menu-btn-my-account" class="menu-pop-item">👤 My Account &amp; Data Center</button>
     <button id="menu-btn-install-pwa" class="menu-pop-item">📥 Install Ammu</button>
@@ -50,7 +50,7 @@
     <button id="menu-btn-remove-from-pl" class="menu-pop-item" style="color:#f85149;">🗑️ Remove from Playlist</button>
   </div>
 
-  <!-- Submenu: Add Track to Existing Playlist -->
+  <!-- Submenu: Add to Playlist -->
   <div id="add-to-playlist-submenu" class="context-menu-pop" style="display:none;">
     <div style="font-size:0.75rem;padding:4px 8px;color:var(--text-muted);border-bottom:1px solid var(--border);">Select Playlist:</div>
     <div id="add-to-playlist-options-box" style="display:flex;flex-direction:column;gap:2px;max-height:160px;overflow-y:auto;"></div>
@@ -63,18 +63,61 @@
     <button id="pl-menu-btn-delete" class="menu-pop-item" style="color:#f85149;">🗑️ Delete Playlist</button>
   </div>
 
-  <!-- Key Authentication Modal (Supports Encryption, Passkey, Download, Master) -->
-  <div id="key-auth-modal" class="modal-backdrop" style="display:none;">
+  <!-- PHASE 1: Isolated Decryption Modal (Appears ONLY if AES Encrypted) -->
+  <div id="decryption-auth-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box text-center">
-      <h3 id="key-auth-title">🔒 Protected Action</h3>
-      <p class="modal-desc" id="key-auth-desc">Enter the appropriate key or Master Key to proceed.</p>
+      <div style="font-size:2.4rem;margin-bottom:6px;">🔐</div>
+      <h3>AES-256 Decryption Key Required</h3>
+      <p class="modal-desc">This backup file is encrypted. Enter the decryption key to unlock its contents.</p>
       <div class="form-group text-left">
-        <label for="key-auth-input" id="key-auth-label">Enter Key</label>
-        <input type="password" id="key-auth-input" class="input-text" placeholder="Key" autocomplete="off" />
+        <label for="decryption-key-input">Decryption Key</label>
+        <input type="password" id="decryption-key-input" class="input-text" placeholder="Enter encryption key" autocomplete="off" />
       </div>
       <div class="modal-actions" style="margin-top:14px;">
-        <button type="button" id="btn-cancel-key-auth" class="btn-action">Cancel</button>
-        <button type="button" id="btn-confirm-key-auth" class="btn-primary-large" style="width:auto;padding:10px 20px;">Authorize</button>
+        <button type="button" id="btn-cancel-decryption" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-decryption" class="btn-primary-large" style="width:auto;padding:10px 20px;">Decrypt File</button>
+      </div>
+      <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
+    </div>
+  </div>
+
+  <!-- PHASE 2: Secondary Keys Multi-Checkbox Selector Modal -->
+  <div id="secondary-keys-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box text-center">
+      <h3>🔑 Creator Key Permissions</h3>
+      <p class="modal-desc">This backup contains protected features. Check the keys you wish to provide:</p>
+      
+      <div class="form-group text-left" style="background:#090d15;padding:10px;border-radius:8px;border:1px solid var(--border);">
+        <!-- Option A: Master Key (Exclusive) -->
+        <label class="checkbox-label" style="font-weight:bold;color:var(--accent-light);">
+          <input type="checkbox" id="chk-enter-master-key" /> 👑 Enter Master Key (Unlocks All Features)
+        </label>
+        <div id="box-master-key-input" style="display:none;margin:6px 0 10px 0;">
+          <input type="password" id="in-master-key" class="input-text" placeholder="Enter Master Key" autocomplete="off" />
+          <small style="color:var(--text-muted);font-size:0.72rem;display:block;margin-top:2px;">Grants downloads and local playlist editing. Original creator attribution remains protected.</small>
+        </div>
+
+        <!-- Sub-Options: Download Key & Author Key (Can be combined if Master Key is unchecked) -->
+        <div id="secondary-individual-keys-group" style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-enter-download-key" /> 🎵 Enter Download Key (Unlocks Song Downloads)
+          </label>
+          <div id="box-download-key-input" style="display:none;margin:4px 0 8px 0;">
+            <input type="password" id="in-download-key" class="input-text" placeholder="Enter Download Key" autocomplete="off" />
+          </div>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-enter-author-key" /> ✏️ Enter Author Key (Unlocks Local Playlist Editing)
+          </label>
+          <div id="box-author-key-input" style="display:none;margin:4px 0 4px 0;">
+            <input type="password" id="in-author-key" class="input-text" placeholder="Enter Creator Passkey" autocomplete="off" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:14px;">
+        <button type="button" id="btn-cancel-secondary-keys" class="btn-action">Cancel</button>
+        <button type="button" id="btn-confirm-secondary-keys" class="btn-primary-large" style="width:auto;padding:10px 20px;">Continue</button>
       </div>
       <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
     </div>
@@ -105,7 +148,7 @@
     <div class="modal-box text-center">
       <div class="welcome-icon">🎧</div>
       <h2>Welcome to Ammu</h2>
-      <p class="modal-desc">Create your local listener profile or import an existing one. 100% Offline.</p>
+      <p class="modal-desc">Create your local listener profile or import an existing backup. 100% Offline.</p>
       <div class="form-group text-left">
         <label for="onboarding-name">Your Name</label>
         <input type="text" id="onboarding-name" class="input-text" placeholder="Enter your name" />
@@ -178,7 +221,7 @@
     </div>
   </div>
 
-  <!-- Analytics Modal -->
+  <!-- Listening Insights Modal -->
   <div id="stats-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box modal-box-large">
       <div class="panel-header-row">
@@ -193,7 +236,7 @@
       </div>
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>🏆 Milestone Badges &amp; Routine</h4>
-        <p id="stat-peak-hour-lbl" style="font-size:0.75rem;color:var(--accent-light);margin-bottom:6px;">Peak listening time: Calculating...</p>
+        <p id="stat-peak-hour-lbl" style="font-size:0.75rem;color:var(--accent-light);margin-bottom:6px;">Peak routine: Calculating...</p>
         <div id="milestone-badges-row" class="badges-row"></div>
       </div>
       <div class="backup-management-box" style="margin-top:10px;">
@@ -211,7 +254,7 @@
     </div>
   </div>
 
-  <!-- Author Modal -->
+  <!-- Author Profile Modal -->
   <div id="author-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box text-center">
       <img id="author-avatar-display" class="dev-avatar" src="my-icon.png" alt="Author" style="margin:0 auto 10px auto;" />
@@ -302,10 +345,10 @@
         </label>
       </div>
 
-      <!-- Universal Action Hub -->
+      <!-- Universal Actions -->
       <div class="backup-management-box" style="border-color:var(--accent);">
         <h4>⚡ Universal Action Hub</h4>
-        <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 8px 0;">Execute actions across your entire sound library.</p>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 8px 0;">Bulk actions across your local sound library.</p>
         <div class="backup-btn-row">
           <button id="btn-universal-download-all" class="btn-primary-large" style="flex:1;font-size:0.8rem;">📥 Download All Playlists</button>
           <button id="btn-universal-delete-all" class="btn-action" style="flex:1;font-size:0.8rem;color:#f85149;">🗑️ Delete All Playlists</button>
@@ -320,7 +363,7 @@
         <p id="settings-current-user-lbl" style="font-size:0.75rem;color:var(--text-muted);">Active listener: Amarjeet Kumar</p>
       </div>
 
-      <!-- 4-Key Hierarchical Security Architecture for Exporters -->
+      <!-- 4-Key Export Security Suite (All Optional) -->
       <div class="backup-management-box" style="margin-top:10px;">
         <h4>🔒 4-Key Export Security Suite (All Optional)</h4>
         <p style="font-size:0.72rem;color:var(--text-muted);margin:2px 0 6px 0;">Protect your intellectual property and sound library.</p>
@@ -387,7 +430,7 @@
 
       <div class="backup-management-box" style="margin-top:10px;">
         <div class="panel-header-row">
-          <h4 style="margin:0;">📜 Activity Audit (IST)</h4>
+          <h4 style="margin:0;">📜 Export / Import Activity Audit (IST)</h4>
           <button id="btn-clear-history" class="btn-dim-sm" style="font-size:0.72rem;color:#f85149;">Clear Log</button>
         </div>
         <ul id="audit-history-list" class="history-list-box"></ul>
@@ -401,7 +444,7 @@
     </div>
   </div>
 
-  <!-- Pre-Import Verification Modal (Handles Decryption Validation) -->
+  <!-- Storage Matcher & Verification Modal -->
   <div id="pre-import-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-box modal-box-large">
       <h3>🔍 Storage Matcher &amp; Verification</h3>
@@ -411,12 +454,6 @@
           <h4 id="pre-import-author-name">Author</h4>
           <p id="pre-import-file-meta" style="font-size:0.75rem;color:var(--text-muted);">Payload info</p>
         </div>
-      </div>
-      
-      <!-- Key Authorization inputs inside import -->
-      <div id="pre-import-keys-container" class="form-group" style="background:#090d15;padding:8px;border-radius:8px;border:1px solid var(--border);">
-        <label for="pre-import-key-input" style="color:var(--accent-light);">🔑 Creator Key / Master Key (Unlock Editing &amp; Downloads)</label>
-        <input type="password" id="pre-import-key-input" class="input-text" placeholder="Enter key (Optional)" autocomplete="off" />
       </div>
 
       <div class="storage-audit-badges-row">
@@ -551,24 +588,23 @@
           <span class="badge">Pure Audio</span>
         </div>
       </div>
-      <!-- Single Settings Gear Icon -->
       <button id="btn-main-settings-trigger" class="btn-action" title="Settings &amp; Hub">⚙️</button>
     </header>
 
-    <!-- Playlist Chips Bar (➕ New permanently anchored first) -->
+    <!-- Playlist Chips Bar -->
     <div class="playlist-chips" id="playlist-tabs"></div>
 
-    <!-- Toolbar with full width search & sort icon -->
+    <!-- Search & Sort Bar -->
     <div class="search-sort-bar">
       <div class="search-input-wrapper">
         <input type="text" id="library-search-input" class="search-field" placeholder="🔍 Search songs in current list..." />
         <button id="btn-clear-search" class="btn-clear-input" style="display:none;">✕</button>
       </div>
       <button id="btn-sort-trigger" class="btn-action-sm" title="Sort Options">↕️</button>
-      <button id="btn-clean-names" class="btn-action-sm" title="One-tap clean clutter tags from song names">✨ Clean</button>
+      <button id="btn-clean-names" class="btn-action-sm" title="Clean clutter tags">✨ Clean</button>
     </div>
 
-    <!-- Multi-Select Batch Action Bar -->
+    <!-- Multi-Select Batch Bar -->
     <div id="batch-action-bar" class="batch-bar" style="display:none;">
       <div style="display:flex;align-items:center;gap:6px;">
         <button id="btn-batch-select-all" class="btn-action-sm">Select All</button>
@@ -620,7 +656,7 @@
     </div>
   </div>
 
-  <!-- Fullscreen Player Card Modal with Sticky Playback Controls Scaffold -->
+  <!-- Fullscreen Player Card Modal -->
   <div class="fullscreen-player-card" id="player-box-modal" style="display:none;">
     <div id="ambient-glow-layer" class="ambient-glow"></div>
 
@@ -633,7 +669,7 @@
       <button id="modal-btn-like" class="icon-btn heart-btn" title="Favorite">💛</button>
     </div>
 
-    <!-- Sticky Scaffold: Upper section scrolls until playback controls hit top boundary -->
+    <!-- Sticky Scaffold: Upper hero scrolls until controls dock -->
     <div class="card-scroll-viewport" id="card-scroll-viewport">
       <div class="player-collapsible-hero">
         <canvas id="audio-visualizer" class="visualizer-canvas" width="300" height="32"></canvas>
@@ -691,7 +727,7 @@
         </div>
       </div>
 
-      <!-- Independent Scrollable Sub-Drawers Area -->
+      <!-- Independent Sub-Drawers Area -->
       <div class="card-drawers-container" id="card-drag-dismiss-area">
         <!-- 1. Volume Drawer -->
         <div id="card-volume-panel" class="embedded-card-panel" style="display:none;">
@@ -739,7 +775,7 @@
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
 
-        <!-- 3. Timestamp Bookmarks Drawer -->
+        <!-- 3. Timestamp Markers Drawer -->
         <div id="card-timestamps-panel" class="embedded-card-panel" style="display:none;">
           <div class="panel-header-row">
             <span>⏱️ Track Bookmarks &amp; Chapters</span>
@@ -749,7 +785,7 @@
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
 
-        <!-- 4. A-B Segment Looper Drawer -->
+        <!-- 4. A-B Looper Drawer -->
         <div id="card-looper-panel" class="embedded-card-panel" style="display:none;">
           <div class="panel-header-row">
             <span>Continuous A-B Section Repeater</span>
@@ -762,7 +798,7 @@
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
 
-        <!-- 5. Offline Lyrics & Notes Drawer -->
+        <!-- 5. Offline Lyrics Drawer -->
         <div id="card-lyrics-panel" class="embedded-card-panel" style="display:none;">
           <div class="panel-header-row">
             <span>Offline Lyrics &amp; Song Notes</span>
@@ -772,7 +808,7 @@
           <p class="card-credit-footer">Made by &amp; for <strong>Amarjeet kumar</strong></p>
         </div>
 
-        <!-- 6. In-Card Playlist Queue Drawer (With Total Duration & Author Pill) -->
+        <!-- 6. In-Card Queue Drawer with Live Duration & Author -->
         <div id="card-playlist-panel" class="embedded-card-panel" style="display:none;">
           <div class="panel-header-row" style="border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;">
             <div>
