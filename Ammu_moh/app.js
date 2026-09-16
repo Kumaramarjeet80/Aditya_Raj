@@ -5,7 +5,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // =============================================================
-// DOM REFERENCES
+// DOM REFERENCES (TOP-LEVEL INITIALIZATION)
 // =============================================================
 const playlistTabs = document.getElementById('playlist-tabs');
 const songList = document.getElementById('song-list');
@@ -103,7 +103,7 @@ const timestampTimePreview = document.getElementById('timestamp-time-preview');
 const timestampMarkersList = document.getElementById('timestamp-markers-list');
 const lyricsTextarea = document.getElementById('lyrics-textarea');
 
-// Global Processing Modal
+// Global Processing Modal Elements
 const globalProcessingModal = document.getElementById('global-processing-modal');
 const processingStatusMsg = document.getElementById('processing-status-msg');
 const processingProgressBar = document.getElementById('processing-progress-bar');
@@ -145,7 +145,7 @@ if (btnCancelProcessingTask) {
 }
 
 // =============================================================
-// INDIAN STANDARD TIME FORMATTERS
+// INDIAN STANDARD TIME (IST) FORMATTERS
 // =============================================================
 function getIndianStandardTime(dateObj = new Date()) {
   return new Intl.DateTimeFormat('en-IN', {
@@ -170,7 +170,7 @@ function getIndianStandardDateOnly(dateObj = new Date()) {
 }
 
 // =============================================================
-// CRYPTO HELPERS
+// OFFLINE WEB CRYPTO (AES-GCM-256 & SHA-256)
 // =============================================================
 async function hashPasskey(passkey) {
   if (!passkey) return '';
@@ -280,7 +280,7 @@ function triggerHaptic(ms = 35) {
   }
 }
 
-// Android Back Gesture & Multi-Select Interception
+// Android Back Gesture Handling
 window.history.pushState({ page: 'home' }, '');
 window.addEventListener('popstate', () => {
   if (multiSelectMode || selectedTrackIds.size > 0) {
@@ -488,7 +488,7 @@ function showEmotionalMessage(isLiked) {
 // =============================================================
 // INDEXEDDB DATABASE ENGINE
 // =============================================================
-const DB_NAME = 'AmmuMusicDB_v290';
+const DB_NAME = 'AmmuMusicDB_v300';
 const DB_VER = 1;
 let db;
 
@@ -861,7 +861,7 @@ let vlcFilters = [];
 // Vivo EQ Frequencies
 const vivoBands = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 let vivoFilters = [];
-let activeEqEngine = 'vlc'; // 'vlc' OR 'vivo' (Strictly Mutually Exclusive)
+let activeEqEngine = 'vlc'; // 'vlc' OR 'vivo' (Exclusive)
 let eqEnabled = false;
 let currentVol = 1.0;
 let currentCrossfadeDuration = 2;
@@ -962,7 +962,7 @@ function cleanAudioBufferResume() {
   masterGainNode.gain.linearRampToValueAtTime(currentVol, now + 0.035);
 }
 
-// Background Wake Lock Protection
+// Wake Lock Protection
 async function acquireWakeLock() {
   try {
     if ('wakeLock' in navigator && !screenWakeLock) {
@@ -1055,7 +1055,7 @@ document.querySelectorAll('.vol-snap-btn').forEach(btn => {
   };
 });
 
-// Dual EQ Tab Switching
+// Mutually Exclusive Tabs
 const btnTabVlc = document.getElementById('btn-tab-vlc-eq');
 const btnTabVivo = document.getElementById('btn-tab-vivo-eq');
 
@@ -1322,7 +1322,7 @@ if (importEqFile) {
   };
 }
 
-// Crossfade Staging
+// Crossfade Configuration
 const selectCrossfade = document.getElementById('select-crossfade-sec');
 if (selectCrossfade) {
   selectCrossfade.onchange = (e) => {
@@ -1501,7 +1501,9 @@ function updateAmbientGlow(imgEl) {
   } catch (_) {}
 }
 
-// Native Synchronized Engine Listeners
+// =============================================================
+// NATIVE SYNCHRONIZED ENGINE & BACKGROUND RESUME LISTENERS
+// =============================================================
 audio.addEventListener('play', () => {
   isManualPause = false;
   wasPlayingBeforeInterruption = false;
@@ -1521,6 +1523,13 @@ audio.addEventListener('pause', () => {
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
   if (!isManualPause && currentPlayingTrack) {
     wasPlayingBeforeInterruption = true;
+  }
+});
+
+// Resuscitate Web Audio pipeline immediately on app visibility return
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && audioCtx && audioCtx.state === 'suspended' && !audio.paused) {
+    audioCtx.resume().catch(() => {});
   }
 });
 
@@ -1608,7 +1617,7 @@ if (menuBtnDevProfile) {
   };
 }
 
-// Hierarchical Sort Menus
+// Sort Navigation
 if (btnSortTrigger) {
   btnSortTrigger.onclick = (e) => {
     e.stopPropagation();
@@ -1753,7 +1762,7 @@ if (btnRemoveAdminKey) {
   };
 }
 
-// Track 3-Dots Menu
+// Track Context Menu Actions
 const menuBtnTrackSelect = document.getElementById('menu-btn-track-select');
 if (menuBtnTrackSelect) {
   menuBtnTrackSelect.onclick = () => {
@@ -1840,7 +1849,7 @@ function openAddToPlaylistSubmenu() {
   }
 }
 
-// Playlist Context Actions
+// Playlist Actions
 const plBtnDownloadAll = document.getElementById('pl-menu-btn-download-all');
 if (plBtnDownloadAll) {
   plBtnDownloadAll.onclick = () => {
@@ -2255,7 +2264,7 @@ if (btnSaveUserProfile) {
   };
 }
 
-// Downloads
+// Bulk Playlist Downloads
 async function downloadEntirePlaylist() {
   triggerHaptic(35);
   const available = browsingTracks.filter(t => t.blob && t.blob.size > 0);
@@ -2489,7 +2498,7 @@ if (btnSaveDev) {
   };
 }
 
-// Analytics Dashboard
+// Analytics
 async function renderListeningDashboard() {
   const allTimeLogs = await dbOps.getAllListeningTimes();
   const todayKey = getIndianStandardDateOnly();
@@ -3011,7 +3020,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   }
 
   const payload = {
-    version: '18.0',
+    version: '19.0',
     exportedAt: getIndianStandardTime(),
     generator: 'Ammu',
     author: userProfile,
@@ -3062,7 +3071,7 @@ async function executeUniversalExport(includeAudio, includeMarkers, includeImage
   showNotification(`Downloaded backup: ${finalBackupFileName}`);
 }
 
-// Two-Phase Import System
+// Two-Phase Import
 let rawEncryptedDataToDecrypt = null;
 let parsedDecryptedPayload = null;
 let currentImportBypassOnboarding = false;
@@ -3136,7 +3145,7 @@ if (btnConfirmDec) {
   };
 }
 
-// "Forgot Key?" Fallback Guard
+// "Forgot Key?" Guard
 const btnForgotDecKey = document.getElementById('btn-forgot-decryption-key');
 if (btnForgotDecKey) {
   btnForgotDecKey.onclick = () => {
@@ -4183,7 +4192,7 @@ if (btnConfirmRename) {
   };
 }
 
-// Favorites Toggle
+// Favorites Toggle: Protected Against Rapid Taps
 async function toggleFavorite(trk) {
   triggerHaptic(25);
   const songKey = trk.name;
@@ -4378,7 +4387,7 @@ if (filePicker) {
   };
 }
 
-// Full In-Memory High-Fidelity Preload & Queue Playback Controller
+// In-Memory Preload & High-Fidelity Audio Direct Trigger
 function playTrackFromBrowsing(idx) {
   if (idx < 0 || idx >= browsingTracks.length) return;
   playingQueue = [...browsingTracks];
@@ -4395,13 +4404,13 @@ async function playTrackDirect(trk) {
 
   if (currentPlayingTrack && currentPlayingTrack.name === trk.name && audio.src) {
     if (audio.paused) {
-      audio.play();
+      audio.play().catch(() => {});
       cleanAudioBufferResume();
     }
     return;
   }
 
-  // Preload complete audio buffer into memory to prevent read underruns
+  // Preload entire audio buffer to eliminate disk stalls and audio crackling
   try {
     const arrayBuffer = await trk.blob.arrayBuffer();
     const memoryBlob = new Blob([arrayBuffer], { type: trk.blob.type || 'audio/mp3' });
@@ -4468,7 +4477,7 @@ function togglePlay() {
   }
   if (audio.paused) {
     cleanAudioBufferResume();
-    audio.play();
+    audio.play().catch(() => {});
   } else {
     isManualPause = true;
     wasPlayingBeforeInterruption = false;
@@ -4476,8 +4485,9 @@ function togglePlay() {
   }
 }
 
+// Background-Protected Queue Advancer
 function loopNext() {
-  executeCrossfadeTransition(() => {
+  const proceedToNext = () => {
     if (!playingQueue.length) return;
     
     if (playNextQueue.length > 0) {
@@ -4506,7 +4516,14 @@ function loopNext() {
     if (playingQueue[nextIdx]) {
       playTrackDirect(playingQueue[nextIdx]);
     }
-  });
+  };
+
+  // If in background or screen is off, bypass crossfader timers to protect against OS suspension
+  if (document.hidden || currentCrossfadeDuration <= 0) {
+    proceedToNext();
+  } else {
+    executeCrossfadeTransition(proceedToNext);
+  }
 }
 
 if (barBtnPlay) barBtnPlay.onclick = (e) => { e.stopPropagation(); togglePlay(); };
@@ -4514,7 +4531,7 @@ if (boxBtnPlay) boxBtnPlay.onclick = togglePlay;
 if (boxBtnPrev) {
   boxBtnPrev.onclick = () => {
     triggerHaptic(20);
-    executeCrossfadeTransition(() => {
+    const proceedToPrev = () => {
       if (!playingQueue.length) return;
       let curIdx = playingQueue.findIndex(t => t.name === (currentPlayingTrack && currentPlayingTrack.name));
       let prev = curIdx;
@@ -4525,7 +4542,13 @@ if (boxBtnPrev) {
       } while (playingQueue[prev] && (playingQueue[prev].isMissing || !playingQueue[prev].blob || playingQueue[prev].blob.size === 0) && attempts < playingQueue.length);
 
       playTrackDirect(playingQueue[prev]);
-    });
+    };
+
+    if (document.hidden || currentCrossfadeDuration <= 0) {
+      proceedToPrev();
+    } else {
+      executeCrossfadeTransition(proceedToPrev);
+    }
   };
 }
 if (boxBtnNext) boxBtnNext.onclick = () => { triggerHaptic(20); loopNext(); };
@@ -4543,7 +4566,7 @@ if (modalBtnLike) {
   };
 }
 
-// Lock-Screen MediaSession Controls
+// MediaSession Controls
 function updateMediaSession() {
   if (!('mediaSession' in navigator) || !currentPlayingTrack) return;
 
@@ -4569,6 +4592,7 @@ function updateMediaSession() {
     } catch (_) {}
   }
 
+  // Direct Hardware Action Handlers
   navigator.mediaSession.setActionHandler('play', () => {
     ensureAudioPipeline();
     cleanAudioBufferResume();
@@ -4581,7 +4605,10 @@ function updateMediaSession() {
     audio.pause();
   });
 
-  navigator.mediaSession.setActionHandler('nexttrack', loopNext);
+  navigator.mediaSession.setActionHandler('nexttrack', () => {
+    loopNext();
+  });
+
   navigator.mediaSession.setActionHandler('previoustrack', () => {
     if (boxBtnPrev) boxBtnPrev.click();
   });
@@ -4716,7 +4743,7 @@ if (btnSleepTimer) {
   };
 }
 
-// Viewport Swipe Handling
+// Viewport Horizontal Swipe
 let mainTouchStartX = 0;
 let mainTouchStartY = 0;
 
@@ -5009,7 +5036,7 @@ async function renderTrimmedClipsForCurrent() {
   });
 }
 
-// Drawers
+// Drawers Navigation
 const panels = {
   vol: document.getElementById('card-volume-panel'),
   eq: document.getElementById('card-eq-panel'),
@@ -5150,7 +5177,7 @@ function renderTimestampsDrawerList() {
       triggerHaptic(20);
       audio.currentTime = ts.time;
       if (audio.paused) {
-        audio.play();
+        audio.play().catch(() => {});
         cleanAudioBufferResume();
       }
       showNotification(`Jumped to: ${ts.name}`);
@@ -5312,7 +5339,7 @@ if (seekBar) {
   };
 }
 
-// Queue Management
+// Queue Management (Two-Zone Partitions)
 function calculateAndRenderQueueDuration() {
   const badge = document.getElementById('card-queue-duration-badge');
   if (!badge) return;
@@ -5401,6 +5428,7 @@ function renderCardReorderList() {
     li.className = `drawer-track-row ${isThisPlaying ? 'now-playing-active' : ''} ${isMissing ? 'missing-storage' : ''}`;
     li.dataset.index = idx;
 
+    // Zone A (Drag/Swap) vs Zone B (Scroll-Only Buttons)
     li.innerHTML = `
       <div class="drawer-track-info-zone" data-zone="info">
         <span class="song-name" style="cursor:pointer;">
@@ -5479,6 +5507,7 @@ function renderCardReorderList() {
 
           updateDragPreviewPosition(touchY);
 
+          // Boundary Auto-Scroll
           const scrollZone = 44;
           if (touchY < panelRect.top + scrollZone) {
             startBoundaryAutoScroll(-6);
@@ -5597,7 +5626,7 @@ window.removeTrackFromQueue = (idx) => {
   showNotification(`Removed "${(removed && removed.name) || 'Track'}" from playing queue`);
 };
 
-// VLC EQ Handlers
+// VLC Equalizer Inputs
 const sliderBassBoost = document.getElementById('slider-bass-boost');
 if (sliderBassBoost) {
   sliderBassBoost.oninput = (e) => {
